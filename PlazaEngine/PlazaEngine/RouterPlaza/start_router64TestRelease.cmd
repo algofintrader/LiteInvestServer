@@ -1,0 +1,1 @@
+start .\P2MQRouter64.exe /ini:client_routerTestRelease.ini

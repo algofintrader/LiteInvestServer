@@ -1,0 +1,218 @@
+﻿<Window x:Class="AvpPlazaExample.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AvpPlazaExample"
+        mc:Ignorable="d"
+        Title="AvpPlazaTester" Height="500" Width="1000" Closed="Window_Closed" >
+    <Window.Resources>
+        <Style TargetType="ListViewItem">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding TypeLevel}" Value="1">
+                    <Setter Property="Background" Value="Orange"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding TypeLevel}" Value="2">
+                    <Setter Property="Background" Value="GreenYellow"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+    </Window.Resources>
+
+    <Grid>
+        <TabControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="1,1,1,1">
+            <TabItem Header="Connect">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="127*"/>
+                        <ColumnDefinition Width="865*"/>
+                    </Grid.ColumnDefinitions>
+                    <ListBox x:Name="SecuritiBox"  Margin="5,5,0,50"  HorizontalAlignment="Stretch" d:ItemsSource="{d:SampleData ItemCount=5}" SelectionChanged="SecuritiBox_SelectionChanged"  />
+                    <Button Margin="98,10,0,0" Width="100" Height="25" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Connect to Plaza" Click="Button_Click" Grid.Column="1"/>
+                    <Button Margin="140,50,0,0" Width="100" Height="25" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Show Glass" Click="Button_Click_1" Grid.Column="1"/>
+                    <Button Margin="10,50,0,0" Width="100" Height="25" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Show Ticks" Click="Button_Click_ShowTicks" Grid.Column="1"/>
+                    <Button Margin="98,90,0,0" Width="100" Height="25" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Close Connection" Click="Button_Close_Connection" Grid.Column="1"/>
+
+                    <ListView x:Name="GlassView" ItemsSource="{Binding Levels}"  d:ItemsSource="{d:SampleData ItemCount=5}" HorizontalAlignment="Left" Margin="260,5,0,60" Width="200" FontSize="11" Grid.Column="1">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Price" DisplayMemberBinding="{Binding Price, StringFormat=######0.########}" Width="100"/>
+                                <GridViewColumn Header="Volume" DisplayMemberBinding="{Binding Volume}" Width="100"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <CheckBox x:Name="EmulatorCheckBox" Content="Glass Emulator Is On" HorizontalAlignment="Left" Margin="83,130,0,0" VerticalAlignment="Top" IsChecked="False" Grid.Column="1"/>
+                    <Label x:Name="LabelTime" d:Content="Depth Time" ContentStringFormat="yyyy.MM.dd HH:mm:ss.fff"  Margin="223,0,0,30" VerticalAlignment="Bottom" Width="225" HorizontalAlignment="Left" Height="30" Grid.Column="1"/>
+                    <ListView Name="ListViewOrder" d:ItemsSource="{d:SampleData ItemCount=5}" Margin="473,5,5,60" Grid.Column="1"  >
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="MainNumber" DisplayMemberBinding="{Binding NumberUser}" />
+                                <GridViewColumn Header="MoexNumber" DisplayMemberBinding="{Binding NumberMarket}"/>
+                                <GridViewColumn Header="Security" DisplayMemberBinding="{Binding SecurityId}"/>
+                                <GridViewColumn Header="DataCreate" DisplayMemberBinding="{Binding TimeCreate, StringFormat=yyyy.MM.dd HH:mm:ss.fff}" />
+                                <GridViewColumn Header="Comment" DisplayMemberBinding="{Binding Comment}"/>
+                                <GridViewColumn Header="TimeRoundTrip" DisplayMemberBinding="{Binding TimeRoundTrip}"/>
+                                <GridViewColumn Header="State" DisplayMemberBinding="{Binding State}" />
+                                <GridViewColumn Header="Side" DisplayMemberBinding="{Binding Side}" />
+                                <GridViewColumn Header="Price" DisplayMemberBinding="{Binding PriceOrder, StringFormat=#0.#####}" />
+                                <GridViewColumn Header="Volume" DisplayMemberBinding="{Binding Volume}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <Label Content="Multi Sender Orders to MOEX" HorizontalAlignment="Left" Margin="43,165,0,0" VerticalAlignment="Top" Grid.Column="1"/>
+                    <Label d:Content="Security name" Content="{Binding SelectedItem, ElementName=SecuritiBox}" Margin="43,190,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
+                    <ComboBox Name="ComboBoxSide"  Margin="43,220,0,0" Width="100" HorizontalAlignment="Left"  VerticalAlignment="Top" Grid.Column="1">
+                        <ComboBoxItem Content="Buy"/>
+                        <ComboBoxItem Content="Sell"/>
+                    </ComboBox>
+                    <Label Content="Price" Margin="43,250,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
+                    <TextBox Name="TextBoxPrice" Text="0" Width="100" Margin="103,250,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
+                    <Label Content="Shift" Margin="43,280,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
+                    <TextBox Name="TextBoxShift" Text="0" Width="100" Margin="103,280,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
+                    <Label Content="Volume" Margin="43,310,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
+                    <TextBox Name="TextBoxVolume" Text="0" Width="100" Margin="103,310,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
+                    <Label Content="Count" Margin="43,340,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
+                    <TextBox Name="TextBoxCount" Text="0" Width="100" Margin="103,340,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
+                    <Button Content="Send Multi Order" Margin="43,370,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Click="Button_SendMultiOrder" Grid.Column="1" />
+
+                    <Button Content="Cancel All Selected Orders" Margin="573,0,0,20"  HorizontalAlignment="Left" VerticalAlignment="Bottom" Click="Button_CancelSelectedOrder" Grid.Column="1" />
+                    <RadioButton x:Name="RadioReal" Grid.Column="1" Content="Real" HorizontalAlignment="Left" Margin="33,10,0,0" VerticalAlignment="Top"/>
+                    <RadioButton x:Name="RadioTest" Grid.Column="1" Content="Test" IsChecked="True" HorizontalAlignment="Left" Margin="33,30,0,0" VerticalAlignment="Top"/>
+
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Тест 1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="320"/>
+                        <ColumnDefinition Width="250"/>
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Margin="5,5,0,5" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Bottom" TextWrapping="Wrap" Text="Сценарий 1. 
+- Выставить заявки по выбранным инструментам при условии, что у нас 30 транзакций в секунду. Выставить по ценам на грани исполнения.
+- Роутер не должен упасть, часть заявок должна перенестись на исполнение в другой промежуток.
+- Проверить, что все заявки будут обслужены и отправлены.
+- Сопоставить результаты - вывести их
+- Автоматом закрыть позы."></TextBlock>
+                    <ListView x:Name="ListSec2" ItemsSource="{Binding Securitys}" HorizontalAlignment="Left" Margin="0,5,1,20" Width="150" VerticalAlignment="Stretch" MouseDoubleClick="ListSec2_MouseDoubleClick" SelectionMode="Single">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}"/>
+                            </GridView>
+                        </ListView.View>
+
+                    </ListView>
+                    <ListView x:Name="ListSelectedSec2" HorizontalAlignment="Left" Margin="160,5,1,20" Width="150" VerticalAlignment="Stretch" MouseDoubleClick="ListSelectedSec2_MouseDoubleClick">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Selected Name" Width="150" DisplayMemberBinding="{Binding Name}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <Grid Margin="0,5,0,0" Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="10*"/>
+                            <RowDefinition Height="2*"/>
+                        </Grid.RowDefinitions>
+                        <GridSplitter Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Height="5"></GridSplitter>
+                        <ListView Name="ListViewOrders2" Grid.Row="0" Margin="2" Visibility="Hidden">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="MainNumber" DisplayMemberBinding="{Binding NumberUser}" Width="100" />
+                                    <GridViewColumn Header="Security" DisplayMemberBinding="{Binding SecurityId}" Width="80"/>
+                                    <GridViewColumn Header="Comment" DisplayMemberBinding="{Binding Comment}" Width="100"/>
+                                    <GridViewColumn Header="State" DisplayMemberBinding="{Binding State}" Width="50" />
+                                    <GridViewColumn Header="Side" DisplayMemberBinding="{Binding Side}" Width="50" />
+                                    <GridViewColumn Header="Price" DisplayMemberBinding="{Binding PriceOrder, StringFormat=#0.#####}" Width="70" />
+                                    <GridViewColumn Header="Volume" DisplayMemberBinding="{Binding Volume}" Width="50" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+
+                        <ListBox x:Name="ListBoxLogTest1" Grid.Row="0" Margin="2"></ListBox>
+
+                        <ListView Name="ListViewPosition" Grid.Row="1" Margin="2">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="SecurityId" DisplayMemberBinding="{Binding SecurityId}" Width="150"/>
+                                    <GridViewColumn Header="ValueCurrent" DisplayMemberBinding="{Binding ValueCurrent}" Width="150" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+
+                    </Grid>
+                    <Label Grid.Column="1" Content="Число заявок на инструмент" HorizontalAlignment="Left" Margin="5,70,0,0" VerticalAlignment="Top"/>
+                    <TextBox x:Name="TextOrderCount2" Grid.Column="1" HorizontalAlignment="Left" Margin="5,94,0,0" TextWrapping="NoWrap" Text="100" VerticalAlignment="Top" Width="100"/>
+
+                    <ComboBox Grid.Column="1" Name="ComboBoxSide2"  Margin="5,120,0,0" Width="100" HorizontalAlignment="Left" SelectedIndex="0" VerticalAlignment="Top">
+                        <ComboBoxItem Content="Buy"/>
+                        <ComboBoxItem Content="Sell"/>
+                    </ComboBox>
+                    <Label Grid.Column="1" Content="Отступ от лучшей цены, пунктов:" HorizontalAlignment="Left" Margin="5,170,0,0" VerticalAlignment="Top"/>
+                    <TextBox x:Name="TextOrderDistance" Grid.Column="1" HorizontalAlignment="Left" Margin="5,200,0,0" TextWrapping="NoWrap" Text="0" VerticalAlignment="Top" Width="50" ToolTip="Больше 0 - Лимитки, меньше 0 - в рынок"/>
+
+                    <Button Name="ButtonMultiOrder2" Content="Старт" Grid.Column="1" Margin="5,234,0,0" Height="25" VerticalAlignment="Top" HorizontalAlignment="Left" Width="200" Click="ButtonMultiOrder2_Click"></Button>
+                    <!--<Button Name="ButtonMultiOrder2Test2" Content="Тест №2" Grid.Column="1" Margin="5,200,0,0" Height="25" VerticalAlignment="Top" HorizontalAlignment="Left" Width="200" Click="ButtonMultiOrder2Test2_Click"></Button>-->
+                    <!--<Button Name="ButtonCancelOrder2" Content="Снять активные заявки" Grid.Column="1" Margin="5,240,0,0" Height="25" VerticalAlignment="Top" HorizontalAlignment="Left" Width="200" Click="ButtonCancelOrder2_Click"></Button>-->
+                    <!--<Button Name="ButtonCloseAllPosition" Content="Закрыть открытые позиции" Grid.Column="1" Margin="5,280,0,0" Height="25" VerticalAlignment="Top" HorizontalAlignment="Left" Width="200" Click="ButtonCloseAllPosition_Click"></Button>-->
+
+
+
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Тест 2">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="320"/>
+                        <ColumnDefinition Width="250"/>
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Margin="5,5,0,5" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Bottom" TextWrapping="Wrap" Text="Сценарий 2.
+Выставить заявки по выбранным инструментам при условии, что у нас 30 транзакций в секунду. Выставить по ценам на грани исполнения.
+Сразу же попытаться отменить заявки прям в момент выставления. Пачку молниеносно при выставлении, вторую пачку скажем через 1 сек. 
+Проверить, что все заявки будут обслужены, отправлены, отменены.
+Роутер не упал, все ок.
+Сопоставить результаты, вывести их
+Автоматом закрыть позиции.">
+                    </TextBlock>
+                    <ListView x:Name="ListSec3" ItemsSource="{Binding Securitys}" HorizontalAlignment="Left" Margin="0,5,1,20" Width="150" VerticalAlignment="Stretch" MouseDoubleClick="ListSec3_MouseDoubleClick" SelectionMode="Single">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}"/>
+                            </GridView>
+                        </ListView.View>
+
+                    </ListView>
+                    <ListView x:Name="ListSelectedSec3" HorizontalAlignment="Left" Margin="160,5,1,20" Width="150" VerticalAlignment="Stretch" MouseDoubleClick="ListSelectedSec2_MouseDoubleClick">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Selected Name" Width="150" DisplayMemberBinding="{Binding Name}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                    <Label Grid.Column="1" Content="Число заявок на инструмент" HorizontalAlignment="Left" Margin="5,6,0,0" VerticalAlignment="Top"/>
+                    <TextBox x:Name="TextOrderCount3" Grid.Column="1" HorizontalAlignment="Left" Margin="5,30,0,0" TextWrapping="NoWrap" Text="100" VerticalAlignment="Top" Width="100"/>
+
+                    <ComboBox Grid.Column="1" Name="ComboBoxSide3"  Margin="5,56,0,0" Width="100" HorizontalAlignment="Left" SelectedIndex="0" VerticalAlignment="Top">
+                        <ComboBoxItem Content="Buy"/>
+                        <ComboBoxItem Content="Sell"/>
+                    </ComboBox>
+                    <Label Grid.Column="1" Content="Отступ от лучшей цены, пунктов:" HorizontalAlignment="Left" Margin="5,106,0,0" VerticalAlignment="Top"/>
+                    <TextBox x:Name="TextOrderDistance3" Grid.Column="1" HorizontalAlignment="Left" Margin="5,136,0,0" TextWrapping="NoWrap" Text="0" VerticalAlignment="Top" Width="50" ToolTip="Больше 0 - Лимитки, меньше 0 - в рынок"/>
+
+                    <Button Name="ButtonMultiOrder3" Content="Старт" Grid.Column="1" Margin="5,167,0,0" Height="25" VerticalAlignment="Top" HorizontalAlignment="Left" Width="200" Click="ButtonMultiOrder3_Click"></Button>
+
+                    <ListBox x:Name="ListBoxLogTest3" Grid.Column="2" Margin="2"></ListBox>
+
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+    </Grid>
+
+</Window>
