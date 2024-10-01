@@ -163,8 +163,7 @@ namespace PlazaEngine.Entity
         public Side Side { get => side; }
 
         /// <summary>
-        /// bid price
-        /// цена заявки
+        /// Цена Ордера
         /// </summary>
         public decimal PriceOrder { get => priceOrder; }
 

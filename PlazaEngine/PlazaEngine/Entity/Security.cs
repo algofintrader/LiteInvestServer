@@ -24,23 +24,34 @@ public record Security(
     public required string Name { get; init; }
 
     private decimal _bestask;
+    
+    /*
     public decimal BestAsk 
     {
         get => _bestask;
         set 
         { _bestask = value; PropertyEvent("BestAsk"); }
-    }
+    }*/
+
     private decimal _bestbid;
+
+    /*
     public decimal BestBid
     {
         get => _bestbid;
         set { _bestbid = value; PropertyEvent("BestBid"); }
     }
+    */
 
+    /*
     public List<MarketDepthLevel> Bids { get; set; }
     public List<MarketDepthLevel> Asks { get; set; }
 
+    */
+
     public DateTime QuotesUpdateTime { get; set; }
+
+    /*
 
     public void UpdateBidsAsks (MarketDepth depth)
     {
@@ -56,7 +67,7 @@ public record Security(
         QuotesUpdateTime = DateTime.Now;
        
        // DepthUpdated?.Invoke(depth);
-    }
+    }*/
     
     /// <summary>
     /// Событие обновление всех котировок
@@ -215,34 +226,7 @@ public record Security(
     // save and load
     // сохранение и загрузка
 
- 
 
-    /// <summary>
-    /// save the line
-    /// взять строку сохранения
-    /// </summary>
-    public string GetSaveStr()
-    {
-        string result = Name + "!";
-        result += ClassCode + "!";
-        result += FullName + "!";
-        result += Id + "!";
-        result += FullName + "!";
-        result += State + "!";
-        result += PriceStep + "!";
-        result += Lot + "!";
-        result += PriceStepCost + "!";
-        result += Go + "!";
-        result += Type + "!";
-        result += _decimals + "!";
-        result += PriceLimitLow + "!";
-        result += PriceLimitHigh + "!";
-        result += OptionType + "!";
-        result += Strike + "!";
-        result += Expiration + "!";
-
-        return result;
-    }
 
     public void PropertyEvent(string _property)
     {

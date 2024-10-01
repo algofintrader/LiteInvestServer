@@ -197,13 +197,14 @@ namespace PlazaEngine.Engine
 
         public bool LoadTicksFromStart { get; set; }
 
+        /*
         //добавил самостоятельно, чтобы упростить подписку и разброс котировок
         //должен в параллеле раскидывать котировки
         private void PlazaClient_MarketDepthChangeEvent(MarketDepth marketDepth)
         {
             if (SecuritiesQuotes.ContainsKey(marketDepth.SecurityId))
                 SecuritiesQuotes[marketDepth.SecurityId].UpdateBidsAsks(marketDepth);
-        }
+        }*/
 
         public ObservableCollection<Order> ActiveOrders = new ObservableCollection<Order>();
 
@@ -489,7 +490,7 @@ namespace PlazaEngine.Engine
                 StartOfConnector = GetTimeMoscowNow();
 
                 //Добавляю сразу свои события в коннектор
-                this.MarketDepthChangeEvent += PlazaClient_MarketDepthChangeEvent;
+                //this.MarketDepthChangeEvent += PlazaClient_MarketDepthChangeEvent;
                 //this.NewMyOrderEvent += PlazaClient_NewMyOrderEvent;
                 //--------------------------------------------------
 
