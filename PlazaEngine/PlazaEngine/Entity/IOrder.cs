@@ -12,7 +12,7 @@ namespace PlazaEngine.Entity
         /// <summary>
         /// Биржевой номер Ордера, присваивается биржей
         /// </summary>
-        string NumberMarket { get; }
+        string ExchangeOrderId { get; }
 
         /// <summary>
         /// Внутренний номер ордера, присваивается автоматически коннектором

@@ -5,10 +5,17 @@ using System.Runtime.Serialization;
 namespace LiteInvestServer.Entity
 {
 
+    public enum Roles
+    {
+        Usual,
+        Admin
+    }
+
+
     [DataContract]
     public class User
     {
-        private User(string _userName, string _pass)
+        public User(string _userName, string _pass)
         {
 
             userName = _userName;
@@ -36,6 +43,12 @@ namespace LiteInvestServer.Entity
         ///  Не совсем до конца понятно как это считать
         /// </summary>
         public decimal LockedBalance { get; set; }
+
+        [DataMember]
+        /// <summary>
+        ///  Лимит на торговлю
+        /// </summary>
+        public decimal Limit { get; set; }
 
         public ConcurrentDictionary <string, Order> Orders { get; set; }
 

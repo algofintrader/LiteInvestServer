@@ -82,10 +82,10 @@ namespace PlazaEngine.Entity
 
             state = OrderStateType.Pending;
 
-            NumberMarket = "";
-            numberUser = Helper.CreateHashId();
+            ExchangeOrderId = "";
+            numberUser = PLazaHelper.CreateHashId();
             _trades = new List<MyTrade>();
-            timeCreate = Helper.GetTimeMoscowNow();
+            timeCreate = PLazaHelper.GetTimeMoscowNow();
         }
 
         public Order()
@@ -117,7 +117,7 @@ namespace PlazaEngine.Entity
         /// <summary>
         /// присвоен ли бирже номер
         /// </summary>
-        private bool IsReal => NumberMarket == "" ? false : true;
+        private bool IsReal => ExchangeOrderId == "" ? false : true;
 
 
 
@@ -133,11 +133,11 @@ namespace PlazaEngine.Entity
         /// order number on the exchange
         /// номер ордера на бирже
         /// </summary>
-        public string NumberMarket { get; set; }
+        public string ExchangeOrderId { get; set; }
 
         internal void SetNumberMarket(string numberMarket)
         {
-            this.NumberMarket = numberMarket;   
+            this.ExchangeOrderId = numberMarket;   
             OrdersNumberHash[numberMarket] = numberUser;
         }
 
@@ -409,7 +409,7 @@ namespace PlazaEngine.Entity
                 return;
             }
 
-            if (trade.NumberOrderMarket != NumberMarket)
+            if (trade.NumberOrderMarket != ExchangeOrderId)
             {
                 return;
             }
@@ -524,7 +524,7 @@ namespace PlazaEngine.Entity
         {
             return new StringBuilder()
                 .Append(numberUser).Append("; ")
-                .Append(NumberMarket).Append("; ")
+                .Append(ExchangeOrderId).Append("; ")
                 .Append(SecurityId).Append("; ")
                 .Append(side == Side.Buy? "Buy" : side == Side.Sell ? "Sell" : "None").Append("; ")
                 .Append(priceOrder).Append("; ")

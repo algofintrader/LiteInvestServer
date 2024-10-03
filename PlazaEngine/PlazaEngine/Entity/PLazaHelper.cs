@@ -7,7 +7,7 @@ namespace PlazaEngine.Entity
     /// number generator for deals and orders inside the robot
     /// генератор номеров для сделок и ордеров внутри робота
     /// </summary>
-    public class Helper
+    public static class PLazaHelper
     {
         
 

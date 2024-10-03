@@ -6,7 +6,7 @@ namespace LiteInvestServer.Records
     public record ClientOrder
     {
         [SwaggerSchema("Уникальный идентификатор инструмента")]
-        public required string Security { get; init; }
+        public required string SecID { get; init; }
         public required Side Side { get; init; }
         public required int Volume { get; init; }
         public decimal? Price { get; init; }

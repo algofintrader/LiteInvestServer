@@ -474,7 +474,7 @@ namespace AvpPlazaExample
             }
         }
 
-        DateTime TimeSendOrders = Helper.GetTimeMoscowNow();
+        DateTime TimeSendOrders = PLazaHelper.GetTimeMoscowNow();
 
         private async void ButtonMultiOrder2_Click(object sender, RoutedEventArgs e)
         {

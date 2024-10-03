@@ -10,13 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Fleck" Version="1.2.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.29.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="6.8.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Fleck\Fleck (websocket).csproj" />
     <ProjectReference Include="..\PlazaEngine\PlazaEngine\PlazaEngine.csproj" />
   </ItemGroup>
 

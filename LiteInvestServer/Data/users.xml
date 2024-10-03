@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ArrayOfKeyValueOfstringUser5p9MbxKl xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+	<KeyValueOfstringUser5p9MbxKl>
+		<Key>samujan</Key>
+		<Value xmlns:d3p1="http://schemas.datacontract.org/2004/07/LiteInvestServer.Entity">
+			<d3p1:Balance>0</d3p1:Balance>
+			<d3p1:CanTrade>true</d3p1:CanTrade>
+			<d3p1:Limit>20000</d3p1:Limit>
+			<d3p1:LockedBalance>0</d3p1:LockedBalance>
+			<d3p1:Password>12345</d3p1:Password>
+			<d3p1:userName>samujan</d3p1:userName>
+		</Value>
+	</KeyValueOfstringUser5p9MbxKl>
+</ArrayOfKeyValueOfstringUser5p9MbxKl>

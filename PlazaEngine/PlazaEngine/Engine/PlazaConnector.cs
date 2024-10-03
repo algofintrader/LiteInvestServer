@@ -2159,7 +2159,7 @@ namespace PlazaEngine.Engine
                                 }
                                 else if (msgData.MsgId == 179)  
                                 {
-                                    var timeSet = Helper.GetTimeMoscowNow();
+                                    var timeSet = PLazaHelper.GetTimeMoscowNow();
                                     int code = msgData["code"].asInt();
                                     string NumberMarket = msgData["order_id"].asUnicodeString();
                                     int NumberUser = Convert.ToInt32(msgData.UserId);
@@ -2497,7 +2497,7 @@ namespace PlazaEngine.Engine
                 IncreaseLimit();
 
                 if (order == null ) return;
-                if (order.NumberMarket == "") return;
+                if (order.ExchangeOrderId == "") return;
 
                 Message sendMessage = _publisher.NewMessage(MessageKeyType.KeyName, "DelOrder");
 
@@ -2509,7 +2509,7 @@ namespace PlazaEngine.Engine
                 DataMessage smsg = (DataMessage)sendMessage;
                 smsg.UserId = (uint)order.NumberUser;
                 smsg["broker_code"].set(brockerCode);
-                smsg["order_id"].set(Convert.ToInt64(order.NumberMarket));
+                smsg["order_id"].set(Convert.ToInt64(order.ExchangeOrderId));
 
                 _publisher.Post(sendMessage, PublishFlag.NeedReply);
                 sendMessage.Dispose();
@@ -2651,7 +2651,7 @@ namespace PlazaEngine.Engine
                             DataMessage smsg = (DataMessage)sendMessage;
                             smsg.UserId = (uint)order.NumberUser;
                             smsg["broker_code"].set(brockerCode);
-                            smsg["order_id"].set(Convert.ToInt64(order.NumberMarket));
+                            smsg["order_id"].set(Convert.ToInt64(order.ExchangeOrderId));
 
                             _publisher.Post(sendMessage, PublishFlag.NeedReply);
                             sendMessage.Dispose();

@@ -1,6 +1,0 @@
-@LiteInvestServer_HostAddress = http://localhost:5194
-
-GET {{LiteInvestServer_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

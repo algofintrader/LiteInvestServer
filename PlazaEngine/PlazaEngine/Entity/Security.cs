@@ -25,33 +25,33 @@ public record Security(
 
     private decimal _bestask;
     
-    /*
+    
     public decimal BestAsk 
     {
         get => _bestask;
         set 
         { _bestask = value; PropertyEvent("BestAsk"); }
-    }*/
+    }
 
     private decimal _bestbid;
 
-    /*
+    
     public decimal BestBid
     {
         get => _bestbid;
         set { _bestbid = value; PropertyEvent("BestBid"); }
     }
-    */
+    
 
-    /*
+    
     public List<MarketDepthLevel> Bids { get; set; }
     public List<MarketDepthLevel> Asks { get; set; }
 
-    */
+    
 
     public DateTime QuotesUpdateTime { get; set; }
 
-    /*
+    
 
     public void UpdateBidsAsks (MarketDepth depth)
     {
@@ -67,7 +67,7 @@ public record Security(
         QuotesUpdateTime = DateTime.Now;
        
        // DepthUpdated?.Invoke(depth);
-    }*/
+    }
     
     /// <summary>
     /// Событие обновление всех котировок
