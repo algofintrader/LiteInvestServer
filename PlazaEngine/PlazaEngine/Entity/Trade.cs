@@ -5,6 +5,7 @@ using ru.micexrts.cgate.message;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace PlazaEngine.Entity;
 
@@ -39,7 +40,7 @@ public class Trade
 
     private static ConcurrentDictionary<string, Security>? securities;
 
-
+    [JsonPropertyName("sn")]
     /// <summary>
     /// Имя инструмента
     /// </summary>
@@ -64,16 +65,18 @@ public class Trade
     }
     private string? securityName;
 
-    /// <summary>
+    [JsonPropertyName("tid")]
     /// Номер сделки
     /// </summary>
     public string TransactionID { get; set; }
 
+    [JsonPropertyName("s")]
     /// <summary>
     /// Биржевой цифровой код инструмента
     /// </summary>
     public string SecurityId { get; set; }
 
+    [JsonPropertyName("t")]
     /// <summary>
     /// Время сделки в часовом поясе MSK (utc+2)
     /// </summary>
@@ -86,18 +89,21 @@ public class Trade
     internal bool IsOnline { get => isOnline; }
     bool isOnline;
 
+    [JsonPropertyName("d")]
     /// <summary>
     /// Направление сделки
     /// </summary>
     public Side Side { get => side; }
     Side side;
 
+    [JsonPropertyName("v")]
     /// <summary>
     /// Объем по сделке
     /// </summary>
     public decimal Volume { get => volume; }
     decimal volume;
 
+    [JsonPropertyName("p")]
     /// <summary>
     /// Цена сделки
     /// </summary>

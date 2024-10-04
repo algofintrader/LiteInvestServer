@@ -267,12 +267,46 @@ namespace PlazaEngine.Engine
             depthPlaza.Subscription(security.Id);
         }
 
+
+        /// <summary>
+        /// Метод который два в одном и регистрация и отписка Стакана.
+        /// </summary>
+        /// <param name="register">true - подписать, false - отписать </param>
+        public void Register_Unregister_MarketDepth(string secid, bool register)
+        {
+            try
+            {
+
+                if (!Securities.ContainsKey(secid) || Securities[secid] == null)
+                    return ;
+
+                var sec = Securities[secid];
+
+                if (register)
+                {
+                    RegisterMarketDepth(sec);
+                }
+                else
+                {
+                    UnRegisterMarketDepth(sec);
+                }
+
+                return ;
+            }
+            catch (Exception ex)
+            {
+                return;
+                //NOTE: продумать реализацию.
+            }
+        }
+
+
         /// <summary>
         /// Подписка на получение стакана, с эмуляцией
         /// </summary>
         /// <param name="security"></param>
         /// <param name="emulatorIsOn"></param>
-        public void RegisterMarketDepth(Security security, bool emulatorIsOn)
+        public void RegisterMarketDepth(Security security, bool emulatorIsOn  )
         {
             if (emulatorIsOn)
             {
@@ -297,16 +331,51 @@ namespace PlazaEngine.Engine
 
 
         // Подписка на тики
+        /// <summary>
+        /// Зарегестрированные тики
+        /// </summary>
+        public HashSet<string> RegisteredTicks { get; private set; } =  new HashSet<string>();
 
-        internal HashSet<string> RegisteredTicks = new HashSet<string>();
+        /// <summary>
+        /// Метод который два в одном и регистрация и отписка
+        /// </summary>
+        /// <param name="register">true - подписать, false - отписать </param>
+        public void Register_Unregister_Ticks(string secid, bool register)
+        {
+            try
+            {
+
+                if (!Securities.ContainsKey(secid) || Securities[secid] == null)
+                    return;
+
+                var sec = Securities[secid];
+
+                if (register)
+                {
+                    TryRegisterTicks(sec);
+                }
+                else
+                {
+                    UnRegisterTicks(sec);
+                }
+
+            }
+            catch (Exception ex)
+            {
+
+                //NOTE: продумать реализацию.
+            }
+        }
 
         /// <summary>
         /// Подписка на получение тиков по инструменту
+        /// Если уже добавлен в список, то ничего не произойдет. 
         /// </summary>
         /// <param name="security"></param>
-        public void RegisterTicks(Security security)
+        public void TryRegisterTicks(Security security)
         {
-            RegisteredTicks.Add(security.Id);
+            if (RegisteredTicks.Add(security.Id))
+                SendLogMessage($"Tick Registered {security.Id}");
         }
 
         /// <summary>
@@ -318,6 +387,7 @@ namespace PlazaEngine.Engine
             if (RegisteredTicks.Contains(security.Id))
             {
                 RegisteredTicks.Remove(security.Id);
+                SendLogMessage($"Tick UnRegistered {security.Id}");
             }
         }
 
@@ -534,65 +604,6 @@ namespace PlazaEngine.Engine
         }
 
         private bool lisenceon = false;
-
-        /*
-        private bool CheckConnectionAndLicense(string LicenseKey)
-        {
-            try
-            {
-                var RSAPubKey = "<RSAKeyValue><Modulus>v4C9l5Gqfs3P9Pr+ZTw1vjrcrRyQNIg5UFw5KB5+BCjeFhYLeBsiMuCruGKIqJxxYHIovWpA6721+rRPL/fz9DHNWrfir5kMxFXHWQt1mjLT4tAxhIAAyynYtSSqWENOOWkxDNDRBJevwF30Txo6ud2Y9s+T57cdYf9DRZUyo124nkYsY90+hWSpBCikUTXrI6Y+HNNPTIDW0XccOBM/0HN45M/XGd4ovWOl8b9e17RHY2I4kUEa0DHmuHGghfoAPbHmKyS8WCD9+M9YiGPULOohUuwGYn1CNI0V0hvB6SSVEGQT/0IsK7vvId/NFAm6sGrtGBdY+tls7QF3ny+KyQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
-
-                var auth = "WyI4NzEzNjIwMiIsIjNTQVg3SHRtWXFodmdQc1Y3VTZXY1JXZU9md1pyTjh3cFhSR1VCTmQiXQ==";
-
-                var result = SKM.V3.Methods.Key.Activate(token: auth, parameters: new ActivateModel()
-                {
-                    Key = LicenseKey,
-                    ProductId = 26213,  
-                    Sign = true,
-                    MachineCode = SKM.V3.Methods.Helpers.GetMachineCodePI(v: 2)
-                });
-
-                if (result == null || result.Result == ResultType.Error ||
-                    !result.LicenseKey.HasValidSignature(RSAPubKey).IsValid())
-                {
-                    // an error occurred or the key is invalid or it cannot be activated
-                    // (eg. the limit of activated devices was achieved)
-                    SendLogMessage("Лицензия не активировалась");
-
-                    return false;
-                }
-                else
-                {
-                    // everything went fine if we are here!
-                    //LogMessage($"The license is Active! Exprires:{result.LicenseKey.Expires}");
-
-
-                    //F1 обычная
-                    //F7 админская
-
-                    if (result.LicenseKey.F7)
-                    {
-                        SendLogMessage($"Рабочая лицензия");
-
-                    }
-                    else
-                    {
-                        SendLogMessage("Ваша лицензия не активна");
-                        return false;
-                    }
-
-                }
-
-                return false;
-
-            }
-            catch (Exception ex)
-            {
-                SendLogMessage(ex.Message);
-                return false;
-            }
-        }*/
-
 
 
         /// <summary>

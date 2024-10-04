@@ -572,7 +572,7 @@ namespace AvpPlazaExample
 
             if (selectedSec != null)
             {
-                plaza.RegisterTicks(selectedSec);
+                plaza.TryRegisterTicks(selectedSec);
             }
         }
     }

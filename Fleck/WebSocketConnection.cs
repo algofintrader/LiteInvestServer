@@ -144,7 +144,8 @@ namespace Fleck
       SendBytes(handshake, OnOpen);
     }
 
-    private void Read(List<byte> data, byte[] buffer)
+
+        private void Read(List<byte> data, byte[] buffer)
     {
       if (!IsAvailable)
         return;
