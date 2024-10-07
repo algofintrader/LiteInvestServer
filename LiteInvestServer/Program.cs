@@ -29,6 +29,7 @@ using System.Text.Json;
 using System.Runtime.CompilerServices;
 using LiteInvestServer.Json;
 using LiteInvestServer.WebScoketFactory;
+using System.Net.Sockets;
 
 
 
@@ -59,19 +60,25 @@ ConcurrentDictionary<string, User> Users = new ConcurrentDictionary<string, User
 //подписка мои ордера
 //возможно один юзер захочет несколько раз хлопнуться )
 //ключ = название юзера
-ConcurrentDictionary<string, ConcurrentDictionary<int, IWebSocketConnection>> MyOrdersSockets = new();
+//ConcurrentDictionary<string, ConcurrentDictionary<int, IWebSocketConnection>> MyOrdersSockets = new();
 
 //ключ secid 
 //нахера нам вообще юзер здесь сдался
-ConcurrentDictionary<string, ConcurrentDictionary<int, IWebSocketConnection>> AllTicksSockets = new();
+//ConcurrentDictionary<string, ConcurrentDictionary<int, IWebSocketConnection>> AllTicksSockets = new();
 
 //подписка ордер бук
 //ConcurrentDictionary<string, User> MyOrderSubscruptions;
 
 PlazaConnector plaza = null;
+WebSocketEngine webSocketEngine = null;
 
+//TODO: Вынести настройки отдельно потом
 string webscoketAdress = "ws://0.0.0.0:8181/";
 string userdBdName = "Data/users.xml";
+
+//websocket
+string myordersWebSocketstreamName = "my_orders";
+string publicTradesSocketstreamName = "public_trades";
 
 var serializer = new JsonSerializerOptions { IncludeFields = true, WriteIndented = true };
 
@@ -80,142 +87,24 @@ if (File.Exists(userdBdName))
     Users = Helper.ReadXml<ConcurrentDictionary<string, User>>(userdBdName);
 }
 
-var webscocketengine = new WebSocketEngine(webscoketAdress);
-
-webscocketengine.AddStream("my_orders", "My Orders", new List<ParameterKey>()
-{
-    new ParameterKey("user", ParameterTypes.Key)
-}, 
-plaza.Register_Unregister_Ticks);
-
-webscocketengine.AddStream("public_trades", "Ticks", new List<ParameterKey>()
-{
-    new ParameterKey("sec_id", ParameterTypes.Key)
-}, plaza.Register_Unregister_MarketDepth);
-
-webscocketengine.Start();
-
-/*server.Start(async ws =>
-{
-    var parameters = GetParameters(ws);
-
-    if (!parameters.ContainsKey("stream"))
-    {
-        Console.WriteLine($"No stream data for WS");
-        ws.Close();
-        return;
-    }
-
-    if (!parameters.ContainsKey("user"))
-    {
-        Console.WriteLine($"No UserName");
-        ws.Close();
-        return;
-    }
-
-    var username = parameters["user"];
-    var streamname = parameters["stream"];
-
-    //TODO: Весь этот код отрефакторить и перевести в некую фабрику сокетов собственно говоря. 
-
-    if (streamname == "my_orders")
-    {
-        if (!MyOrdersSockets.ContainsKey(username))
-            MyOrdersSockets[username] = new();
-
-        //NOTE: Может ли GetHash в рамках одного юзера повторится?
-        //TODO: Юзера также надо будет удалять из списков. 
-        var hash = ws.GetHashCode();
-        MyOrdersSockets[username][hash] = ws;
-        Console.WriteLine($"WebSocket for Orders Opened {username} stream = {streamname} hash = {hash}");
-    }
-    //TODO: Проверка на то, что больше нет тех кто подписался, потому что толком отписки сейчас нет
-    // Потому что если мы будем включать отписку, то можем отрубить подписку для всех остальных 
-    else if (streamname == "public_trades")
-    {
-        var sec_id = parameters["sec_id"];
-
-        if (!AllTicksSockets.ContainsKey(sec_id))
-            AllTicksSockets[sec_id] = new();
-
-        var hash = ws.GetHashCode();
-
-
-        AllTicksSockets[sec_id][hash] = ws;
-
-        if (!plaza.RegisteredTicks.Contains(sec_id))
-        {
-            Console.WriteLine($"Registering Initial Ticks! sec id  = {sec_id} hash = {hash}");
-            plaza.TryRegisterTicks(Securities[sec_id]);
-        }
-
-        Console.WriteLine($"WebSocket for Ticks Opened {username} stream = {streamname} hash = {hash}");
-
-    }
-    else
-    {
-        Console.WriteLine($"No Correct parameters for subscribing");
-        ws.Close();
-    }
-
-
-    ws.OnClose = async (closingwebsocket) =>
-    {
-        var hash = closingwebsocket.GetHashCode();
-        var parameters = GetParameters(closingwebsocket);
-        var streamname = parameters["stream"];
-
-        try
-        {
-            if (streamname == "my_orders")
-            {
-                MyOrdersSockets[parameters["user"]].TryRemove(hash, out _);
-
-                if(MyOrdersSockets[parameters["user"]].Count==0)
-                {
-
-                }
-            }
-
-            if (streamname == "public_trades")
-            {
-                var secID = parameters["sec_id"];
-
-                AllTicksSockets[secID].TryRemove(hash, out _);
-
-                //означает, что у нас больше 0 подписантов на конкретно эти инструменты
-                if (AllTicksSockets[secID].Count ==0)
-                {
-                    //разрегистрируем тики, раз у нас нет подписантов. 
-                    plaza.UnRegisterTicks(Securities[secID]);
-                    //удаляем всех подписанто на тики
-                    AllTicksSockets.TryRemove(secID, out var _);
-
-                    Console.WriteLine($"Unregistering for Ticks {username} stream = {streamname} hash = {hash}");
-                }
-
-                Console.WriteLine($"WebSocket for Ticks Closed {username} stream = {streamname} hash = {hash}");
-            }
-
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Webscoket delete Error: {ex.Message}");
-        }
-
-        Console.WriteLine($"WebSocket Close and Removed hash = {hash}");
-    };
-
-});*/
-
-
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+bool CheckConditionsForWebsocket(WebSocketEngine webSocketEngine,string name )
+{
+    if (webSocketEngine == null)
+        return false;
 
+    var websockets = webSocketEngine.GetSocketsFull(name);
+
+    if (websockets == null)
+        return false;
+
+    return true;
+}
 
 ///PLAZA WORDER MAIN
 builder.Services.AddSingleton(_ =>
@@ -226,9 +115,6 @@ builder.Services.AddSingleton(_ =>
         Limit = 30,
         LoadTicksFromStart = false,
     };
-
-
-    
 
     plaza.TicksLoadedEvent += () =>
     {
@@ -242,51 +128,94 @@ builder.Services.AddSingleton(_ =>
         //Или из подписки найти обновленные тики. 
         //вопрос.. блять
 
+        //-----------------------------
+        //TODO: Рефакторить!
 
-        //TODO: Надо обязательно дописать удаление юзера 
+
+        foreach (var tick in ticksDictionary)
+            LogMessageAsync($"tiks arrive {tick.Key} count = {tick.Value.Count()}");
+
+        if (webSocketEngine == null)
+            return;
+
+        var wesbokcetsKEYS = webSocketEngine.GetSocketsFull(publicTradesSocketstreamName).Values;
+        //это список сокетов, где ключ - это хеш сокетаю
+        var websockets = webSocketEngine.GetSockets(publicTradesSocketstreamName, "sec_id");
+        //Получаем список где ключ это инструмента а значение это сокет
+
+        if (websockets == null) 
+            return;
+
+        //-----------------------------
+
+      
+
         //проверяем всех наших подписантов
-        foreach (var secIdsubcription in AllTicksSockets)
+        foreach (var secIdsubcription in wesbokcetsKEYS)
         {
+            LogMessageAsync($"sec {secIdsubcription}");
             //в тиках есть тики, которые мы должны отправить
-            if (ticksDictionary.ContainsKey(secIdsubcription.Key) && ticksDictionary[secIdsubcription.Key].Count!=0)
+            
+            /*
+            if (ticksDictionary.ContainsKey(secIdsubcription) && ticksDictionary[secIdsubcription.Key].Count!=0)
             {
                 var serializedOrder = JsonSerializer.Serialize(ticksDictionary[secIdsubcription.Key]);
               
+                
                 //собственно отправляем их 
-                foreach (var socket in AllTicksSockets[secIdsubcription.Key])
+                foreach (var socket in secIdsubcription.Value)
                 {
-                    Console.WriteLine($"{socket.Key} Sending pack of ticks");
+                    LogMessageAsync($"{socket.Key} Sending pack of ticks");
                     socket.Value.Send(serializedOrder);
                 }
-            }
+            }*/
         }
 
     };
 
     plaza.OrderLoadedEvent += () =>
     {
-        Console.WriteLine($"Orders Loaded!");
+        LogMessageAsync($"Orders Loaded!");
     };
 
     plaza.OrderChangedEvent += async (plazaOrder, reason) =>
     {
-
-        var username =plazaOrder.Comment;
-
-        if (!Users.ContainsKey(username))
+        //-----------------------------
+        //TODO: Рефакторить!
+        if (webSocketEngine == null)
             return;
+
+
+        //-----------------------------
+
+        var username = plazaOrder.Comment;
+
+        if (!Users.ContainsKey(username) || username != string.Empty)
+            return;
+
+        //-----------
+        var websockets = webSocketEngine.GetSockets(myordersWebSocketstreamName, username);
+
+        if (websockets == null)
+            return;
+
 
         Console.WriteLine($"New Order user ({username}) {plazaOrder.State} number = {plazaOrder.ExchangeOrderId}");
 
-        if(MyOrdersSockets.ContainsKey(username) && MyOrdersSockets[username].Count!=0)
+        try
         {
-            foreach(var connection in MyOrdersSockets[username])
+            /*
+            foreach (var connection in websockets)
             {
-                
                 var serializedOrder = JsonSerializer.Serialize(plazaOrder, serializer);
-                connection.Value.Send(serializedOrder);
-            }
+                await connection.Send(serializedOrder).ConfigureAwait(false);
+            }*/
         }
+        catch (Exception ex)
+        {
+            LogMessageAsync(ex.Message);
+        }
+
         //далее по подпискам на сокеты мы должны отправить инфу о новом состоянии юзера..
     };
 
@@ -308,14 +237,31 @@ builder.Services.AddSingleton(_ =>
 
 });
 
-void Plaza_OrderLoadedEvent()
+builder.Services.AddSingleton(_ =>
 {
-    throw new NotImplementedException();
-}
+    webSocketEngine = new WebSocketEngine(webscoketAdress);
+
+    webSocketEngine.AddStream(myordersWebSocketstreamName, "My Orders", new List<ParameterKey>()
+{
+    new ParameterKey("user", ParameterTypes.Key)
+});
+
+    webSocketEngine.AddStream(publicTradesSocketstreamName, "Ticks", new List<ParameterKey>()
+{
+    new ParameterKey("sec_id", ParameterTypes.Key),
+}, plaza.Register_Unregister_Ticks);
+
+    webSocketEngine.Start();
+    return webSocketEngine;
+});
 
 var app = builder.Build();
 
+//регистрация плазы сервиса
 app.Services.GetRequiredService<PlazaConnector>();
+
+//регистрируем веб сокет 
+app.Services.GetRequiredService<WebSocketEngine>();
 
 app.UseCors(_ => _.SetIsOriginAllowed(_ => true)
                   .AllowCredentials()
@@ -404,7 +350,7 @@ FuturesApi.MapPost("/NewOrder", async (string userName,ClientOrder clientOrder) 
            new Order(plaza.Securities[clientOrder.SecID], clientOrder.Side, clientOrder.Volume, plaza.Portfolio.Number, userName) :
             new Order(plaza.Securities[clientOrder.SecID], clientOrder.Side, clientOrder.Volume, (decimal)clientOrder.Price, plaza.Portfolio.Number, userName);
 
-        Console.Out.WriteAsync($"Sending Order {userName} price={plazaOrder.PriceOrder} ");
+        LogMessageAsync($"Sending Order {userName} price={plazaOrder.PriceOrder} ");
 
         await plaza.ExecuteOrder(plazaOrder);
 
@@ -472,16 +418,25 @@ app.UseHttpsRedirection();
 
 app.MapControllers();
 
-
+async void LogMessageAsync(string message)
+{
+    await Console.Out.WriteLineAsync(message).ConfigureAwait(false);
+}
 
 //TODO: Переделать сохранение в промежутках по человечески
 AppDomain.CurrentDomain.ProcessExit += (_,_) =>
 {
+    try
+    {
+        Helper.SaveXml(Users, userdBdName);
 
-    Helper.SaveXml(Users, userdBdName);
-
-    if(plaza!=null)
-        plaza.Dispose();
+        if (plaza != null)
+            plaza.Dispose();
+    }
+    catch (Exception ex)
+    {
+        
+    }
 };
 
 app.Run();

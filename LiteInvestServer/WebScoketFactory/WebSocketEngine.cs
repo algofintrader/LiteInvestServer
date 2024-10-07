@@ -1,8 +1,10 @@
-﻿using Fleck;
+﻿using Amazon.Runtime.Internal.Transform;
+using Fleck;
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
 using MongoDB.Bson.IO;
 using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Web;
 
 namespace LiteInvestServer.WebScoketFactory
@@ -39,10 +41,12 @@ namespace LiteInvestServer.WebScoketFactory
 
             //NOTE: Нет проверки на то, чтобы маркет ключ был один. 
 
-            if (ParameterKeys == null)
+            if (_parameters == null)
                 throw new ArgumentNullException("parameters");
 
-            if (ParameterKeys.Count == 0)
+            var keyparamenter = _parameters.FirstOrDefault(p => p.Type == ParameterTypes.Key);
+
+            if (_parameters.Count == 0 || keyparamenter==null)
                 throw new Exception("Parameter must have one value, which will be KEY for Sockets!");
 
             ParameterKeys = _parameters;
@@ -107,6 +111,36 @@ namespace LiteInvestServer.WebScoketFactory
             server.ListenerSocket.NoDelay = true;
         }
 
+        /// <summary>
+        /// Возвращает сокеты, где ключ... является основным ключом потока!
+        /// </summary>
+        /// <param name="streamNameKey"></param>
+        /// <returns></returns>
+        public ConcurrentDictionary<string, ConcurrentDictionary<int, IWebSocketConnection>> GetSocketsFull(string streamNameKey)
+        {
+            try
+            {
+                return Streams[streamNameKey].Sockets;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
+        public ConcurrentDictionary<int, IWebSocketConnection> GetSockets(string streamNameKey,string key)
+        {
+            try
+            {
+                var res= Streams[streamNameKey].Sockets[key];
+                return res;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
         public void Start()
         {
             //не самая коненчно лучшая концепция программирования 
@@ -119,10 +153,21 @@ namespace LiteInvestServer.WebScoketFactory
 
                 //у нас такой стрим есть
 
+                //КАК ПОЛУЧИТЬ СОКЕТ!!! выдается список. 
+                //var listofsocketsforsubcription = Streams["имя стрима"].Sockets["ключ поток"];
+
                 if (Streams.ContainsKey(streamValue))
                 {
                     var stream = Streams[streamValue];
-                    var hash = ws.GetHashCode();
+
+                    var paramName1 = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Instrument);
+
+                    //если нет ключа в виде инструмента, то предполагается использовать ключ для маркет даты. 
+                    if (paramName1 == null)
+                        paramName1 = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key);
+
+                    var valueofKey = WsParameters[paramName1.KeyName];
+
                     //проверяем что есть все поля, которые нам нужны. 
 
                     if (!stream.CheckAllParameters(WsParameters))
@@ -131,15 +176,23 @@ namespace LiteInvestServer.WebScoketFactory
                         return;
                     }
 
-                    if (stream.Sockets.ContainsKey(stream.Key))
+                    //TODO: Переписать ключ!!!! 
+
+                    if (!stream.Sockets.ContainsKey(stream.Key))
                         stream.Sockets.TryAdd(stream.Key, new());
+
+                    var hash = ws.GetHashCode();
 
                     stream.Sockets[stream.Key][hash] = ws;
 
-
+                    //TODO: Дублирующий код 
                     if (stream.NeedDataRegistration)
                     {
                         var paramName = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Instrument);
+                       
+                        //если нет ключа в виде инструмента, то предполагается использовать ключ для маркет даты. 
+                        if(paramName==null)
+                            paramName = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key);
                         //можно регистрировать данные сколько угодно,
                         //проверка на то, что мы не делаем это повторно
                         //уже внутри.
@@ -172,6 +225,10 @@ namespace LiteInvestServer.WebScoketFactory
                 var stream = Streams[streamValue];
                 stream.Sockets[stream.Key].Remove(hash, out _);
                 var param = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Instrument);
+
+                if (param == null)
+                    param = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key);
+
                 //если нет больше подписантов и нет смысла держать маркет дату
                 if (stream.NeedDataRegistration && stream.Sockets[stream.Key].Count ==0)
                 {
@@ -191,9 +248,9 @@ namespace LiteInvestServer.WebScoketFactory
         /// <param name="streamNameKey">stream key</param>
         /// <param name="_name">Свободное имя, ни к чему не привязано.</param>
         /// <param name="_parameters"></param>
-        public void AddStream(string streamNameKey, string _name, List<ParameterKey> _parameters,Action <string,bool> register_unregister)
+        public void AddStream(string streamNameKey, string _name, List<ParameterKey> _parameters,Action <string,bool> register_unregister_data=null)
         {
-            Streams.TryAdd(streamNameKey, new WebSocketSettings(_parameters) { Name = _name, Register_Unregister_MarketData = register_unregister });
+            Streams.TryAdd(streamNameKey, new WebSocketSettings(_parameters) { Name = _name, Register_Unregister_MarketData = register_unregister_data });
         }
 
 
