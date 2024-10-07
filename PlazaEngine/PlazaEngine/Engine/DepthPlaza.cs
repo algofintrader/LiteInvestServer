@@ -31,13 +31,17 @@ namespace PlazaEngine.Depth
         CancellationTokenSource cancelTokenSource;
         CancellationToken token;
 
-        public DepthPlaza(PlazaConnector _plazaConnector)
+        int UpDateTimeMs { get; set; }
+
+        public DepthPlaza(PlazaConnector _plazaConnector,int _updateTimeMs = 20)
         {
             plazaConnector = _plazaConnector;
             orderBooks = new();
             schemeInfo.Ready = false;
             schemeInfo.Indices.OrdersAggr = -1;
             lastRevision = 0;
+
+            UpDateTimeMs = _updateTimeMs;
 
             cancelTokenSource = new CancellationTokenSource();
             token = cancelTokenSource.Token;
@@ -299,7 +303,7 @@ namespace PlazaEngine.Depth
             Dictionary<uint,MarketDepth> mdList = new Dictionary<uint,MarketDepth>();
             while (!token.IsCancellationRequested)
             {
-                Thread.Sleep(20);
+                Thread.Sleep(UpDateTimeMs);
                 try
                 {
                     if ((subscriptedIsin?.Count ?? 0) == 0)

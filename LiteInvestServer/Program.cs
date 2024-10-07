@@ -57,6 +57,9 @@ ConcurrentDictionary<string, Security> Securities = new ConcurrentDictionary<str
 ///База юзеров 
 ConcurrentDictionary<string, User> Users = new ConcurrentDictionary<string, User>();
 
+//База ордеров по юзеру
+ConcurrentDictionary<string, List<Order>> Orders = new();
+
 //подписка мои ордера
 //возможно один юзер захочет несколько раз хлопнуться )
 //ключ = название юзера
@@ -72,13 +75,18 @@ ConcurrentDictionary<string, User> Users = new ConcurrentDictionary<string, User
 PlazaConnector plaza = null;
 WebSocketEngine webSocketEngine = null;
 
+string data = "Data";
+
 //TODO: Вынести настройки отдельно потом
 string webscoketAdress = "ws://0.0.0.0:8181/";
-string userdBdName = "Data/users.xml";
+string userdBdName = $"{data}/users.xml";
+string ordersBdName = $"{data}/orders.xml";
 
 //websocket
 string myordersWebSocketstreamName = "my_orders";
+
 string publicTradesSocketstreamName = "public_trades";
+string orderbookWebSocketstreamName = "orderbook";
 
 var serializer = new JsonSerializerOptions { IncludeFields = true, WriteIndented = true };
 
@@ -118,8 +126,7 @@ builder.Services.AddSingleton(_ =>
 
     plaza.TicksLoadedEvent += () =>
     {
-        Console.WriteLine($"Ticks Ready To Go!");
-
+        LogMessageAsync($"Ticks Ready To Go!");
     };
 
     plaza.NewTickCollectionEvent += ticksDictionary =>
@@ -132,43 +139,44 @@ builder.Services.AddSingleton(_ =>
         //TODO: Рефакторить!
 
 
+        
         foreach (var tick in ticksDictionary)
-            LogMessageAsync($"tiks arrive {tick.Key} count = {tick.Value.Count()}");
+        {
+            if(tick.Value.Count!=0)
+            LogMessageAsync($"tiks arrive {tick.Key} count = {tick.Value.Count()} priceFirst = {tick.Value.First().Price}");
+        }
 
         if (webSocketEngine == null)
             return;
 
-        var wesbokcetsKEYS = webSocketEngine.GetSocketsFull(publicTradesSocketstreamName).Values;
+        var wesbokcets = webSocketEngine.GetSocketsFull(publicTradesSocketstreamName);
         //это список сокетов, где ключ - это хеш сокетаю
-        var websockets = webSocketEngine.GetSockets(publicTradesSocketstreamName, "sec_id");
+        
         //Получаем список где ключ это инструмента а значение это сокет
 
-        if (websockets == null) 
+        if (wesbokcets == null) 
             return;
 
         //-----------------------------
 
-      
-
         //проверяем всех наших подписантов
-        foreach (var secIdsubcription in wesbokcetsKEYS)
+        foreach (var secIdsubcription in wesbokcets)
         {
-            LogMessageAsync($"sec {secIdsubcription}");
+            LogMessageAsync($"sec {secIdsubcription.Key}");
             //в тиках есть тики, которые мы должны отправить
             
-            /*
-            if (ticksDictionary.ContainsKey(secIdsubcription) && ticksDictionary[secIdsubcription.Key].Count!=0)
+            
+            if (ticksDictionary.ContainsKey(secIdsubcription.Key) && ticksDictionary[secIdsubcription.Key].Count!=0)
             {
                 var serializedOrder = JsonSerializer.Serialize(ticksDictionary[secIdsubcription.Key]);
               
-                
                 //собственно отправляем их 
                 foreach (var socket in secIdsubcription.Value)
                 {
                     LogMessageAsync($"{socket.Key} Sending pack of ticks");
                     socket.Value.Send(serializedOrder);
                 }
-            }*/
+            }
         }
 
     };
@@ -204,12 +212,12 @@ builder.Services.AddSingleton(_ =>
 
         try
         {
-            /*
+            
             foreach (var connection in websockets)
             {
                 var serializedOrder = JsonSerializer.Serialize(plazaOrder, serializer);
-                await connection.Send(serializedOrder).ConfigureAwait(false);
-            }*/
+                await connection.Value.Send(serializedOrder).ConfigureAwait(false);
+            }
         }
         catch (Exception ex)
         {
@@ -221,8 +229,22 @@ builder.Services.AddSingleton(_ =>
 
     plaza.MarketDepthChangeEvent += orderbook =>
     {
+        var sec_id = orderbook.SecurityId;
+        //-----------
+        var websockets = webSocketEngine.GetSockets(orderbookWebSocketstreamName, sec_id);
 
-        Console.WriteLine(orderbook.SecurityId + " " + orderbook.Bids.FirstOrDefault().Price);
+        if (websockets == null)
+            return;
+
+
+        foreach(var websocket in websockets)
+        {
+            var serialized = JsonSerializer.Serialize(orderbook, serializer);
+            websocket.Value.Send(serialized);
+        }
+
+        LogMessageAsync(
+    orderbook.SecurityId + " " + orderbook.Bids[0].Price);
     };
 
 
@@ -250,6 +272,11 @@ builder.Services.AddSingleton(_ =>
 {
     new ParameterKey("sec_id", ParameterTypes.Key),
 }, plaza.Register_Unregister_Ticks);
+
+    webSocketEngine.AddStream(orderbookWebSocketstreamName, "OrderBook", new List<ParameterKey>()
+{
+    new ParameterKey("sec_id", ParameterTypes.Key),
+}, plaza.Register_Unregister_MarketDepth);
 
     webSocketEngine.Start();
     return webSocketEngine;
@@ -349,7 +376,7 @@ FuturesApi.MapPost("/NewOrder", async (string userName,ClientOrder clientOrder) 
         Order plazaOrder = clientOrder.Market ?
            new Order(plaza.Securities[clientOrder.SecID], clientOrder.Side, clientOrder.Volume, plaza.Portfolio.Number, userName) :
             new Order(plaza.Securities[clientOrder.SecID], clientOrder.Side, clientOrder.Volume, (decimal)clientOrder.Price, plaza.Portfolio.Number, userName);
-
+        
         LogMessageAsync($"Sending Order {userName} price={plazaOrder.PriceOrder} ");
 
         await plaza.ExecuteOrder(plazaOrder);
@@ -420,7 +447,8 @@ app.MapControllers();
 
 async void LogMessageAsync(string message)
 {
-    await Console.Out.WriteLineAsync(message).ConfigureAwait(false);
+    var dt =DateTime.Now.ToString("H:mm:ss.fff");
+    await Console.Out.WriteLineAsync($"{dt} {message}").ConfigureAwait(false);
 }
 
 //TODO: Переделать сохранение в промежутках по человечески
@@ -428,6 +456,7 @@ AppDomain.CurrentDomain.ProcessExit += (_,_) =>
 {
     try
     {
+        Helper.SaveXml(Orders, ordersBdName);
         Helper.SaveXml(Users, userdBdName);
 
         if (plaza != null)

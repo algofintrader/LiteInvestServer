@@ -20,14 +20,14 @@ namespace LiteInvestServer.WebScoketFactory
     {
         public ParameterKey(string _name, ParameterTypes _parameterTypes)
         {
-            KeyName = _name;
+            Key = _name;
             Type = _parameterTypes;
         }
 
         /// <summary>
         /// Имя, которое выступает неким ключом
         /// </summary>
-        public string KeyName { get; private set; }
+        public string Key { get; private set; }
         public ParameterTypes Type { get; private set; }
 
 
@@ -65,7 +65,7 @@ namespace LiteInvestServer.WebScoketFactory
         /// Первый из параметров является ключом
         /// Не стал писать сложную реализацию
         /// </summary>
-        public string Key => ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key).KeyName;
+        public string Key => ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key).Key;
 
         public bool CheckAllParameters(IDictionary<string, string> parameters)
         {
@@ -160,14 +160,6 @@ namespace LiteInvestServer.WebScoketFactory
                 {
                     var stream = Streams[streamValue];
 
-                    var paramName1 = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Instrument);
-
-                    //если нет ключа в виде инструмента, то предполагается использовать ключ для маркет даты. 
-                    if (paramName1 == null)
-                        paramName1 = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key);
-
-                    var valueofKey = WsParameters[paramName1.KeyName];
-
                     //проверяем что есть все поля, которые нам нужны. 
 
                     if (!stream.CheckAllParameters(WsParameters))
@@ -176,28 +168,23 @@ namespace LiteInvestServer.WebScoketFactory
                         return;
                     }
 
+                    var paramName = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key);
+                    var KEY = WsParameters[paramName.Key];
+
                     //TODO: Переписать ключ!!!! 
 
-                    if (!stream.Sockets.ContainsKey(stream.Key))
-                        stream.Sockets.TryAdd(stream.Key, new());
+                    if (!stream.Sockets.ContainsKey(KEY))
+                        stream.Sockets.TryAdd(KEY, new());
 
                     var hash = ws.GetHashCode();
 
-                    stream.Sockets[stream.Key][hash] = ws;
+                    stream.Sockets[KEY][hash] = ws;
 
                     //TODO: Дублирующий код 
                     if (stream.NeedDataRegistration)
                     {
-                        var paramName = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Instrument);
-                       
-                        //если нет ключа в виде инструмента, то предполагается использовать ключ для маркет даты. 
-                        if(paramName==null)
-                            paramName = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key);
-                        //можно регистрировать данные сколько угодно,
-                        //проверка на то, что мы не делаем это повторно
-                        //уже внутри.
-                        stream.Register_Unregister_MarketData?.Invoke(WsParameters[paramName.KeyName],true);
-                        Console.WriteLine($"Registering marker data! {stream.Name}  = {WsParameters[paramName.KeyName]} hash = {hash}");
+                        stream.Register_Unregister_MarketData?.Invoke(KEY,true);
+                        Console.WriteLine($"Registering marker data! {stream.Name}  = {KEY} hash = {hash}");
                     }
 
                     Console.WriteLine($"WebSocket for {stream.Name}  Opened hash = {hash}");
@@ -215,26 +202,25 @@ namespace LiteInvestServer.WebScoketFactory
         private void OnClosingWebSocket(IWebSocketConnection ws)
         {
             //Закрывающий СТРИМ приходит сюда 
-            var parameters = GetParameters(ws);
-            var streamValue = parameters[_streamKEY];
+            var WsParameters = GetParameters(ws);
+            var streamValue = WsParameters[_streamKEY];
             var hash = ws.GetHashCode();
 
             //у нас такой стрим есть
             if (Streams.ContainsKey(streamValue))
             {
                 var stream = Streams[streamValue];
-                stream.Sockets[stream.Key].Remove(hash, out _);
-                var param = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Instrument);
 
-                if (param == null)
-                    param = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key);
+                var paramName = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key);
+                var KEY = WsParameters[paramName.Key];
+
+                stream.Sockets[KEY].Remove(hash, out _);
 
                 //если нет больше подписантов и нет смысла держать маркет дату
-                if (stream.NeedDataRegistration && stream.Sockets[stream.Key].Count ==0)
+                if (stream.NeedDataRegistration && stream.Sockets[KEY].Count ==0)
                 {
-                  
-                    stream.Register_Unregister_MarketData?.Invoke(parameters[param.KeyName], true);
-                    Console.WriteLine($"Unregistering for {stream.Name} stream = {parameters[param.KeyName]} hash = {hash}");
+                    stream.Register_Unregister_MarketData?.Invoke(KEY, false);
+                    Console.WriteLine($"Unregistering for {stream.Name} stream = {KEY} hash = {hash}");
                 }
                 Console.WriteLine($"WebSocket for {stream.Name} hash = {hash}");
             }

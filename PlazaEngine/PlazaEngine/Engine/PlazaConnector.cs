@@ -141,7 +141,8 @@ namespace PlazaEngine.Engine
         /// <param name="test">тестовый ли вариант?</param>
         /// <param name="appname">название программы для подключения, соответствующий ключу</param>
         /// <param name="TickEventPeriodMilliSecond">Периодичность отправки тиков, миллисекунд</param>
-        public PlazaConnector(string key, bool test = true, string appname = "", int TickEventPeriodMilliSecond = 20)
+        public PlazaConnector(string key, bool test = true, string appname = "", 
+            int TickEventPeriodMilliSecond = 20,int depthEventMillisecond = 100)
         {
             AddPlazaDll();
 
@@ -155,7 +156,7 @@ namespace PlazaEngine.Engine
             depthEmulator = new DepthEmulator();
             depthEmulator.MarketDepthChanged += (md) => { MarketDepthChangeEvent?.Invoke(md); };
 
-            depthPlaza = new DepthPlaza(this);
+            depthPlaza = new DepthPlaza(this, depthEventMillisecond);
 
             ticksplaza = new TicksPlaza(this, TickEventPeriodMilliSecond);
             ticksplaza.NewTickCollectionEvent += (t) => NewTickCollectionEvent?.Invoke(t);
