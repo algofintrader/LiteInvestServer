@@ -1854,7 +1854,7 @@ namespace PlazaEngine.Engine
                                     order.SetNumberMarket(replmsg["public_order_id"].asUnicodeString());
                                     order.numberUser = replmsg["ext_id"].asInt();
 
-                                    order.volumeExecute = order.volume - replmsg["public_amount_rest"].asInt(); // это у нас оставшееся в заявке
+                                    order.VolumeExecuted = order.volume - replmsg["public_amount_rest"].asInt(); // это у нас оставшееся в заявке
 
                                     order.priceOrder = Convert.ToDecimal(replmsg["price"].asDecimal());
                                     order.PortfolioNumber = replmsg["client_code"].asString();
@@ -1903,7 +1903,7 @@ namespace PlazaEngine.Engine
                                         order.side = Side.Sell;
                                     }
 
-                                    Orders[order.NumberUser] = order;
+                                    Orders[order.NumberUserOrderId] = order;
 
                                     //сразу первыми шлем событие если ордер обновился
                                     if (order.State == Order.OrderStateType.Done && order.TimeCallBack > StartOfConnector && NewOrderFilled != null)
@@ -2186,7 +2186,7 @@ namespace PlazaEngine.Engine
                                         order.SetNumberMarket(NumberMarket);
                                     }
                                     order.timeSet = timeSet;
-                                    Orders[order.NumberUser] = order;
+                                    Orders[order.NumberUserOrderId] = order;
 
                                     string msgCode = msgData["message"].asUnicodeString();
 
@@ -2265,7 +2265,7 @@ namespace PlazaEngine.Engine
         private void ExecuteOrder2(Order order)
         {
             _ordersToExecute.Enqueue(order);
-            Orders[order.NumberUser] = order;
+            Orders[order.NumberUserOrderId] = order;
         }
 
 
@@ -2287,7 +2287,7 @@ namespace PlazaEngine.Engine
                 order.priceOrder = order.Side == Side.Buy ? Securities[order.SecurityId].PriceLimitHigh : Securities[order.SecurityId].PriceLimitLow;
             }
 
-            Orders[order.NumberUser] = order;
+            Orders[order.NumberUserOrderId] = order;
             
             Message sendMessage = _publisher.NewMessage(MessageKeyType.KeyName, "AddOrder");
             DataMessage smsg = (DataMessage)sendMessage;
@@ -2300,7 +2300,7 @@ namespace PlazaEngine.Engine
             string clientCode = code[4].ToString() + code[5].ToString() + code[6].ToString();
 
            
-            smsg.UserId = (uint)order.NumberUser;
+            smsg.UserId = (uint)order.NumberUserOrderId;
             smsg["broker_code"].set(brockerCode);
 
             int isinId = Convert.ToInt32(order.SecurityId);
@@ -2311,7 +2311,7 @@ namespace PlazaEngine.Engine
             smsg["dir"].set(dir);
             smsg["amount"].set(Convert.ToInt32(order.Volume));
             smsg["price"].set(order.priceOrder.ToString(new CultureInfo("en-US")));
-            smsg["ext_id"].set(order.NumberUser);
+            smsg["ext_id"].set(order.NumberUserOrderId);
             smsg["comment"].set(order.Comment);
             order.timeCreate = GetTimeMoscowNow();
 
@@ -2481,7 +2481,7 @@ namespace PlazaEngine.Engine
                 _canseledOrders = new List<decimal[]>();
             }
 
-            decimal[] record = _canseledOrders.Find(decimals => decimals[0] == order.NumberUser);
+            decimal[] record = _canseledOrders.Find(decimals => decimals[0] == order.NumberUserOrderId);
 
             if (record != null)
             {
@@ -2495,14 +2495,14 @@ namespace PlazaEngine.Engine
             }
             else
             {
-                record = new[] { Convert.ToDecimal(order.NumberUser), 1 };
+                record = new[] { Convert.ToDecimal(order.NumberUserOrderId), 1 };
                 _canseledOrders.Add(record);
             }
 
             _ordersToCansel.Enqueue(order);
         }
 
-        private void Cancel2Old(Order order)
+        public void CancelOrderByExchangeId(Order order)
         {
             try
             {
@@ -2519,7 +2519,7 @@ namespace PlazaEngine.Engine
                                      code[3].ToString();
 
                 DataMessage smsg = (DataMessage)sendMessage;
-                smsg.UserId = (uint)order.NumberUser;
+                smsg.UserId = (uint)order.NumberUserOrderId;
                 smsg["broker_code"].set(brockerCode);
                 smsg["order_id"].set(Convert.ToInt64(order.ExchangeOrderId));
 
@@ -2600,7 +2600,7 @@ namespace PlazaEngine.Engine
                             string clientCode = code[4].ToString() + code[5].ToString() + code[6].ToString();
 
                             DataMessage smsg = (DataMessage)sendMessage;
-                            smsg.UserId = (uint)order.NumberUser;
+                            smsg.UserId = (uint)order.NumberUserOrderId;
                             smsg["broker_code"].set(brockerCode);
 
                             int isinId =/* GetIsinId(*/ Convert.ToInt32(order.SecurityId);//);
@@ -2616,7 +2616,7 @@ namespace PlazaEngine.Engine
                             smsg["dir"].set(dir);
                             smsg["amount"].set(Convert.ToInt32(order.Volume));
                             smsg["price"].set(order.PriceOrder.ToString(new CultureInfo("en-US")));
-                            smsg["ext_id"].set(order.NumberUser); 
+                            smsg["ext_id"].set(order.NumberUserOrderId); 
 
                             smsg["comment"].set(order.Comment);
                             //Debug.WriteLine(sendMessage);
@@ -2661,7 +2661,7 @@ namespace PlazaEngine.Engine
                                                  code[3].ToString();
 
                             DataMessage smsg = (DataMessage)sendMessage;
-                            smsg.UserId = (uint)order.NumberUser;
+                            smsg.UserId = (uint)order.NumberUserOrderId;
                             smsg["broker_code"].set(brockerCode);
                             smsg["order_id"].set(Convert.ToInt64(order.ExchangeOrderId));
 

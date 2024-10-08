@@ -148,7 +148,7 @@ namespace AvpPlazaTester
         {
             if (plaza != null)
             {
-                plaza.CancelOrder(o.NumberUser);
+                plaza.CancelOrder(o.NumberUserOrderId);
             }
             lock (timeLastOrderChangedLocker)
             {

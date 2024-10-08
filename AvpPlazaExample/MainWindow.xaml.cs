@@ -322,7 +322,7 @@ namespace AvpPlazaExample
             timerListViewOrderUpdate.Stop();
             timerListViewOrderUpdate.Start();
 
-            LogMessage($"{order.NumberUser}; {order.State}; {message}");
+            LogMessage($"{order.NumberUserOrderId}; {order.State}; {message}");
             
         }
 
@@ -424,7 +424,7 @@ namespace AvpPlazaExample
             ListViewOrder.SelectedItems.CopyTo(orders,0);
             foreach (var o in orders)
             {
-                await plaza.CancelOrder(((Order)o).NumberUser);
+                await plaza.CancelOrder(((Order)o).NumberUserOrderId);
                 RouterLogger.Log(o.ToString(), "Test_Scenario");
             }
 
@@ -503,7 +503,7 @@ namespace AvpPlazaExample
             {
                 if (o.State == Order.OrderStateType.Activ)
                 {
-                    await plaza.CancelOrder(o.NumberUser);
+                    await plaza.CancelOrder(o.NumberUserOrderId);
                     RouterLogger.Log(o.ToString(), "Test_Scenario");
                 }
             }
@@ -530,7 +530,7 @@ namespace AvpPlazaExample
             if (test2Started 
             && o.State == Order.OrderStateType.Activ)
             {
-                await plaza.CancelOrder(o.NumberUser);
+                await plaza.CancelOrder(o.NumberUserOrderId);
                 RouterLogger.Log(o.ToString(), "Test_Scenario");
             }
         }

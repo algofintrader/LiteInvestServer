@@ -90,7 +90,7 @@ namespace AvpPlazaTester
                 if (o.State == Order.OrderStateType.Activ)
                 {
                     orderNeedCanceled++;
-                    plaza.CancelOrder(o.NumberUser);
+                    plaza.CancelOrder(o.NumberUserOrderId);
                     RouterLogger.Log(o.ToString(), "Test_Scenario");
                 }
             }

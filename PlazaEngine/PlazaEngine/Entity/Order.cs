@@ -4,14 +4,18 @@ using PlazaEngine.Engine;
 using System;
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.Runtime.Serialization;
+using System.Security.AccessControl;
 using System.Text;
 
 namespace PlazaEngine.Entity
 {
+
     /// <summary>
     /// order
     /// ордер
     /// </summary>
+    [DataContract]
     public class Order : IOrder
     {
         /// <summary>
@@ -100,6 +104,7 @@ namespace PlazaEngine.Entity
             */
         }
 
+        [DataMember]
         public string SecurityId { get; set; }
 
         /// <summary>
@@ -120,19 +125,22 @@ namespace PlazaEngine.Entity
         private bool IsReal => ExchangeOrderId == "" ? false : true;
 
 
-
+        [DataMember]
         internal int numberUser;
 
+
         /// <summary>
-        /// order number in the robot
-        /// номер ордера в роботе
+        /// Пользовательский Ордер Id
         /// </summary>
-        public int NumberUser { get => numberUser; }
+        [DataMember]
+        public int NumberUserOrderId { get => numberUser; set { numberUser = value; } }
+
 
         /// <summary>
         /// order number on the exchange
         /// номер ордера на бирже
         /// </summary>
+        [DataMember]
         public string ExchangeOrderId { get; set; }
 
         internal void SetNumberMarket(string numberMarket)
@@ -151,6 +159,7 @@ namespace PlazaEngine.Entity
         /// account number to which the order belongs
         /// номер счёта которому принадлежит ордер
         /// </summary>
+        [DataMember]
         public string PortfolioNumber { get; set; }
 
 
@@ -158,15 +167,18 @@ namespace PlazaEngine.Entity
         /// direction
         /// направление
         /// </summary>
+        [DataMember]
         internal Side side;
 
-        public Side Side { get => side; }
+        [DataMember]
+        public Side Side { get => side; set { side = value; } }
+
 
         /// <summary>
         /// Цена Ордера
         /// </summary>
-        public decimal PriceOrder { get => priceOrder; }
-
+        [DataMember]
+        public decimal PriceOrder { get => priceOrder; set { priceOrder = value; } }
         internal decimal priceOrder;
 
 
@@ -179,13 +191,17 @@ namespace PlazaEngine.Entity
             get { return GetMidlePrice(); }
         }
 
+
         /// <summary>
         /// volume
         /// объём
         /// </summary>
-        public decimal Volume { get => volume; }
+        [DataMember]
+        public decimal Volume { get => volume; set { volume = value; } }
         internal decimal volume;
 
+
+        /*
         /// <summary>
         /// execute volume
         /// объём исполнившийся
@@ -223,9 +239,13 @@ namespace PlazaEngine.Entity
 
             }
 
-        }
+        }*/
 
-        internal decimal volumeExecute;
+        /// <summary>
+        /// Исполненный объем
+        /// </summary>
+        [DataMember]
+        public decimal VolumeExecuted { get; set; }
 
         private bool _volumeExecuteChange;
 
@@ -241,9 +261,11 @@ namespace PlazaEngine.Entity
         /// order status: None, Pending, Done, Patrial, Fail
         /// статус ордера: None, Pending, Done, Patrial, Fail
         /// </summary>
+        [DataMember]
         public OrderStateType State
         {
             get { return state; }
+            set {  state = value; }
         }
 
         internal OrderStateType state;
@@ -252,7 +274,8 @@ namespace PlazaEngine.Entity
         /// order price type. Limit, Market
         /// тип цены ордера. Limit, Market
         /// </summary>
-        public OrderType TypeOrder { get => typeOrder; }
+        [DataMember]
+        public OrderType TypeOrder { get => typeOrder; set { typeOrder = value; } }
         private OrderType typeOrder;
 
         /// <summary>
@@ -265,34 +288,39 @@ namespace PlazaEngine.Entity
         /// user comment
         /// комментарий пользователя
         /// </summary>
+        [DataMember]
         public string Comment { get; set; }
 
         /// <summary>
         /// time of the first response from the stock exchange on the order. Server time
         /// время первого отклика от биржи по ордеру. Время севрера.
         /// </summary>
-        public DateTime TimeCallBack { get => timeCallBack; }
+        [DataMember]
+        public DateTime TimeCallBack { get => timeCallBack; set { timeCallBack = value; } }
         internal DateTime timeCallBack;
 
         /// <summary>
         /// time of order removal from the system. Server time
         /// время снятия ордера из системы. Время сервера
         /// </summary>
-        public DateTime TimeCancel { get => timeCancel; }
+        [DataMember]
+        public DateTime TimeCancel { get => timeCancel; set { timeCancel = value; } }
         internal DateTime timeCancel;
 
         /// <summary>
         /// order execution time. Server time
         /// время исполнения ордера. Время сервера
         /// </summary>
-        public DateTime TimeDone { get => timeDone; }
+        [DataMember]
+        public DateTime TimeDone { get => timeDone; set { timeDone = value; } }
         internal DateTime timeDone;
 
         /// <summary>
         /// order creation time.
         /// время создания ордера.
         /// </summary>
-        public DateTime TimeCreate { get => _timeCreate; }
+        [DataMember]
+        public DateTime TimeCreate { get => _timeCreate; set { _timeCreate = value; } }
 
         /// <summary>
         /// Время создания ордера.
@@ -313,7 +341,6 @@ namespace PlazaEngine.Entity
         }
 
         private DateTime _timeCreate;
-
         internal DateTime timeSet
         {
             get
@@ -328,7 +355,6 @@ namespace PlazaEngine.Entity
                 }
             }
         }
-
         private DateTime _timeSet;
 
 
@@ -395,6 +421,8 @@ namespace PlazaEngine.Entity
         /// </summary>
         private List<MyTrade> _trades;
 
+
+        /*
         /// <summary>
         /// heck the ownership of the transaction to this order
         /// проверить принадлежность сделки этому ордеру
@@ -444,7 +472,7 @@ namespace PlazaEngine.Entity
             {
                 state = OrderStateType.Done;
             }
-        }
+        }*/
 
         /// <summary>
         /// take the average order execution price
@@ -540,18 +568,21 @@ namespace PlazaEngine.Entity
         /// price type for order
         /// тип цены для ордера
         /// </summary>
+        [DataContract]
         public enum OrderType
         {
             /// <summary>
             /// limit order. Those. bid at a certain price
             /// лимитная заявка. Т.е. заявка по определённой цене
             /// </summary>
+            [EnumMember]
             Limit,
 
             /// <summary>
             /// market application. Those. application at any price
             /// рыночная заявка. Т.е. заявка по любой цене
             /// </summary>
+            [EnumMember]
             Market,
 
             /// <summary>
@@ -568,48 +599,56 @@ namespace PlazaEngine.Entity
         /// Order status
         /// статус Ордера
         /// </summary>
+        [DataContract]
         public enum OrderStateType
         {
             /// <summary>
             /// none
             /// отсутствует
             /// </summary>
+            [EnumMember]
             None,
 
             /// <summary>
             /// accepted by the exchange and exhibited in the system
             /// принята биржей и выставленна в систему
             /// </summary>
+            [EnumMember]
             Activ,
 
             /// <summary>
             /// waiting for registration
             /// ожидает регистрации
             /// </summary>
+            [EnumMember]
             Pending,
 
             /// <summary>
             /// done
             /// исполнен
             /// </summary>
+            [EnumMember]
             Done,
 
             /// <summary>
             /// partitial done
             /// исполнен частично
             /// </summary>
+            [EnumMember]
             Partial,
 
             /// <summary>
             /// error
             /// произошла ошибка
             /// </summary>
+            [EnumMember]
             Fail,
 
             /// <summary>
             /// cancel
             /// отменён
             /// </summary>
+            [EnumMember]
             Cancel
         }
 

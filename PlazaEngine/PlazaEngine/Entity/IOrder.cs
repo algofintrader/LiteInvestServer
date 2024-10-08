@@ -17,7 +17,7 @@ namespace PlazaEngine.Entity
         /// <summary>
         /// Внутренний номер ордера, присваивается автоматически коннектором
         /// </summary>
-        int NumberUser { get; }
+        int NumberUserOrderId { get; }
 
         /// <summary>
         /// Код лицевого счета клиента зарегистрированного на бирже. 

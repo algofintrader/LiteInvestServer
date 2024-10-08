@@ -50,10 +50,5 @@ namespace LiteInvestServer.Entity
         /// </summary>
         public decimal Limit { get; set; }
 
-        public ConcurrentDictionary <string, Order> Orders { get; set; }
-
-        public ConcurrentDictionary<string, Position> Users { get;}
-
-
     }
 }

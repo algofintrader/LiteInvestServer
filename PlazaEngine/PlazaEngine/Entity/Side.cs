@@ -6,12 +6,6 @@
     public enum Side
     {
         /// <summary>
-        /// none
-        /// не определено
-        /// </summary>
-        None,
-
-        /// <summary>
         /// buy
         /// купля
         /// </summary>

@@ -147,54 +147,64 @@ namespace LiteInvestServer.WebScoketFactory
             //Если сокет вдруг разоврется во время работы, то он сам его отключит.
             server.Start(ws =>
             {
-                //ПРИХОДЯЩИЙ СТРИМ приходит сюда 
-                var WsParameters = GetParameters(ws);
-                var streamValue = WsParameters[_streamKEY];
-
-                //у нас такой стрим есть
-
-                //КАК ПОЛУЧИТЬ СОКЕТ!!! выдается список. 
-                //var listofsocketsforsubcription = Streams["имя стрима"].Sockets["ключ поток"];
-
-                if (Streams.ContainsKey(streamValue))
+                try
                 {
-                    var stream = Streams[streamValue];
+                    Console.Out.WriteLineAsync($"incoming websocket {ws.ConnectionInfo}").ConfigureAwait(false);
 
-                    //проверяем что есть все поля, которые нам нужны. 
+                    //ПРИХОДЯЩИЙ СТРИМ приходит сюда 
+                    var WsParameters = GetParameters(ws);
+                    var streamValue = WsParameters[_streamKEY];
 
-                    if (!stream.CheckAllParameters(WsParameters))
+                    //у нас такой стрим есть
+
+                    //КАК ПОЛУЧИТЬ СОКЕТ!!! выдается список. 
+                    //var listofsocketsforsubcription = Streams["имя стрима"].Sockets["ключ поток"];
+
+                    if (Streams.ContainsKey(streamValue))
+                    {
+                        var stream = Streams[streamValue];
+
+                        //проверяем что есть все поля, которые нам нужны. 
+
+                        if (!stream.CheckAllParameters(WsParameters))
+                        {
+                            ws.Close();
+                            return;
+                        }
+
+                        var paramName = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key);
+                        var KEY = WsParameters[paramName.Key];
+
+                        //TODO: Переписать ключ!!!! 
+
+                        if (!stream.Sockets.ContainsKey(KEY))
+                            stream.Sockets.TryAdd(KEY, new());
+
+                        var hash = ws.GetHashCode();
+
+                        stream.Sockets[KEY][hash] = ws;
+
+                        //TODO: Дублирующий код 
+                        if (stream.NeedDataRegistration)
+                        {
+                            stream.Register_Unregister_MarketData?.Invoke(KEY, true);
+                            Console.WriteLine($"Registering marker data! {stream.Name}  = {KEY} hash = {hash}");
+                        }
+
+                        Console.WriteLine($"WebSocket for {stream.Name}  Opened hash = {hash}");
+
+                        ws.OnClose += OnClosingWebSocket;
+                    }
+                    else
                     {
                         ws.Close();
                         return;
                     }
-
-                    var paramName = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key);
-                    var KEY = WsParameters[paramName.Key];
-
-                    //TODO: Переписать ключ!!!! 
-
-                    if (!stream.Sockets.ContainsKey(KEY))
-                        stream.Sockets.TryAdd(KEY, new());
-
-                    var hash = ws.GetHashCode();
-
-                    stream.Sockets[KEY][hash] = ws;
-
-                    //TODO: Дублирующий код 
-                    if (stream.NeedDataRegistration)
-                    {
-                        stream.Register_Unregister_MarketData?.Invoke(KEY,true);
-                        Console.WriteLine($"Registering marker data! {stream.Name}  = {KEY} hash = {hash}");
-                    }
-
-                    Console.WriteLine($"WebSocket for {stream.Name}  Opened hash = {hash}");
-
-                    ws.OnClose += OnClosingWebSocket;
                 }
-                else
+                catch (Exception ex)
                 {
-                    ws.Close();
-                    return;
+                    Console.Out.WriteLineAsync($" {ex.Message}").ConfigureAwait(false);
+
                 }
             });
         }

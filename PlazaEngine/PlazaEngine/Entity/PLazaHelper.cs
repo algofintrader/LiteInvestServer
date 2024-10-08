@@ -32,6 +32,9 @@ namespace PlazaEngine.Entity
 
         private static int lastDayGetNumber = 0;
 
+
+        //NOTE: До сих пор не понял, насколько этот номер уникальный 
+        //Может его просто сохранять
         private static int GetNumberOrderForRealTrading()
         {
             lock (_locker)
