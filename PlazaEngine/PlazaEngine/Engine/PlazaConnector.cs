@@ -2279,7 +2279,7 @@ namespace PlazaEngine.Engine
         /// Ответ в Event NewActiveOrder(order);
         /// </summary>
         /// <param name="order"></param>
-        public async Task<string> ExecuteOrder(Order order)
+        public async Task<string> ExecuteOrderAsync(Order order)
         {
             RouterLogger.Log($"ExecuteOrder {order} start" , "ExecuteOrder");
             if (order.TypeOrder == Order.OrderType.Market)

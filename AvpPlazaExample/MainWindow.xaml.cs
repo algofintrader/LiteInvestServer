@@ -413,7 +413,7 @@ namespace AvpPlazaExample
                     , plaza.Portfolios.First().Value.Number
                     , $"Id{i}"
                     );
-                await plaza.ExecuteOrder(o);
+                await plaza.ExecuteOrderAsync(o);
                 RouterLogger.Log(o.ToString(), "Test_Scenario");
             }
         }
@@ -469,7 +469,7 @@ namespace AvpPlazaExample
                 {
                     Order o = new Order(p.SecurityId, p.ValueCurrent > 0 ? Side.Sell : Side.Buy, Math.Abs(p.ValueCurrent), p.PortfolioName, $"Close-Client{i++} ");
                     RouterLogger.Log(o.ToString(), "Test_Scenario");
-                    await plaza.ExecuteOrder(o);
+                    await plaza.ExecuteOrderAsync(o);
                 }
             }
         }

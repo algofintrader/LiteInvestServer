@@ -94,7 +94,7 @@ namespace AvpPlazaTester
                     decimal price = side == Side.Buy ? sec.BestBid - sec.PriceStep * priceDistance : sec.BestAsk + sec.PriceStep * priceDistance;
                     Order o = new Order(sec.Id, side, 1, price, portfolio, $"{sec.ShortName}-Client{i}");
                     RouterLogger.Log(o.ToString(), "Test_Scenario");
-                    plaza.ExecuteOrder(o);
+                    plaza.ExecuteOrderAsync(o);
                 }
             }
             Thread.Sleep(1000);

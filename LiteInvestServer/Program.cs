@@ -80,11 +80,9 @@ WebSocketEngine webSocketEngine = null;
 
 string data = "Data";
 
-string realSocket = "//37.18.88.53:5000/";
-string debugSocket = "//0.0.0.0:5000/";
+//NOTE: Вбил вручную в код, почему то не находит Development settings. 
+string webscoketAdress= "ws://0.0.0.0:5000/";
 
-//TODO: Вынести настройки отдельно потом
-string webscoketAdress =$"ws:{realSocket}";
 string userdBdName = $"{data}/users.xml";
 string ordersBdName = $"{data}/orders.xml";
 string tradesBdName = $"{data}/trades.xml";
@@ -100,8 +98,14 @@ var serializer = new JsonSerializerOptions { IncludeFields = true, WriteIndented
 
 string secretHASH = "f11c97fb416a788e5febef00fe7c0daa794551f5";
 
+ 
 
-var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
+var wb = new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory };
+
+var builder = WebApplication.CreateBuilder(args);
+//var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
+
+
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -347,6 +351,11 @@ builder.Services.AddSingleton(_ =>
 
 var app = builder.Build();
 
+if (!app.Environment.IsDevelopment())
+{
+    webscoketAdress = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("WebsocketAdress")["Adress"];
+}
+
 //регистрация плазы сервиса
 app.Services.GetRequiredService<PlazaConnector>();
 
@@ -474,7 +483,7 @@ FuturesApi.MapPost("/SendOrder", async (string userName,ClientOrder clientOrder)
         
         LogMessageAsync($"Sending Order {userName} price={plazaOrder.PriceOrder} ");
 
-        await plaza.ExecuteOrder(plazaOrder);
+        await plaza.ExecuteOrderAsync(plazaOrder).ConfigureAwait(false);
 
         var serializedOrder = JsonSerializer.Serialize(plazaOrder, serializer);
 
