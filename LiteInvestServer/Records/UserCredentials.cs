@@ -4,8 +4,8 @@ namespace LiteInvestServer.Records
 {
     record UserCredentials
     {
-        public required string Login { get; init; }
-        public string Password { get; init; }
+        public required string LoginEmail { get; init; }
+        public required string Password { get; init; }
 
         /// <summary>
         /// Свободное имя, может быть ФИО

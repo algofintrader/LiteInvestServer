@@ -14,5 +14,7 @@ namespace LiteInvestServer.Records
         [SwaggerSchema("Market = true. Limit = false")]
         public bool Market { get; set; } = false;
 
+        public int? NumberOrderId { get; set; }
+
     };
 }

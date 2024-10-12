@@ -1,6 +1,7 @@
 ﻿using PlazaEngine.Entity;
 using System.Collections.Concurrent;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace LiteInvestServer.Entity
 {
@@ -15,20 +16,24 @@ namespace LiteInvestServer.Entity
     [DataContract]
     public class User
     {
-        public User(string _userName, string _pass)
+        public User(string _login, string _pass)
         {
 
-            userName = _userName;
+            Login = _login;
             Password = _pass;
         }
 
         [DataMember]
-        public string userName { get; private set; }
+        public string Login { get; private set; }
 
+        //TODO: pass HASH
+        [JsonIgnore]
         [DataMember]
-        private string Password { get; set; }
+        public string Password { get; set; }
         [DataMember]
         public decimal Balance { get; set; }
+
+        //NOTE: PROFIT
 
 
         [DataMember]
@@ -37,6 +42,10 @@ namespace LiteInvestServer.Entity
         /// Будет отключено в админке.
         /// </summary>
         public bool CanTrade { get; set; }
+
+        [JsonIgnore]
+        [DataMember]
+        public bool Admin { get; set; }
 
         [DataMember]
         /// <summary>

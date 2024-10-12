@@ -30,6 +30,14 @@ using System.Runtime.CompilerServices;
 using LiteInvestServer.Json;
 using LiteInvestServer.WebScoketFactory;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
+using LiteInvestServer;
+using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.AspNetCore.Http;
+using System.Net.Http;
 
 
 
@@ -96,34 +104,20 @@ string orderbookWebSocketstreamName = "orderbook";
 
 var serializer = new JsonSerializerOptions { IncludeFields = true, WriteIndented = true };
 
-string secretHASH = "f11c97fb416a788e5febef00fe7c0daa794551f5";
-
- 
-
 var wb = new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory };
 
 var builder = WebApplication.CreateBuilder(args);
 //var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 
+var services = builder.Services;
+var configuration = builder.Configuration;
 
+var jwtOptions = builder.Configuration.GetSection("JwtOptions").Get<JwtOptions>();
+var jwtprovider = new JwtProvider(jwtOptions);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-bool CheckConditionsForWebsocket(WebSocketEngine webSocketEngine,string name )
-{
-    if (webSocketEngine == null)
-        return false;
-
-    var websockets = webSocketEngine.GetSocketsFull(name);
-
-    if (websockets == null)
-        return false;
-
-    return true;
-}
-
 
 ///PLAZA WORDER MAIN
 builder.Services.AddSingleton(_ =>
@@ -147,13 +141,17 @@ builder.Services.AddSingleton(_ =>
     Orders = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Order>>>(ordersBdName);
     Trades = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Trade>>>(tradesBdName);
 
+
+    string admin = "adminadminov";
+
+    if (!Users.ContainsKey(admin))
+        Users.TryAdd(admin, new User(admin, "adminPass#1R") { Admin = true, CanTrade = false });
+
     plaza = new PlazaConnector("02mMLX144T2yxnfzEUrCjUKzXKciQKJ", test: false, appname: "osaApplication")
     {
         Limit = 30,
         LoadTicksFromStart = false,
     };
-
-   
 
     plaza.UpdatePosition += pos =>
     {
@@ -349,11 +347,44 @@ builder.Services.AddSingleton(_ =>
     return webSocketEngine;
 });
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new()
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions!.SecretKey))
+        };
+
+        options.Events = new JwtBearerEvents { OnMessageReceived = onMessageReceived };
+
+        static Task onMessageReceived(MessageReceivedContext context)
+        {
+            context.Token = context.Request.Cookies["liteinvest"];
+            return Task.CompletedTask;
+        }
+
+        services.AddAuthorization();
+    });
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
     webscoketAdress = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("WebsocketAdress")["Adress"];
+   
+    /*X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
+
+    store.Open(OpenFlags.ReadOnly);
+
+    foreach (X509Certificate2 certificate in store.Certificates)
+    {
+        //TODO's
+    }*/
 }
 
 //регистрация плазы сервиса
@@ -378,88 +409,139 @@ app.UseSwaggerUI(_ =>
 
 var RiskManager = app.MapGroup("/RiskManager")
     .WithTags("RiskManager");
+
    
-RiskManager.MapPost("/CreateUser", async (UserCredentials userCredentials,string adminToken) =>
+RiskManager.MapGet("/GetUsers", async (HttpContext httpContext) =>
 {
-    //TODO: проверка токена 
-    if (adminToken != secretHASH)
-        return Results.Problem("Admin Hash incorrect");
 
-    if (Users.ContainsKey(userCredentials.Login))
-    {
-        return Results.Problem("User with such name already created");
-    }
-
-    //TODO: проверка на создание лимита?
-
-
-    try
-    {
-        Users.TryAdd(userCredentials.Login, new User(userCredentials.Login, userCredentials.Password)
-        { Limit = 20000, CanTrade = true });
-
-        //NOTE: пароли как бы надо получать в зашифрованном виде скорее всего. 
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem(ex.Message);
-    }
-
-    return Results.Accepted<UserCredentials>();
-}).WithDescription("Юзер изначально создается с лимитом в 20 000 р. и с возможностью торговать. Предполагается, что потом зайдут в админку и поменяют лимиты");
-
-
-RiskManager.MapPost("/GetUsersList", async ( string adminToken) =>
-{
-    //TODO: проверка токена 
-    if (adminToken != secretHASH)
-        return Results.Problem("Admin Hash incorrect");
-
-    try
-    {
-         return Results.Json(Users.ToList());
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem(ex.Message);
-    }
-}).WithDescription("Выдача списка юзеров");
-
-
-RiskManager.MapPost("/ChangeLimitUser", async (string username, string adminToken,decimal newlimit) =>
-{
-    if (adminToken != secretHASH)
-        return Results.Problem("Admin Hash incorrect");
+    string username = httpContext.GetUserName();
 
     if (!Users.ContainsKey(username))
         return Results.Problem("User not found");
 
-    Users[username].Limit = newlimit;
+    if (!Users[username].Admin)
+        return Results.Problem("No Admin rights");
+    try
+    {
+         return Results.Json(Users.ToList().Where(a=>!a.Value.Admin));
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+}).RequireAuthorization().WithDescription("Выдача списка юзеров");
+
+
+RiskManager.MapPost("/ChangeLimitUser", async (HttpContext httpContext,string usernametochange,decimal newlimit) =>
+{
+    string username = httpContext.GetUserName();
+
+    if (!Users.ContainsKey(username))
+        return Results.Problem("User not found");
+
+    if (!Users[username].Admin)
+        return Results.Problem("No Admin rights");
+
+    try
+    {
+        Users[usernametochange].Limit = newlimit;
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+
     return Results.Accepted<UserCredentials>(); 
 }).WithDescription("Изменение лимита Юзера");
 
-RiskManager.MapPost("/CanTrade", async (string username, string adminToken, bool cantrade) =>
+RiskManager.MapPost("/CanTrade", async (HttpContext httpContext, string usernametochange, bool cantrade) =>
 {
-    if (adminToken != secretHASH)
-        return Results.Problem("Admin Hash incorrect");
+    string username = httpContext.GetUserName();
 
     if (!Users.ContainsKey(username))
         return Results.Problem("User not found");
 
-    Users[username].CanTrade = cantrade;
+    if (!Users[username].Admin)
+        return Results.Problem("No Admin rights");
+
+    if (Users[usernametochange].Admin)
+    {
+        return Results.Problem("You can not change settings for admin to trade");
+    }
+
+    try
+    {
+        Users[usernametochange].CanTrade = cantrade;
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
 
     return Results.Accepted<UserCredentials>();
 }).WithDescription("Возможность торговать");
 
-var FuturesApi = app.MapGroup("/FuturesApi").WithTags("FuturesApi")
-    .WithTags("FuturesApi")
-    .WithDescription("Торговля Фьючерсами. Выставление, Отмена заявок");
+var Trading = app.MapGroup("/Trading").WithTags("Trading");
 
-FuturesApi.MapPost("/SendOrder", async (string userName,ClientOrder clientOrder) =>
+Trading.MapPost("/Register", async (UserCredentials userCredentials) =>
+{
+
+    if(Users.ContainsKey(userCredentials.LoginEmail))
+    {
+        return Results.Problem("User already exists!");
+    }
+
+    Users.TryAdd(userCredentials.LoginEmail, new User(userCredentials.LoginEmail, userCredentials.Password)
+    {
+        Limit = 20000, 
+        CanTrade = false,
+        Admin = false,
+    });
+
+    return Results.Accepted<UserCredentials>();
+}).WithDescription("Изначально любой может создать юзера, но он не сможет торговать. Админ позже выставит такую возможность");
+
+Trading.MapPost("/Login", async(string login, string pass, HttpContext httpContext) =>
+{
+    if (!Users.ContainsKey(login))
+    {
+        return Results.Problem("User does not exist!");
+    }
+
+    var user = Users[login];
+
+    if (user.Password != pass)
+    {
+        return Results.Problem("Pass incorrect");
+    }
+    var token = jwtprovider.GenerateToken(user);
+    httpContext.Response.Cookies.Append("liteinvest", token);
+
+    return Results.Json(token);
+});
+
+Trading.MapPost("/LogOut", async (HttpContext httpContext) =>
+{
+    try
+    {
+        string username = httpContext.GetUserName();
+        httpContext.Response.Cookies.Delete("liteinvest");
+    }
+    catch (Exception ex)
+    {
+        Results.Problem(ex.Message);
+    }
+    return Results.Ok();
+});
+
+
+Trading.MapPost("/SendOrder", async (ClientOrder clientOrder, HttpContext httpContext) =>
 {
 
     try
     {
+        string userName = httpContext.GetUserName();
+        
         if (!Users.ContainsKey(userName))
             return Results.Problem("User not found");
         //проверка, а есть ли такой юзер и может ли он торговать
@@ -480,7 +562,10 @@ FuturesApi.MapPost("/SendOrder", async (string userName,ClientOrder clientOrder)
         Order plazaOrder = clientOrder.Market ?
            new Order(plaza.Securities[clientOrder.SecID], clientOrder.Side, clientOrder.Volume, plaza.Portfolio.Number, userName) :
             new Order(plaza.Securities[clientOrder.SecID], clientOrder.Side, clientOrder.Volume, (decimal)clientOrder.Price, plaza.Portfolio.Number, userName);
-        
+
+        if (clientOrder.NumberOrderId != null && clientOrder.NumberOrderId !=0)
+            plazaOrder.NumberUserOrderId = (int)clientOrder.NumberOrderId;
+
         LogMessageAsync($"Sending Order {userName} price={plazaOrder.PriceOrder} ");
 
         await plaza.ExecuteOrderAsync(plazaOrder).ConfigureAwait(false);
@@ -496,12 +581,14 @@ FuturesApi.MapPost("/SendOrder", async (string userName,ClientOrder clientOrder)
         return Results.Problem(ex.Message); 
     }
 
-});
+}).RequireAuthorization().WithDescription("NumberOrderId если отправлять Null или 0 в итоге не будет использован и будет сгенерирован системой.");
 
-FuturesApi.MapPost("/GetOrders", async (string userName) =>
+Trading.MapGet("/GetOrders", async (HttpContext httpContext) =>
 {
     try
     {
+        string userName = httpContext.GetUserName();
+
         if (!Orders.ContainsKey(userName))
             return Results.Problem("User not found in Orders");
         //проверка, а есть ли такой юзер и может ли он торговать
@@ -512,12 +599,14 @@ FuturesApi.MapPost("/GetOrders", async (string userName) =>
     {
         return Results.Problem(ex.Message);
     }
-}).WithDescription("Выдача ордеров - пока что полный срок. TypeOrder = 0 (limit) 1 (market)");
+}).RequireAuthorization().WithDescription("Выдача ордеров - пока что полный срок. TypeOrder = 0 (limit) 1 (market)");
 
-FuturesApi.MapPost("/CancelOrder", async (string userName, int numberId) =>
+Trading.MapPost("/CancelOrder", async (HttpContext httpContext, int numberId) =>
 {
     try
     {
+        string userName = httpContext.GetUserName();
+
         if (!Users.ContainsKey(userName))
             return Results.Problem("User not found");
         //проверка, а есть ли такой юзер и может ли он торговать
@@ -541,9 +630,9 @@ FuturesApi.MapPost("/CancelOrder", async (string userName, int numberId) =>
     {
         return Results.Problem(ex.Message);
     }
-});
+}).RequireAuthorization();
 
-FuturesApi.MapGet("/GetAllSecurities", async () =>
+Trading.MapGet("/GetAllSecurities", async () =>
 {
     if (Securities == null || Securities.Count == 0)
         return Results.Problem("No Security");
@@ -569,7 +658,7 @@ FuturesApi.MapGet("/GetAllSecurities", async () =>
         });
     }
     return Results.Json(securitiesJson);
-});
+}).RequireAuthorization();
 
 /*
 FuturesApi.MapGet("/SubscribeSecurityTicks", (string secKEY) =>
@@ -594,7 +683,8 @@ FuturesApi.MapGet("/SubscribeSecurityQuotes", (string secKEY) =>
 
 app.UseHttpsRedirection();
 
-//app.UseAuthorization();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
@@ -610,6 +700,7 @@ AppDomain.CurrentDomain.ProcessExit += (_,_) =>
     try
     {
         Helper.SaveXml(Trades, tradesBdName);
+
         Helper.SaveXml(Orders, ordersBdName);
         Helper.SaveXml(Users, userdBdName);
 
