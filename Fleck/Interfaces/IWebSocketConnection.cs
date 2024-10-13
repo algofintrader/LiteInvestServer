@@ -20,5 +20,7 @@ namespace Fleck
         void Close(int code);
         IWebSocketConnectionInfo ConnectionInfo { get; }
         bool IsAvailable { get; }
+
+        string Key { get; set; }
     }
 }

@@ -219,6 +219,9 @@ namespace Fleck
       });
     }
 
+
+    public string Key { get; set; }
+
     private void CloseSocket()
     {
       _closing = true;

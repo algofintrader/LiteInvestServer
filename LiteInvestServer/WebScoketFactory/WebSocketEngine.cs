@@ -1,10 +1,14 @@
 ﻿using Amazon.Runtime.Internal.Transform;
 using Fleck;
+using LiteInvestServer.Entity;
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
+using Microsoft.IdentityModel.Tokens;
 using MongoDB.Bson.IO;
 using System;
 using System.Collections.Concurrent;
+using System.IdentityModel.Tokens.Jwt;
 using System.IO;
+using System.Security.Claims;
 using System.Web;
 
 namespace LiteInvestServer.WebScoketFactory
@@ -36,8 +40,10 @@ namespace LiteInvestServer.WebScoketFactory
     public class WebSocketSettings
     {
 
+
         public WebSocketSettings(List<ParameterKey> _parameters)
         {
+
 
             //NOTE: Нет проверки на то, чтобы маркет ключ был один. 
 
@@ -48,6 +54,8 @@ namespace LiteInvestServer.WebScoketFactory
 
             if (_parameters.Count == 0 || keyparamenter==null)
                 throw new Exception("Parameter must have one value, which will be KEY for Sockets!");
+
+            
 
             ParameterKeys = _parameters;
 
@@ -95,15 +103,22 @@ namespace LiteInvestServer.WebScoketFactory
     public class WebSocketEngine
     {
 
+        private string _authname;
         private static string webscoketAdress { get; set; }
+        private JwtOptions jwtoptions { get; set; }
+        private ConcurrentDictionary<string, User> UsersContext { get; set; }
 
         private WebSocketServer server;
 
         private string _streamKEY = "stream";
 
-        public WebSocketEngine(string _websocketAdress)
+        public WebSocketEngine(string _websocketAdress, string nameForAuth,JwtOptions _jwtoptions, 
+            ConcurrentDictionary<string, User> usersContext)
         {
             webscoketAdress = _websocketAdress;
+            _authname = nameForAuth;
+            jwtoptions = _jwtoptions;
+            UsersContext = usersContext;
 
             server = new WebSocketServer(webscoketAdress);
 
@@ -149,16 +164,66 @@ namespace LiteInvestServer.WebScoketFactory
             {
                 try
                 {
+
+                    void CloseSocket()
+                    {
+                        ws.Close();
+                    }
+
                     Console.Out.WriteLineAsync($"incoming websocket {ws.ConnectionInfo}").ConfigureAwait(false);
 
                     //ПРИХОДЯЩИЙ СТРИМ приходит сюда 
                     var WsParameters = GetParameters(ws);
                     var streamValue = WsParameters[_streamKEY];
 
-                    //у нас такой стрим есть
+                    //TODO:
+                    // ------------ рефакторить этот кошмар------//
 
-                    //КАК ПОЛУЧИТЬ СОКЕТ!!! выдается список. 
-                    //var listofsocketsforsubcription = Streams["имя стрима"].Sockets["ключ поток"];
+                    if (!ws.ConnectionInfo.Headers.ContainsKey(_authname))
+                    { CloseSocket();
+                        return; }
+
+                    var authtoken = ws.ConnectionInfo.Headers[_authname];
+
+                    if (authtoken == null || authtoken.Length == 0)
+                    { CloseSocket();
+                        return;
+                    }
+
+                    var token = JwtProvider.ValidateToken(authtoken, jwtoptions);
+
+                    if (token == null)
+                    {
+                        CloseSocket();
+                        return;
+                    }
+
+                    var dt = token.ValidTo.ToLocalTime();
+                   
+                    if (DateTime.Now>dt)
+                    {
+                        CloseSocket();
+                        return;
+                    }
+
+                    string user;
+
+                    try
+                    {
+
+                        user = token.Claims.FirstOrDefault(x => x.Type == JwtHelper.LoginKey).Value;
+                     
+                        if(!UsersContext.ContainsKey(user))
+                        {
+                            CloseSocket() ; return; 
+                        }    
+
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception("Problems with validating user");
+                    }
+                    //----------------------------------------------------//
 
                     if (Streams.ContainsKey(streamValue))
                     {
@@ -166,16 +231,25 @@ namespace LiteInvestServer.WebScoketFactory
 
                         //проверяем что есть все поля, которые нам нужны. 
 
+                        /*
                         if (!stream.CheckAllParameters(WsParameters))
                         {
-                            ws.Close();
+                            CloseSocket();
                             return;
-                        }
+                        }*/
+                        
 
                         var paramName = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key);
-                        var KEY = WsParameters[paramName.Key];
 
-                        //TODO: Переписать ключ!!!! 
+                       
+
+                        //если ключ юзер, то берем его из токена
+                        if (paramName.Key == WebSocketKeys.User.ToString())
+                           ws.Key = user;
+                        else
+                           ws.Key = WsParameters[paramName.Key];
+
+                        string KEY = ws.Key;
 
                         if (!stream.Sockets.ContainsKey(KEY))
                             stream.Sockets.TryAdd(KEY, new());
@@ -197,7 +271,7 @@ namespace LiteInvestServer.WebScoketFactory
                     }
                     else
                     {
-                        ws.Close();
+                        CloseSocket();
                         return;
                     }
                 }
@@ -220,9 +294,7 @@ namespace LiteInvestServer.WebScoketFactory
             if (Streams.ContainsKey(streamValue))
             {
                 var stream = Streams[streamValue];
-
-                var paramName = stream.ParameterKeys.FirstOrDefault(p => p.Type == ParameterTypes.Key);
-                var KEY = WsParameters[paramName.Key];
+                var KEY = ws.Key;
 
                 stream.Sockets[KEY].Remove(hash, out _);
 

@@ -1,87 +1,36 @@
-﻿
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.OpenApi.Models;
-using MongoDB.Bson.IO;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using PlazaEngine.Engine;
 using PlazaEngine.Entity;
 using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Reflection;
-
-using Fleck;
 using LiteInvestServer.Entity;
-
-using Swashbuckle.AspNetCore.SwaggerGen;
-using Swashbuckle.AspNetCore.Annotations;
 using LiteInvestServer.Records;
-using Amazon.Runtime.Internal.Endpoints.StandardLibrary;
-using System;
-using Amazon.Runtime.Internal.Util;
-using System.Web;
-using Amazon.Runtime.Internal.Transform;
-using System.Collections.Generic;
-using static System.Net.Mime.MediaTypeNames;
 using LiteInvestServer.Helpers;
 using System.Text.Json;
-using System.Runtime.CompilerServices;
 using LiteInvestServer.Json;
 using LiteInvestServer.WebScoketFactory;
-using System.Net.Sockets;
-using System.Security.Cryptography.X509Certificates;
 using LiteInvestServer;
-using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.AspNetCore.Http;
-using System.Net.Http;
+using MongoDB.Bson.Serialization.Serializers;
 
 
 
 //NOTE: Идея такая короче. Протестировать за неделю, все что связано с торговлей
 // На выходных сделать админские моменты
 
-//TODO: Протестировать сценарий выставления заявки
-//и Чтобы ответ пришел по сокетам
-// TODO: Провести рефакторинг сокетов. 
-// TODO: Убрать юзера напрямую. 
-
-
 //NOTE: Скорее всего у нас постоянно будет переподключение, поэтому мы должны сами обновлять постоянно инструменты
-
-/*
-var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
-
-app.MapGet("/getmessage", () => "Hello Artem");
-app.Run();*/
-
 
 ConcurrentDictionary<string, Security> Securities = new ConcurrentDictionary<string, Security>();
 
 ///База юзеров 
-ConcurrentDictionary<string, User> Users = new ConcurrentDictionary<string, User>();
+ConcurrentDictionary<string, User> UsersContext = new ConcurrentDictionary<string, User>();
 
 //База ордеров по юзеру
 ConcurrentDictionary<string, ConcurrentDictionary<string,Order>> Orders = new();
 
 //База ордеров по юзеру
 ConcurrentDictionary<string, ConcurrentDictionary<string, Trade>> Trades = new();
-
-//подписка мои ордера
-//возможно один юзер захочет несколько раз хлопнуться )
-//ключ = название юзера
-//ConcurrentDictionary<string, ConcurrentDictionary<int, IWebSocketConnection>> MyOrdersSockets = new();
-
-//ключ secid 
-//нахера нам вообще юзер здесь сдался
-//ConcurrentDictionary<string, ConcurrentDictionary<int, IWebSocketConnection>> AllTicksSockets = new();
-
-//подписка ордер бук
-//ConcurrentDictionary<string, User> MyOrderSubscruptions;
 
 PlazaConnector plaza = null;
 WebSocketEngine webSocketEngine = null;
@@ -95,12 +44,12 @@ string userdBdName = $"{data}/users.xml";
 string ordersBdName = $"{data}/orders.xml";
 string tradesBdName = $"{data}/trades.xml";
 
-//websocket
 string myordersWebSocketstreamName = "my_orders";
 string mytradesWebSocketstreamName = "my_trades";
-
 string publicTradesSocketstreamName = "public_trades";
 string orderbookWebSocketstreamName = "orderbook";
+
+string authkeyname = "liteinvest";
 
 var serializer = new JsonSerializerOptions { IncludeFields = true, WriteIndented = true };
 
@@ -137,15 +86,15 @@ builder.Services.AddSingleton(_ =>
 
     }*/
 
-    Users = Helper.ReadXml<ConcurrentDictionary<string, User>>(userdBdName);
+    UsersContext = Helper.ReadXml<ConcurrentDictionary<string, User>>(userdBdName);
     Orders = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Order>>>(ordersBdName);
     Trades = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Trade>>>(tradesBdName);
 
 
     string admin = "adminadminov";
 
-    if (!Users.ContainsKey(admin))
-        Users.TryAdd(admin, new User(admin, "adminPass#1R") { Admin = true, CanTrade = false });
+    if (!UsersContext.ContainsKey(admin))
+        UsersContext.TryAdd(admin, new User(admin, "adminPass#1R") { Admin = true, CanTrade = false });
 
     plaza = new PlazaConnector("02mMLX144T2yxnfzEUrCjUKzXKciQKJ", test: false, appname: "osaApplication")
     {
@@ -240,7 +189,7 @@ builder.Services.AddSingleton(_ =>
 
         try
         {
-            if (!Users.ContainsKey(username) || plazaOrder.ExchangeOrderId == string.Empty)
+            if (!UsersContext.ContainsKey(username) || plazaOrder.ExchangeOrderId == string.Empty)
                 return;
 
             if (!Orders.ContainsKey(username))
@@ -326,11 +275,12 @@ builder.Services.AddSingleton(_ =>
 
 builder.Services.AddSingleton(_ =>
 {
-    webSocketEngine = new WebSocketEngine(webscoketAdress);
+    
+    webSocketEngine = new WebSocketEngine(webscoketAdress,authkeyname, jwtOptions,UsersContext);
 
     webSocketEngine.AddStream(myordersWebSocketstreamName, "My Orders", new List<ParameterKey>()
 {
-    new ParameterKey("user", ParameterTypes.Key)
+    new ParameterKey(WebSocketKeys.User.ToString(), ParameterTypes.Key)
 });
 
     webSocketEngine.AddStream(publicTradesSocketstreamName, "Ticks", new List<ParameterKey>()
@@ -350,24 +300,13 @@ builder.Services.AddSingleton(_ =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = new()
+        options.TokenValidationParameters = JwtProvider.GetBasicTokenValidationParameters(jwtOptions);
+        options.Events = new JwtBearerEvents 
+        {OnMessageReceived = (context)=>
         {
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions!.SecretKey))
-        };
-
-        options.Events = new JwtBearerEvents { OnMessageReceived = onMessageReceived };
-
-        static Task onMessageReceived(MessageReceivedContext context)
-        {
-            context.Token = context.Request.Cookies["liteinvest"];
+            context.Token = context.Request.Cookies[authkeyname];
             return Task.CompletedTask;
-        }
-
+        }};
         services.AddAuthorization();
     });
 
@@ -416,14 +355,14 @@ RiskManager.MapGet("/GetUsers", async (HttpContext httpContext) =>
 
     string username = httpContext.GetUserName();
 
-    if (!Users.ContainsKey(username))
+    if (!UsersContext.ContainsKey(username))
         return Results.Problem("User not found");
 
-    if (!Users[username].Admin)
+    if (!UsersContext[username].Admin)
         return Results.Problem("No Admin rights");
     try
     {
-         return Results.Json(Users.ToList().Where(a=>!a.Value.Admin));
+         return Results.Json(UsersContext.ToList().Where(a=>!a.Value.Admin));
     }
     catch (Exception ex)
     {
@@ -436,15 +375,14 @@ RiskManager.MapPost("/ChangeLimitUser", async (HttpContext httpContext,string us
 {
     string username = httpContext.GetUserName();
 
-    if (!Users.ContainsKey(username))
+    if (!UsersContext.ContainsKey(username))
         return Results.Problem("User not found");
 
-    if (!Users[username].Admin)
+    if (!UsersContext[username].Admin)
         return Results.Problem("No Admin rights");
-
     try
     {
-        Users[usernametochange].Limit = newlimit;
+        UsersContext[usernametochange].Limit = newlimit;
     }
     catch (Exception ex)
     {
@@ -458,20 +396,20 @@ RiskManager.MapPost("/CanTrade", async (HttpContext httpContext, string username
 {
     string username = httpContext.GetUserName();
 
-    if (!Users.ContainsKey(username))
+    if (!UsersContext.ContainsKey(username))
         return Results.Problem("User not found");
 
-    if (!Users[username].Admin)
+    if (!UsersContext[username].Admin)
         return Results.Problem("No Admin rights");
 
-    if (Users[usernametochange].Admin)
+    if (UsersContext[usernametochange].Admin)
     {
         return Results.Problem("You can not change settings for admin to trade");
     }
 
     try
     {
-        Users[usernametochange].CanTrade = cantrade;
+        UsersContext[usernametochange].CanTrade = cantrade;
     }
     catch (Exception ex)
     {
@@ -486,12 +424,12 @@ var Trading = app.MapGroup("/Trading").WithTags("Trading");
 Trading.MapPost("/Register", async (UserCredentials userCredentials) =>
 {
 
-    if(Users.ContainsKey(userCredentials.LoginEmail))
+    if(UsersContext.ContainsKey(userCredentials.LoginEmail))
     {
         return Results.Problem("User already exists!");
     }
 
-    Users.TryAdd(userCredentials.LoginEmail, new User(userCredentials.LoginEmail, userCredentials.Password)
+    UsersContext.TryAdd(userCredentials.LoginEmail, new User(userCredentials.LoginEmail, userCredentials.Password)
     {
         Limit = 20000, 
         CanTrade = false,
@@ -503,29 +441,29 @@ Trading.MapPost("/Register", async (UserCredentials userCredentials) =>
 
 Trading.MapPost("/Login", async(string login, string pass, HttpContext httpContext) =>
 {
-    if (!Users.ContainsKey(login))
+    if (!UsersContext.ContainsKey(login))
     {
         return Results.Problem("User does not exist!");
     }
 
-    var user = Users[login];
+    var user = UsersContext[login];
 
     if (user.Password != pass)
     {
         return Results.Problem("Pass incorrect");
     }
-    var token = jwtprovider.GenerateToken(user);
-    httpContext.Response.Cookies.Append("liteinvest", token);
+    var authResponse = jwtprovider.GenerateToken(user);
+    httpContext.Response.Cookies.Append(authkeyname, authResponse.Token);
 
-    return Results.Json(token);
-});
+    return Results.Json(authResponse);
+}).Produces<AuthResponse>();
 
 Trading.MapPost("/LogOut", async (HttpContext httpContext) =>
 {
     try
     {
         string username = httpContext.GetUserName();
-        httpContext.Response.Cookies.Delete("liteinvest");
+        httpContext.Response.Cookies.Delete(authkeyname);
     }
     catch (Exception ex)
     {
@@ -542,11 +480,11 @@ Trading.MapPost("/SendOrder", async (ClientOrder clientOrder, HttpContext httpCo
     {
         string userName = httpContext.GetUserName();
         
-        if (!Users.ContainsKey(userName))
+        if (!UsersContext.ContainsKey(userName))
             return Results.Problem("User not found");
         //проверка, а есть ли такой юзер и может ли он торговать
 
-        var user = Users[userName];
+        var user = UsersContext[userName];
 
         if (!user.CanTrade)
             return Results.Problem("User Can not trade!");
@@ -607,11 +545,11 @@ Trading.MapPost("/CancelOrder", async (HttpContext httpContext, int numberId) =>
     {
         string userName = httpContext.GetUserName();
 
-        if (!Users.ContainsKey(userName))
+        if (!UsersContext.ContainsKey(userName))
             return Results.Problem("User not found");
         //проверка, а есть ли такой юзер и может ли он торговать
 
-        var user = Users[userName];
+        var user = UsersContext[userName];
 
         if (!user.CanTrade)
             return Results.Problem("User Can not trade!");
@@ -702,7 +640,7 @@ AppDomain.CurrentDomain.ProcessExit += (_,_) =>
         Helper.SaveXml(Trades, tradesBdName);
 
         Helper.SaveXml(Orders, ordersBdName);
-        Helper.SaveXml(Users, userdBdName);
+        Helper.SaveXml(UsersContext, userdBdName);
 
         if (plaza != null)
             plaza.Dispose();
