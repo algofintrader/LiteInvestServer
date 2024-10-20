@@ -66,7 +66,7 @@ namespace PlazaEngine.Entity
                 {
                     if (_positionOnBoard[i].SecurityId == position.SecurityId)
                     {
-                        _positionOnBoard[i].ValueCurrent = position.ValueCurrent;
+                        _positionOnBoard[i].XPosValueCurrent = position.XPosValueCurrent;
                         _positionOnBoard[i].ValueBlocked = position.ValueBlocked;
                         return;
                     }

@@ -1435,8 +1435,8 @@ namespace PlazaEngine.Engine
                                     positionOnBoard.SecurityId = replmsg["isin_id"].asInt().ToString();
                                     positionOnBoard.PortfolioName = replmsg["client_code"].asUnicodeString();
                                     positionOnBoard.ValueBegin = replmsg["xopen_qty"].asInt();
-                                    positionOnBoard.ValueCurrent = replmsg["xpos"].asInt();
-                                    positionOnBoard.ValueBlocked = positionOnBoard.ValueCurrent;
+                                    positionOnBoard.XPosValueCurrent = replmsg["xpos"].asInt();
+                                    positionOnBoard.ValueBlocked = positionOnBoard.XPosValueCurrent;
 
                                     Positions[positionOnBoard.SecurityId] = positionOnBoard;
 

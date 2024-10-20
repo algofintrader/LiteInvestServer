@@ -180,13 +180,16 @@ namespace LiteInvestServer.WebScoketFactory
                     // ------------ рефакторить этот кошмар------//
 
                     if (!ws.ConnectionInfo.Headers.ContainsKey(_authname))
-                    { CloseSocket();
-                        return; }
+                    { 
+                        CloseSocket();
+                        return;
+                    }
 
                     var authtoken = ws.ConnectionInfo.Headers[_authname];
 
                     if (authtoken == null || authtoken.Length == 0)
-                    { CloseSocket();
+                    {
+                        CloseSocket();
                         return;
                     }
 
@@ -244,7 +247,7 @@ namespace LiteInvestServer.WebScoketFactory
                        
 
                         //если ключ юзер, то берем его из токена
-                        if (paramName.Key == WebSocketKeys.User.ToString())
+                        if (paramName.Key == WebSocketKeys.user.ToString())
                            ws.Key = user;
                         else
                            ws.Key = WsParameters[paramName.Key];

@@ -2,6 +2,7 @@
 {
    public enum WebSocketKeys
     {
-        User,
+        user,
+        sec_Id
     }
 }

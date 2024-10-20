@@ -32,6 +32,10 @@ ConcurrentDictionary<string, ConcurrentDictionary<string,Order>> Orders = new();
 //База ордеров по юзеру
 ConcurrentDictionary<string, ConcurrentDictionary<string, Trade>> Trades = new();
 
+//ключ - юзер
+//ключ 2 - sec ID
+ConcurrentDictionary<string, ConcurrentDictionary<string, Position>> Positions = new();
+
 PlazaConnector plaza = null;
 WebSocketEngine webSocketEngine = null;
 
@@ -104,7 +108,7 @@ builder.Services.AddSingleton(_ =>
 
     plaza.UpdatePosition += pos =>
     {
-        LogMessageAsync($"Position {pos.SecurityId} {pos.ValueCurrent}");
+        LogMessageAsync($"Position {pos.SecurityId} {pos.XPosValueCurrent}");
     };
 
    plaza.TicksLoadedEvent += () =>
@@ -171,6 +175,41 @@ builder.Services.AddSingleton(_ =>
         {
             LogMessageAsync($"Problems with websocket {ex.Message}");
         }
+
+    };
+
+    plaza.NewMyTradeEvent += newtrade =>
+    {
+
+        //если поза не открыта, начинаем считать... 
+
+        //пересчитываем среднюю цену
+
+        var username = newtrade.Comment;
+
+        if (!UsersContext.ContainsKey(username))
+            return;
+
+        if (!Positions.ContainsKey(username))
+            Positions.TryAdd(username, new ConcurrentDictionary<string, Position>());
+
+        Positions[username].TryGetValue(newtrade.SecurityId, out var posvalue);
+
+        //TODO: Как работать с DEAL непонятно до конца
+
+        //нет открытых поз у данного юзера по этому инструменту
+        //открытие новой позиции всегда сопровождается получается, с открытием
+        if (posvalue == null)
+            Positions[username][newtrade.SecurityId] = new Position();
+            
+
+       //Positions[username][newtrade.SecurityId].AddTrade();
+
+
+
+
+        //работа с позициями и с со сделками одновременно
+
 
     };
 
@@ -280,17 +319,17 @@ builder.Services.AddSingleton(_ =>
 
     webSocketEngine.AddStream(myordersWebSocketstreamName, "My Orders", new List<ParameterKey>()
 {
-    new ParameterKey(WebSocketKeys.User.ToString(), ParameterTypes.Key)
+    new ParameterKey(WebSocketKeys.user.ToString(), ParameterTypes.Key)
 });
 
     webSocketEngine.AddStream(publicTradesSocketstreamName, "Ticks", new List<ParameterKey>()
 {
-    new ParameterKey("sec_id", ParameterTypes.Key),
+    new ParameterKey(WebSocketKeys.sec_Id.ToString(), ParameterTypes.Key),
 }, plaza.Register_Unregister_Ticks);
 
     webSocketEngine.AddStream(orderbookWebSocketstreamName, "OrderBook", new List<ParameterKey>()
 {
-    new ParameterKey("sec_id", ParameterTypes.Key),
+    new ParameterKey(WebSocketKeys.sec_Id.ToString(), ParameterTypes.Key),
 }, plaza.Register_Unregister_MarketDepth);
 
     webSocketEngine.Start();
@@ -419,9 +458,11 @@ RiskManager.MapPost("/CanTrade", async (HttpContext httpContext, string username
     return Results.Accepted<UserCredentials>();
 }).WithDescription("Возможность торговать");
 
+var common = app.MapGroup("/Common").WithTags("Common");
+
 var Trading = app.MapGroup("/Trading").WithTags("Trading");
 
-Trading.MapPost("/Register", async (UserCredentials userCredentials) =>
+common.MapPost("/Register", async (UserCredentials userCredentials) =>
 {
 
     if(UsersContext.ContainsKey(userCredentials.LoginEmail))
@@ -439,7 +480,7 @@ Trading.MapPost("/Register", async (UserCredentials userCredentials) =>
     return Results.Accepted<UserCredentials>();
 }).WithDescription("Изначально любой может создать юзера, но он не сможет торговать. Админ позже выставит такую возможность");
 
-Trading.MapPost("/Login", async(string login, string pass, HttpContext httpContext) =>
+common.MapPost("/Login", async(string login, string pass, HttpContext httpContext) =>
 {
     if (!UsersContext.ContainsKey(login))
     {
@@ -458,7 +499,7 @@ Trading.MapPost("/Login", async(string login, string pass, HttpContext httpConte
     return Results.Json(authResponse);
 }).Produces<AuthResponse>();
 
-Trading.MapPost("/LogOut", async (HttpContext httpContext) =>
+common.MapPost("/LogOut", async (HttpContext httpContext) =>
 {
     try
     {

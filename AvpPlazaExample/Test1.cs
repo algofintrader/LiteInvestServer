@@ -231,17 +231,17 @@ namespace AvpPlazaTester
 
         private bool ClosePosition(PlazaConnector plaza, int step)
         {
-            int countOpenPosition = plaza.Positions.Count((p) => p.Value.ValueCurrent != 0);
+            int countOpenPosition = plaza.Positions.Count((p) => p.Value.XPosValueCurrent != 0);
             SendMessageLog($"Шаг {step}. Нашли открытых позиций {countOpenPosition}.  Обнуляем открытые позиции по портфелю...");
             mainWindow.CloseAllPosition();
             
             // проверяем
             Thread.Sleep(1000);
-            countOpenPosition = plaza.Positions.Count((p) => p.Value.ValueCurrent != 0);
+            countOpenPosition = plaza.Positions.Count((p) => p.Value.XPosValueCurrent != 0);
             int trySecond = 0;
             while (countOpenPosition != 0 && trySecond++<10)
             {
-                countOpenPosition = plaza.Positions.Count((p) => p.Value.ValueCurrent != 0);
+                countOpenPosition = plaza.Positions.Count((p) => p.Value.XPosValueCurrent != 0);
                 Thread.Sleep(1000);
             }
             if (countOpenPosition == 0)

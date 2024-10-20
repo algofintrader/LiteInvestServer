@@ -18,7 +18,7 @@ namespace PlazaEngine.Entity
         /// current volume
         /// текущий объём
         /// </summary>
-        public decimal ValueCurrent { get; set; }
+        public decimal XPosValueCurrent { get; set; }
 
         /// <summary>
         /// blocked volume

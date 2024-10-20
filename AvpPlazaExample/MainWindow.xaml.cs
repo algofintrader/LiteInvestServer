@@ -465,9 +465,9 @@ namespace AvpPlazaExample
             int i = 0;
             foreach (var p in allPosition)
             {
-                if (p.ValueCurrent != 0)
+                if (p.XPosValueCurrent != 0)
                 {
-                    Order o = new Order(p.SecurityId, p.ValueCurrent > 0 ? Side.Sell : Side.Buy, Math.Abs(p.ValueCurrent), p.PortfolioName, $"Close-Client{i++} ");
+                    Order o = new Order(p.SecurityId, p.XPosValueCurrent > 0 ? Side.Sell : Side.Buy, Math.Abs(p.XPosValueCurrent), p.PortfolioName, $"Close-Client{i++} ");
                     RouterLogger.Log(o.ToString(), "Test_Scenario");
                     await plaza.ExecuteOrderAsync(o);
                 }
