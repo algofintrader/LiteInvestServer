@@ -15,7 +15,7 @@ namespace PlazaEngine.Entity;
 public class Trade
 {
 
-    //public Trade() { }
+    public Trade() { }
 
     /// <summary>
     /// Собрать обезличенную сделку из сообщения биржи .
@@ -93,21 +93,21 @@ public class Trade
     /// <summary>
     /// Направление сделки
     /// </summary>
-    public Side Side { get => side; }
+    public Side Side { get => side; set { side = value; } }
     Side side;
 
     [JsonPropertyName("v")]
     /// <summary>
     /// Объем по сделке
     /// </summary>
-    public decimal Volume { get => volume; }
+    public decimal Volume { get => volume; set { volume = value; } }
     decimal volume;
 
     [JsonPropertyName("p")]
     /// <summary>
     /// Цена сделки
     /// </summary>
-    public decimal Price { get => price; }
+    public decimal Price { get => price; set { price = value; } }
     decimal price;
 
 

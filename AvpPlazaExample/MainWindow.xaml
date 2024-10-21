@@ -74,11 +74,17 @@
                     <TextBox Name="TextBoxVolume" Text="0" Width="100" Margin="103,310,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
                     <Label Content="Count" Margin="43,340,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
                     <TextBox Name="TextBoxCount" Text="0" Width="100" Margin="103,340,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
-                    <Button Content="Send Multi Order" Margin="43,370,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Click="Button_SendMultiOrder" Grid.Column="1" />
+                    
+                    
+                    <Button Content="Send Multi Order" Margin="45,392,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Click="Button_SendMultiOrder" Grid.Column="1" />
 
+                    
+                    
                     <Button Content="Cancel All Selected Orders" Margin="573,0,0,20"  HorizontalAlignment="Left" VerticalAlignment="Bottom" Click="Button_CancelSelectedOrder" Grid.Column="1" />
                     <RadioButton x:Name="RadioReal" Grid.Column="1" Content="Real" HorizontalAlignment="Left" Margin="33,10,0,0" VerticalAlignment="Top"/>
                     <RadioButton x:Name="RadioTest" Grid.Column="1" Content="Test" IsChecked="True" HorizontalAlignment="Left" Margin="33,30,0,0" VerticalAlignment="Top"/>
+                    <TextBox x:Name="TextBoxComment" Text="" Width="100" Margin="103,368,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
+                    <Label Content="Comment" Margin="43,365,0,0"  HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1"/>
 
                 </Grid>
             </TabItem>

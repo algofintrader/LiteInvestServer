@@ -201,7 +201,15 @@ builder.Services.AddSingleton(_ =>
         //открытие новой позиции всегда сопровождается получается, с открытием
         if (posvalue == null)
             Positions[username][newtrade.SecurityId] = new Position();
-            
+
+        var restpos = Positions[username][newtrade.SecurityId].AddTrade(newtrade);
+
+        //когда происходит перекрытие или другая история.
+       
+
+        //  TODO: Добавить механизм подсчета позиций 
+
+
 
        //Positions[username][newtrade.SecurityId].AddTrade();
 
@@ -324,12 +332,12 @@ builder.Services.AddSingleton(_ =>
 
     webSocketEngine.AddStream(publicTradesSocketstreamName, "Ticks", new List<ParameterKey>()
 {
-    new ParameterKey(WebSocketKeys.sec_Id.ToString(), ParameterTypes.Key),
+    new ParameterKey(WebSocketKeys.sec_id.ToString(), ParameterTypes.Key),
 }, plaza.Register_Unregister_Ticks);
 
     webSocketEngine.AddStream(orderbookWebSocketstreamName, "OrderBook", new List<ParameterKey>()
 {
-    new ParameterKey(WebSocketKeys.sec_Id.ToString(), ParameterTypes.Key),
+    new ParameterKey(WebSocketKeys.sec_id.ToString(), ParameterTypes.Key),
 }, plaza.Register_Unregister_MarketDepth);
 
     webSocketEngine.Start();
@@ -562,6 +570,19 @@ Trading.MapPost("/SendOrder", async (ClientOrder clientOrder, HttpContext httpCo
 
 }).RequireAuthorization().WithDescription("NumberOrderId если отправлять Null или 0 в итоге не будет использован и будет сгенерирован системой.");
 
+Trading.MapPost("/GetPositions", async (ClientOrder clientOrder, HttpContext httpContext) =>
+{
+    try
+    {
+        string userName = httpContext.GetUserName();
+    } 
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+
+}).RequireAuthorization().WithDescription("NumberOrderId если отправлять Null или 0 в итоге не будет использован и будет сгенерирован системой.");
+
 Trading.MapGet("/GetOrders", async (HttpContext httpContext) =>
 {
     try
@@ -619,10 +640,10 @@ Trading.MapGet("/GetAllSecurities", async () =>
     //пришлось такой брут перевод сделать,
     //чтобы наш объект сервера не зависел от объекта у плазы
 
-    Dictionary<string, SecurityApi> securitiesJson = new();
+    List <SecurityApi> securitiesJson = new();
     foreach (var sec in Securities.Values)
     {
-        securitiesJson.Add(sec.Id, new SecurityApi()
+        securitiesJson.Add(new SecurityApi()
         {
             id = sec.Id,
             ShortName = sec.ShortName,

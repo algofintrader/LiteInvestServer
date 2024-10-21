@@ -1,9 +1,15 @@
-﻿using PlazaEngine.Entity;
+﻿using Microsoft.VisualBasic;
+using PlazaEngine.Entity;
 using System.Collections.Concurrent;
 
 namespace LiteInvestServer.Entity
 {
 
+    public class AggregationTrade
+    {
+        public decimal AveragePrice { get; set; }
+        public decimal AllVol { get; set; }
+    }
 
     /// <summary>
     /// Класс отвечающий за подсчет среднего (вход/выход)
@@ -18,30 +24,50 @@ namespace LiteInvestServer.Entity
         /// </summary>
         /// <param name="trade"></param>
         /// <returns></returns>
-        public decimal AddTrade(Trade trade)
+        public decimal AddTrade(MyTrade trade)
         {
-            Trades.TryAdd(trade.TransactionID, trade);
-            return CalculateAveragePrice();
+            Trades.TryAdd(trade.NumberTrade, trade);
+            var result = CalculateAveragePrice(Trades.Values);
+            
+            AveragePrice = result.AveragePrice;
+            Volume = result.AllVol;
+
+            return Volume;
         }
 
         public decimal AveragePrice { get; set; }
 
-        decimal CalculateAveragePrice()
+        /// <summary>
+        /// Рассчитывает среднюю цену
+        /// КЛЮЧ - весь объём
+        /// Value - цена
+        /// </summary>
+        /// <param name="MyTrades"></param>
+        /// <returns></returns>
+        AggregationTrade CalculateAveragePrice(ICollection <MyTrade> MyTrades)
         {
             decimal averageprice = 0;
             decimal summ = 0;
 
-            foreach (var trade in Trades.Values)
+            foreach (var trade in MyTrades)
             {
                 summ += trade.Volume;
                 averageprice += trade.Price * trade.Volume;
             }
-
-            AveragePrice = averageprice / summ;
-            return summ;
+           
+            return new AggregationTrade() { AllVol = summ, AveragePrice = averageprice / summ };
+            // return new AggregationTrade(summ, averageprice / summ);
         }
 
-        ConcurrentDictionary<string, Trade> Trades { get; set; } = new();
+        public AggregationTrade SimulateTradeCalculations(MyTrade tradeSimulation)
+        {
+            var clone = Trades.Values.ToList();
+            clone.Add(tradeSimulation);
+
+            return CalculateAveragePrice(clone);
+        }
+
+        ConcurrentDictionary<string, MyTrade> Trades { get; set; } = new();
     }
 
     public class Position
@@ -61,54 +87,99 @@ namespace LiteInvestServer.Entity
 
         public decimal MaxOpened { get; set; }
 
+        object tradelock = new object();
+
         public decimal CalculateUnrealizedPnl(decimal tickprice)
         {
+            
+            //как бы если поза не открыта, мы уже ниче не делаем.
+            if (CurrentPos == 0 || !Open)
+                return 0;
 
+            lock(tradelock)
+            {
+                var posopened = OpenTrades.Volume;
+                var posclosed = CloseTrades.Volume;
 
+                var rest = posopened - posclosed;
 
+                var closedtrade = CloseTrades.SimulateTradeCalculations(new MyTrade()
+                {
+                    Price = tickprice,
+                    Volume = rest
+                });
 
-            return 0;
+                var pnl = (closedtrade.AveragePrice - OpenTrades.AveragePrice) * posopened;
+
+                return 0;
+
+            }
+           
         }
 
-        public void AddTrade(Trade trade)
+        public decimal CalculateFinishedPnl()
         {
 
+            lock (tradelock)
+            {
+                var posopened = OpenTrades.Volume;
+                return (CloseTrades.AveragePrice - OpenTrades.AveragePrice) * posopened;
+            }
+
+        }
+
+        public Position? AddTrade(MyTrade trade)
+        {
 
             //первая сделка открывает направление
             if (CurrentPos == 0)
             {
                 Side = trade.Side;
+                CurrentPos += trade.Volume;
+
                 Open = true;
-
-
-                CurrentPos = OpenTrades.AddTrade(trade);
-
-                return;
+                OpenTrades.AddTrade(trade);
+                
+                return null;
             }
 
             //пришло обратное направление (то есть чел, перезакрывается)
-            if (CurrentPos!=0 && Side!=trade.Side)
+            if (CurrentPos != 0 && Side != trade.Side)
             {
                 //если перезакрытие уже больше
-                if(trade.Volume>CurrentPos)
+                if (trade.Volume >= CurrentPos)
                 {
                     Open = false;
-                    var rest = Math.Abs(CurrentPos-trade.Volume);
+                    var rest = Math.Abs(CurrentPos) - Math.Abs(trade.Volume);
 
                     //поза закрыта и остатка нет
-                    if(rest==0)
+                    if (rest == 0)
                     {
-                        
+                        CloseTrades.AddTrade(trade);
+                        CalculateFinishedPnl();
+                        return null;
                     }
                     //поза закрыта и есть остаток
                     else
                     {
-
+                        var pos = new Position();
+                        pos.AddTrade(new MyTrade() { Side = trade.Side, Price = trade.Price,Volume= trade.Volume });
+                        return pos;
                     }
+
+                    return null;
+                }
+
+
+                if (trade.Volume < CurrentPos)
+                {
+                    CloseTrades.AddTrade(trade);
+
+                    return null;
 
                 }
 
-                return;
+                return null;
             }
            
             if(CurrentPos !=0 && Side == trade.Side)
@@ -121,10 +192,12 @@ namespace LiteInvestServer.Entity
              
                 CurrentPos += trade.Volume;
 
-                return;
+                AverageEntry = OpenTrades.AveragePrice;
+
+                return null;
             }
 
-            
+            return null;
 
             //как мы будем закрывать открывать позицию и где будет эта логика?
         }

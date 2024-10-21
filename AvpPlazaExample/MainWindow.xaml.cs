@@ -413,6 +413,8 @@ namespace AvpPlazaExample
                     , plaza.Portfolios.First().Value.Number
                     , $"Id{i}"
                     );
+                o.Comment = TextBoxComment.Text;
+
                 await plaza.ExecuteOrderAsync(o);
                 RouterLogger.Log(o.ToString(), "Test_Scenario");
             }

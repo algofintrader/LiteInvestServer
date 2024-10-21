@@ -15,6 +15,12 @@ namespace PlazaEngine.Entity
     /// </summary>
     public class MyTrade : IMyTrade
     {
+
+        public MyTrade()
+        {
+
+        }
+
         /// <summary>
         /// Клиентская сделка, совершённая на бирже
         /// </summary>
@@ -75,14 +81,14 @@ namespace PlazaEngine.Entity
         /// volume
         /// объём
         /// </summary>
-        public decimal Volume { get => volume; }
+        public decimal Volume { get => volume; set { volume = value; } }
         private decimal volume;
 
         /// <summary>
         /// price
         /// цена
         /// </summary>
-        public decimal Price { get => price; }
+        public decimal Price { get => price; set { price = value; } }
         private decimal price;
 
         /// <summary>
@@ -118,7 +124,7 @@ namespace PlazaEngine.Entity
         /// party to the transaction
         /// сторона сделки
         /// </summary>
-        public Side Side { get => side; }
+        public Side Side { get => side; set { side = value; }  }
         private Side side;
 
         private static readonly CultureInfo CultureInfo = new CultureInfo("ru-RU");
