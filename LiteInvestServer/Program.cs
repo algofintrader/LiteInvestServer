@@ -22,31 +22,29 @@ using MongoDB.Bson.Serialization.Serializers;
 //NOTE: Скорее всего у нас постоянно будет переподключение, поэтому мы должны сами обновлять постоянно инструменты
 
 ConcurrentDictionary<string, Security> Securities = new ConcurrentDictionary<string, Security>();
-
 ///База юзеров 
 ConcurrentDictionary<string, User> UsersContext = new ConcurrentDictionary<string, User>();
-
 //База ордеров по юзеру
 ConcurrentDictionary<string, ConcurrentDictionary<string,Order>> Orders = new();
-
 //База ордеров по юзеру
 ConcurrentDictionary<string, ConcurrentDictionary<string, Trade>> Trades = new();
-
 //ключ - юзер
 //ключ 2 - sec ID
-ConcurrentDictionary<string, ConcurrentDictionary<string, Position>> Positions = new();
+ConcurrentDictionary<string, ConcurrentDictionary<string, Pos>> OpenedPositions = new();
+ConcurrentDictionary<string, ConcurrentDictionary<string, List<Pos>>> ClosedPositions = new();
 
 PlazaConnector plaza = null;
 WebSocketEngine webSocketEngine = null;
 
-string data = "Data";
+string data = "C:\\ServerData";
+var directoryInfo = new DirectoryInfo(data);
 
 //NOTE: Вбил вручную в код, почему то не находит Development settings. 
 string webscoketAdress= "ws://0.0.0.0:5000/";
 
-string userdBdName = $"{data}/users.xml";
-string ordersBdName = $"{data}/orders.xml";
-string tradesBdName = $"{data}/trades.xml";
+string userdBdName = $"{data}\\users.xml";
+string ordersBdName = $"{data}\\orders.xml";
+string tradesBdName = $"{data}\\trades.xml";
 
 string myordersWebSocketstreamName = "my_orders";
 string mytradesWebSocketstreamName = "my_trades";
@@ -72,6 +70,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
+
+
+
 ///PLAZA WORDER MAIN
 builder.Services.AddSingleton(_ =>
 {
@@ -90,10 +92,17 @@ builder.Services.AddSingleton(_ =>
 
     }*/
 
+
+    if (!Directory.Exists(data))
+        System.IO.Directory.CreateDirectory(directoryInfo.ToString());
+
+
+    //TODO: Перепишу всю эту часть, когда сделаю нормальное сохранение. 
     UsersContext = Helper.ReadXml<ConcurrentDictionary<string, User>>(userdBdName);
     Orders = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Order>>>(ordersBdName);
     Trades = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Trade>>>(tradesBdName);
-
+    OpenedPositions = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Pos>>>($"{data}\\{nameof (OpenedPositions)}.xml");
+    ClosedPositions = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, List<Pos>>>>($"{data}\\{nameof(ClosedPositions)}.xml");
 
     string admin = "adminadminov";
 
@@ -108,7 +117,7 @@ builder.Services.AddSingleton(_ =>
 
     plaza.UpdatePosition += pos =>
     {
-        LogMessageAsync($"Position {pos.SecurityId} {pos.XPosValueCurrent}");
+        LogMessageAsync($"Position sec_id={pos.SecurityId} {pos.XPosValueCurrent} ");
     };
 
    plaza.TicksLoadedEvent += () =>
@@ -178,46 +187,51 @@ builder.Services.AddSingleton(_ =>
 
     };
 
-    plaza.NewMyTradeEvent += newtrade =>
+    plaza.NewMyTradeEvent += newMytrade =>
     {
 
         //если поза не открыта, начинаем считать... 
 
         //пересчитываем среднюю цену
 
-        var username = newtrade.Comment;
+        var username = newMytrade.Comment;
 
         if (!UsersContext.ContainsKey(username))
             return;
 
-        if (!Positions.ContainsKey(username))
-            Positions.TryAdd(username, new ConcurrentDictionary<string, Position>());
+        if (!OpenedPositions.ContainsKey(username))
+            OpenedPositions.TryAdd(username, new ConcurrentDictionary<string, Pos>());
 
-        Positions[username].TryGetValue(newtrade.SecurityId, out var posvalue);
+        OpenedPositions[username].TryGetValue(newMytrade.SecurityId, out var posvalue);
 
         //TODO: Как работать с DEAL непонятно до конца
 
         //нет открытых поз у данного юзера по этому инструменту
         //открытие новой позиции всегда сопровождается получается, с открытием
         if (posvalue == null)
-            Positions[username][newtrade.SecurityId] = new Position();
+            OpenedPositions[username][newMytrade.SecurityId] = new Pos();
 
-        var restpos = Positions[username][newtrade.SecurityId].AddTrade(newtrade);
+        var restpos = OpenedPositions[username][newMytrade.SecurityId].AddTrade(newMytrade);
+
+        //добавилось остаточная позиция, как то так... 
+        if (restpos != null)
+        {
+            if (!ClosedPositions.ContainsKey(username))
+                ClosedPositions[username] = new();
+
+            if (!ClosedPositions[username].ContainsKey(newMytrade.SecurityId))
+                ClosedPositions[username][newMytrade.SecurityId] = new List<Pos>();
+
+            var closedpos = OpenedPositions[username][newMytrade.SecurityId];
+            ClosedPositions[username][newMytrade.SecurityId].Add(closedpos);
+
+            OpenedPositions[username].TryRemove(newMytrade.SecurityId, out var _);
+        }
 
         //когда происходит перекрытие или другая история.
-       
-
         //  TODO: Добавить механизм подсчета позиций 
-
-
-
-       //Positions[username][newtrade.SecurityId].AddTrade();
-
-
-
-
+        //Positions[username][newtrade.SecurityId].AddTrade();
         //работа с позициями и с со сделками одновременно
-
 
     };
 
@@ -236,7 +250,7 @@ builder.Services.AddSingleton(_ =>
 
         try
         {
-            if (!UsersContext.ContainsKey(username) || plazaOrder.ExchangeOrderId == string.Empty)
+            if (!UsersContext.ContainsKey(username) || username == string.Empty)
                 return;
 
             if (!Orders.ContainsKey(username))
@@ -570,19 +584,47 @@ Trading.MapPost("/SendOrder", async (ClientOrder clientOrder, HttpContext httpCo
 
 }).RequireAuthorization().WithDescription("NumberOrderId если отправлять Null или 0 в итоге не будет использован и будет сгенерирован системой.");
 
-Trading.MapPost("/GetPositions", async (ClientOrder clientOrder, HttpContext httpContext) =>
+Trading.MapPost("/GetClosedPositions", async (string sec_id,HttpContext httpContext) =>
 {
     try
     {
         string userName = httpContext.GetUserName();
-        return Results.Ok();
-    } 
+
+        if (sec_id.IsNullOrEmpty())
+            return Results.Json(ClosedPositions[userName]);
+
+        if (ClosedPositions.ContainsKey(userName) && ClosedPositions[userName].ContainsKey(sec_id))
+            return Results.Json(ClosedPositions[userName][sec_id]);
+
+        return Results.Problem("No Data Found");
+    }
     catch (Exception ex)
     {
         return Results.Problem(ex.Message);
     }
 
-}).RequireAuthorization().WithDescription("NumberOrderId если отправлять Null или 0 в итоге не будет использован и будет сгенерирован системой.");
+}).RequireAuthorization().WithDescription("");
+
+Trading.MapPost("/GetOpenPosition", async (string sec_id, HttpContext httpContext) =>
+{
+    try
+    {
+        string userName = httpContext.GetUserName();
+
+        if (sec_id.IsNullOrEmpty())
+            return Results.Json(OpenedPositions[userName]);
+
+    if (OpenedPositions.ContainsKey(userName) && OpenedPositions[userName].ContainsKey(sec_id) && OpenedPositions[userName][sec_id] != null)
+            return Results.Json(OpenedPositions[userName][sec_id]);
+
+        return Results.Problem("No Data Found");
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+
+}).RequireAuthorization().WithDescription("");
 
 Trading.MapGet("/GetOrders", async (HttpContext httpContext) =>
 {
@@ -695,15 +737,25 @@ async void LogMessageAsync(string message)
     await Console.Out.WriteLineAsync($"{dt} {message}").ConfigureAwait(false);
 }
 
+void SaveDb()
+{
+    Helper.SaveXml(Trades, tradesBdName);
+    Helper.SaveXml(Orders, ordersBdName);
+    Helper.SaveXml(UsersContext, userdBdName);
+
+    Helper.SaveXml(OpenedPositions, $"{data}\\{nameof(OpenedPositions)}.xml");
+    Helper.SaveXml(ClosedPositions, $"{data}\\{nameof(ClosedPositions)}.xml");
+}
+
 //TODO: Переделать сохранение в промежутках по человечески
 AppDomain.CurrentDomain.ProcessExit += (_,_) =>
 {
     try
     {
-        Helper.SaveXml(Trades, tradesBdName);
 
-        Helper.SaveXml(Orders, ordersBdName);
-        Helper.SaveXml(UsersContext, userdBdName);
+        //TODO: переписать этот кошмар... 
+
+        SaveDb();
 
         if (plaza != null)
             plaza.Dispose();

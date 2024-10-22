@@ -1,6 +1,8 @@
 ﻿using Microsoft.VisualBasic;
 using PlazaEngine.Entity;
 using System.Collections.Concurrent;
+using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace LiteInvestServer.Entity
 {
@@ -20,11 +22,11 @@ namespace LiteInvestServer.Entity
         public decimal Volume { get; private set; }
 
         /// <summary>
-        /// Возвращает значение обще открытых позиций
+        /// Возвращает среднее значение входа. 
         /// </summary>
         /// <param name="trade"></param>
-        /// <returns></returns>
-        public decimal AddTrade(MyTrade trade)
+        /// <returns>СРЕДНЮЮ ЦЕНУ</returns>
+        public AggregationTrade AddTrade(MyTrade trade)
         {
             Trades.TryAdd(trade.NumberTrade, trade);
             var result = CalculateAveragePrice(Trades.Values);
@@ -32,7 +34,7 @@ namespace LiteInvestServer.Entity
             AveragePrice = result.AveragePrice;
             Volume = result.AllVol;
 
-            return Volume;
+            return result;
         }
 
         public decimal AveragePrice { get; set; }
@@ -70,22 +72,45 @@ namespace LiteInvestServer.Entity
         ConcurrentDictionary<string, MyTrade> Trades { get; set; } = new();
     }
 
-    public class Position
+
+    /// <summary>
+    /// По сути позиция с открытием, закрытием. 
+    /// </summary>
+    [DataContract]
+    public class Pos
     {
 
         TradeCollection OpenTrades = new();
         TradeCollection CloseTrades = new();
 
+        [JsonIgnore]
+        [DataMember]
         public decimal CurrentPos { get; private set; } = 0;
 
+        [DataMember]
+        public decimal PosValue { get => Side == Side.Buy? CurrentPos : - CurrentPos; }
+
+        [DataMember]
         public Side Side { get; private set; }
 
+        [DataMember]
+        public string StringSide { get => Side.ToString(); }
+
+        [DataMember]
         public decimal AverageEntry{ get; private set; }
+        [DataMember]
         public decimal AverageExit { get; private set; }
 
+        [DataMember]
         public bool Open { get; private set; }
 
+        [DataMember]
         public decimal MaxOpened { get; set; }
+
+        [DataMember]
+        public decimal RealizedPnl { get; private set; }
+        [DataMember]
+        public decimal UnRealizedPnl { get; private set; }
 
         object tradelock = new object();
 
@@ -109,7 +134,7 @@ namespace LiteInvestServer.Entity
                     Volume = rest
                 });
 
-                var pnl = (closedtrade.AveragePrice - OpenTrades.AveragePrice) * posopened;
+                UnRealizedPnl = (closedtrade.AveragePrice - OpenTrades.AveragePrice) * posopened;
 
                 return 0;
 
@@ -128,42 +153,53 @@ namespace LiteInvestServer.Entity
 
         }
 
-        public Position? AddTrade(MyTrade trade)
+        private void UpdateOpen(AggregationTrade aggregationTrade)
         {
+            MaxOpened = aggregationTrade.AllVol;
+            AverageEntry = aggregationTrade.AveragePrice;
+        }
+
+        public Pos? AddTrade(MyTrade myTrade)
+        {
+           
 
             //первая сделка открывает направление
             if (CurrentPos == 0)
             {
-                Side = trade.Side;
-                CurrentPos += trade.Volume;
+                Side = myTrade.Side;
+                CurrentPos += myTrade.Volume;
 
                 Open = true;
-                OpenTrades.AddTrade(trade);
-                
+
+                var res= OpenTrades.AddTrade(myTrade);
+                UpdateOpen(res);
+
                 return null;
             }
 
             //пришло обратное направление (то есть чел, перезакрывается)
-            if (CurrentPos != 0 && Side != trade.Side)
+            if (CurrentPos != 0 && Side != myTrade.Side)
             {
                 //если перезакрытие уже больше
-                if (trade.Volume >= CurrentPos)
+                if (myTrade.Volume >= CurrentPos)
                 {
                     Open = false;
-                    var rest = Math.Abs(CurrentPos) - Math.Abs(trade.Volume);
+                    var rest = Math.Abs(CurrentPos) - Math.Abs(myTrade.Volume);
+
+                    CurrentPos = 0;
 
                     //поза закрыта и остатка нет
                     if (rest == 0)
                     {
-                        CloseTrades.AddTrade(trade);
-                        CalculateFinishedPnl();
+                        AverageExit = CloseTrades.AddTrade(myTrade).AveragePrice;
+                        RealizedPnl = CalculateFinishedPnl();
                         return null;
                     }
                     //поза закрыта и есть остаток
                     else
                     {
-                        var pos = new Position();
-                        pos.AddTrade(new MyTrade() { Side = trade.Side, Price = trade.Price,Volume= trade.Volume });
+                        var pos = new Pos();
+                        pos.AddTrade(new MyTrade() { Side = myTrade.Side, Price = myTrade.Price,Volume= myTrade.Volume });
                         return pos;
                     }
 
@@ -171,10 +207,10 @@ namespace LiteInvestServer.Entity
                 }
 
 
-                if (trade.Volume < CurrentPos)
+                if (myTrade.Volume < CurrentPos)
                 {
-                    CloseTrades.AddTrade(trade);
-
+                    CurrentPos -= myTrade.Volume;
+                    AverageExit = CloseTrades.AddTrade(myTrade).AveragePrice;
                     return null;
 
                 }
@@ -182,17 +218,12 @@ namespace LiteInvestServer.Entity
                 return null;
             }
            
-            if(CurrentPos !=0 && Side == trade.Side)
+            if(CurrentPos !=0 && Side == myTrade.Side)
             {
-                OpenTrades.AddTrade(trade);
-
-                //TODO: дописать увеличение объёма
-                if (OpenTrades.Volume > MaxOpened)
-                    MaxOpened = OpenTrades.Volume; 
-             
-                CurrentPos += trade.Volume;
-
-                AverageEntry = OpenTrades.AveragePrice;
+               
+                CurrentPos += myTrade.Volume;
+                var res = OpenTrades.AddTrade(myTrade);
+                UpdateOpen(res);
 
                 return null;
             }

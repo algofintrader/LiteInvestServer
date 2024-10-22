@@ -147,7 +147,8 @@ namespace LiteInvestServer.WebScoketFactory
         {
             try
             {
-                var res= Streams[streamNameKey].Sockets[key];
+                
+                Streams[streamNameKey].Sockets.TryGetValue(key,out var res);
                 return res;
             }
             catch (Exception ex)
