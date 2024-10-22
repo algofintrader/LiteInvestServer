@@ -179,13 +179,22 @@ namespace LiteInvestServer.WebScoketFactory
                     //TODO:
                     // ------------ рефакторить этот кошмар------//
 
+                    /*
                     if (!ws.ConnectionInfo.Headers.ContainsKey(_authname))
                     { 
                         CloseSocket();
                         return;
+                    }*/
+
+
+                    if(!WsParameters.ContainsKey("liteinvest"))
+                    {
+                        CloseSocket();
+                        return;
                     }
 
-                    var authtoken = ws.ConnectionInfo.Headers[_authname];
+                    //var authtoken = ws.ConnectionInfo.Headers[_authname];
+                    var authtoken = WsParameters["liteinvest"];
 
                     if (authtoken == null || authtoken.Length == 0)
                     {

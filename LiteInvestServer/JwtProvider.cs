@@ -60,10 +60,17 @@ namespace LiteInvestServer
 
         public static JwtSecurityToken ValidateToken(string token, JwtOptions _jwtOptions)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            tokenHandler.ValidateToken(token, GetBasicTokenValidationParameters(_jwtOptions), out SecurityToken validatedToken);
-            var jwtToken = (JwtSecurityToken)validatedToken;
-            return jwtToken;
+            try
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                tokenHandler.ValidateToken(token, GetBasicTokenValidationParameters(_jwtOptions), out SecurityToken validatedToken);
+                var jwtToken = (JwtSecurityToken)validatedToken;
+                return jwtToken;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
 
     }

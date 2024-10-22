@@ -300,8 +300,8 @@ builder.Services.AddSingleton(_ =>
                 websocket.Value.Send(serialized);
             }
 
-            if (orderbook.Bids != null && orderbook.Bids.Count != 9)
-                LogMessageAsync(orderbook.SecurityId + " " + orderbook.Bids[0].Price);
+           // if (orderbook.Bids != null && orderbook.Bids.Count != 9)
+           //     LogMessageAsync(orderbook.SecurityId + " " + orderbook.Bids[0].Price);
         }
         catch (Exception ex)
         {
@@ -575,6 +575,7 @@ Trading.MapPost("/GetPositions", async (ClientOrder clientOrder, HttpContext htt
     try
     {
         string userName = httpContext.GetUserName();
+        return Results.Ok();
     } 
     catch (Exception ex)
     {

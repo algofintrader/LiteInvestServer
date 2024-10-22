@@ -1,4 +1,6 @@
-﻿namespace PlazaEngine.Entity;
+﻿using System.Text.Json.Serialization;
+
+namespace PlazaEngine.Entity;
 
 public class Level
 {
@@ -196,26 +198,32 @@ public class MarketDepth
 public record MarketDepthLevel
 {
 
+    [JsonIgnore]
     /// <summary>
     /// number of contracts for sale at this price level
     /// количество контрактов на продажу по этому уровню цены
     /// </summary>
     public decimal Ask { get; set; }
 
+    [JsonIgnore]
     /// <summary>
     /// \number of purchase contracts at this price level
     /// количество контрактов на покупку по этому уровню цены
     /// </summary>
     public decimal Bid { get; set; }
 
+    [JsonPropertyName("Volume")]
+    public decimal Volume { get => Ask == 0 ? Bid : Ask; }
 
 
+    [JsonPropertyName("Price")]
     /// <summary>
     /// price
     /// цена
     /// </summary>
     public decimal Price { get; set; }
 
+    [JsonIgnore]
     /// <summary>
     /// Unique price level number, required for working with BitMex
     /// уникальный номер ценового уровня, необходим для работы с BitMex
