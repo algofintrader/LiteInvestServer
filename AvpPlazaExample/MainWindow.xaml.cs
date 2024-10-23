@@ -379,6 +379,10 @@ namespace AvpPlazaExample
             var selSec = (string)SecuritiBox.SelectedValue;
             selectedSec = securitis.Find(s => s.Name == selSec);
             Levels.Clear();
+            if (selectedSec != null)
+            {
+                plaza.RegisterMarketDepth(selectedSec, EmulatorCheckBox.IsChecked ?? false);
+            }
             //GlassView.Items.Clear();
         }
 

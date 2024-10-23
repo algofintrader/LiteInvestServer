@@ -146,8 +146,14 @@ namespace PlazaEngine.Engine
         {
             AddPlazaDll();
 
-            IsTestRegim = test;
-            
+            IsTestRegim = test; //IsTestRegim = true; // тестовый
+
+            if (IsTestRegim)
+            {
+                appname = "ntest_send";
+                key = "11111111";
+            }
+
             if (MaxTransaction == 0)
                    MaxTransaction = 30;
            

@@ -30,8 +30,8 @@
                     </Grid.ColumnDefinitions>
                     <ListBox x:Name="SecuritiBox"  Margin="5,5,0,50"  HorizontalAlignment="Stretch" d:ItemsSource="{d:SampleData ItemCount=5}" SelectionChanged="SecuritiBox_SelectionChanged"  />
                     <Button Margin="98,10,0,0" Width="100" Height="25" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Connect to Plaza" Click="Button_Click" Grid.Column="1"/>
-                    <Button Margin="140,50,0,0" Width="100" Height="25" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Show Glass" Click="Button_Click_1" Grid.Column="1"/>
-                    <Button Margin="10,50,0,0" Width="100" Height="25" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Show Ticks" Click="Button_Click_ShowTicks" Grid.Column="1"/>
+                    <!--<Button Margin="140,50,0,0" Width="100" Height="25" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Show Glass" Click="Button_Click_1" Grid.Column="1"/>-->
+                    <Button Margin="98,50,0,0" Width="100" Height="25" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Show Ticks" Click="Button_Click_ShowTicks" Grid.Column="1"/>
                     <Button Margin="98,90,0,0" Width="100" Height="25" HorizontalAlignment="Left" VerticalAlignment="Top" Content="Close Connection" Click="Button_Close_Connection" Grid.Column="1"/>
 
                     <ListView x:Name="GlassView" ItemsSource="{Binding Levels}"  d:ItemsSource="{d:SampleData ItemCount=5}" HorizontalAlignment="Left" Margin="260,5,0,60" Width="200" FontSize="11" Grid.Column="1">

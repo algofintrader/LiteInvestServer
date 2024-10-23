@@ -73,6 +73,7 @@ namespace PlazaEngine.Depth
             listener.Handler += new Listener.MessageHandler(OrdbookMessageHandler);
         }
 
+        bool newSubscription = false;
 
         public void Subscription(string isinId)
         {
@@ -84,6 +85,7 @@ namespace PlazaEngine.Depth
             {
                 throw new Exception($"Invalid isin_id specified for subscription. {isinId}");
             }
+            newSubscription = true;
         }
 
         public void UnSubscription(string isinId)
@@ -301,6 +303,7 @@ namespace PlazaEngine.Depth
         private void ThreadNotificationDepth()
         {
             Dictionary<uint,MarketDepth> mdList = new Dictionary<uint,MarketDepth>();
+            Int64 lastRevisionSended = 0;
             while (!token.IsCancellationRequested)
             {
                 Thread.Sleep(UpDateTimeMs);
@@ -310,19 +313,29 @@ namespace PlazaEngine.Depth
                     {
                         continue;
                     }
+                    if (lastRevisionSended == lastRevision && !newSubscription)
+                    {
+                        continue;
+                    }
+                    lastRevisionSended = lastRevision;
+
                     List<uint> _allIsin = subscriptedIsin.ToList();
                     for (int i = 0; i < _allIsin.Count; i++)
                     {
                         uint isin = _allIsin[i];
                         if (orderBooks.TryGetValue(isin, out var orderBook))
                         {
-                            mdList.TryGetValue(isin, out MarketDepth? md);
-                            md = orderBook.GetMarketDepth(md);
-                            if (!mdList.ContainsKey(isin))
+                            if (orderBook.IsNewRevision || newSubscription)
                             {
-                                mdList[isin] = md;
+                                mdList.TryGetValue(isin, out MarketDepth? md);
+                                md = orderBook.GetMarketDepth(md);
+                                if (!mdList.ContainsKey(isin))
+                                {
+                                    mdList[isin] = md;
+                                }
+                                MarketDepthChangeEvent?.Invoke(md);
+                                newSubscription = false;
                             }
-                            MarketDepthChangeEvent?.Invoke(md);
                         }
                         if (token.IsCancellationRequested)
                         {
@@ -624,6 +637,9 @@ namespace PlazaEngine.Depth
 		UInt32 isinId;
 		Orders[] orders;
 		DateTime moment = DateTime.MinValue;
+        bool newRevision = false;
+
+        object revisionLocker = new object();
 
         /// <summary>
         /// Unix Time in UTC nanosecund to DateTime MSK
@@ -636,13 +652,36 @@ namespace PlazaEngine.Depth
                 moment = moment.AddTicks(1);
             else 
                 moment = _m;
-		}
+            lock (revisionLocker)
+            {
+                newRevision = true;
+            }
+        }
 
-		public DateTime GetMoment()
+        public bool IsNewRevision
+        {
+            get
+            {
+                lock (revisionLocker)
+                {
+                    if (newRevision)
+                    {
+                        newRevision = false;
+                        return true;
+                    }
+                    return false;
+                }
+            }
+
+        }
+
+
+        public DateTime GetMoment()
 		{
 			return moment;
 		}
 		
+
 		public OrderBook(UInt32 isinId)
 		{
 			this.isinId = isinId;
