@@ -31,11 +31,12 @@ namespace LiteInvestServer.Entity
         [DataMember]
         public string Password { get; set; }
         [DataMember]
-        public decimal Balance { get; set; }
+        public decimal AllBalance { get; set; }
+
+        // до конца не понятно как это реализовать 
+        //public decimal FreeBalance { get; set; }
 
         //NOTE: PROFIT
-
-
         [DataMember]
         /// <summary>
         /// Может ли данный юзер торговать
@@ -55,9 +56,29 @@ namespace LiteInvestServer.Entity
 
         [DataMember]
         /// <summary>
-        ///  Лимит на торговлю
+        ///  Сколько денег выделено на торвголю
         /// </summary>
         public decimal Limit { get; set; }
+
+        /// <summary>
+        /// Плечо на фондовый
+        /// </summary>
+        //public int LeverageFond { get; set; }
+
+        /// <summary>
+        /// Плечо на Фючерсы
+        /// </summary>
+        public int LeverageFutures { get; set; }
+
+        /// <summary>
+        /// Плечо на Валюту
+        /// </summary>
+        //public int LeverageCurrency { get; set; }
+
+
+
+
+
 
     }
 }

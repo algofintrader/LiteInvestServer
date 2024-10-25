@@ -200,6 +200,9 @@ namespace PlazaEngine.Entity
         public decimal Volume { get => volume; set { volume = value; } }
         internal decimal volume;
 
+        [DataMember]
+        public string Error { get; set; }
+
 
         /*
         /// <summary>

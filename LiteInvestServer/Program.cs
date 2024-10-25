@@ -33,6 +33,14 @@ ConcurrentDictionary<string, ConcurrentDictionary<string, Trade>> Trades = new()
 ConcurrentDictionary<string, ConcurrentDictionary<string, Pos>> OpenedPositions = new();
 ConcurrentDictionary<string, ConcurrentDictionary<string, List<Pos>>> ClosedPositions = new();
 
+//это словарь наоборот
+// ключ - sec_id
+// далее по юзерам идет разбивка. 
+ConcurrentDictionary<string, ConcurrentDictionary<string, Pos>> PositionsForProfit = new ();
+
+
+ConcurrentDictionary<string, PositionOnBoard> RealPositions = new();
+
 PlazaConnector plaza = null;
 WebSocketEngine webSocketEngine = null;
 
@@ -71,9 +79,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 
-
-
-
 ///PLAZA WORDER MAIN
 builder.Services.AddSingleton(_ =>
 {
@@ -93,7 +98,7 @@ builder.Services.AddSingleton(_ =>
     }*/
 
 
-    if (!Directory.Exists(data))
+if (!Directory.Exists(data))
         System.IO.Directory.CreateDirectory(directoryInfo.ToString());
 
 
@@ -117,7 +122,8 @@ builder.Services.AddSingleton(_ =>
 
     plaza.UpdatePosition += pos =>
     {
-        LogMessageAsync($"Position sec_id={pos.SecurityId} {pos.XPosValueCurrent} ");
+        RealPositions[pos.SecurityId] = pos;
+        LogMessageAsync($"New Pos Info sec_id={pos.SecurityId} {pos.XPosValueCurrent} ");
     };
 
    plaza.TicksLoadedEvent += () =>
@@ -187,54 +193,7 @@ builder.Services.AddSingleton(_ =>
 
     };
 
-    plaza.NewMyTradeEvent += newMytrade =>
-    {
-
-        //если поза не открыта, начинаем считать... 
-
-        //пересчитываем среднюю цену
-
-        var username = newMytrade.Comment;
-
-        if (!UsersContext.ContainsKey(username))
-            return;
-
-        if (!OpenedPositions.ContainsKey(username))
-            OpenedPositions.TryAdd(username, new ConcurrentDictionary<string, Pos>());
-
-        OpenedPositions[username].TryGetValue(newMytrade.SecurityId, out var posvalue);
-
-        //TODO: Как работать с DEAL непонятно до конца
-
-        //нет открытых поз у данного юзера по этому инструменту
-        //открытие новой позиции всегда сопровождается получается, с открытием
-        if (posvalue == null)
-            OpenedPositions[username][newMytrade.SecurityId] = new Pos();
-
-        var restpos = OpenedPositions[username][newMytrade.SecurityId].AddTrade(newMytrade);
-
-        //добавилось остаточная позиция, как то так... 
-        if (restpos != null)
-        {
-            if (!ClosedPositions.ContainsKey(username))
-                ClosedPositions[username] = new();
-
-            if (!ClosedPositions[username].ContainsKey(newMytrade.SecurityId))
-                ClosedPositions[username][newMytrade.SecurityId] = new List<Pos>();
-
-            var closedpos = OpenedPositions[username][newMytrade.SecurityId];
-            ClosedPositions[username][newMytrade.SecurityId].Add(closedpos);
-
-            OpenedPositions[username].TryRemove(newMytrade.SecurityId, out var _);
-        }
-
-        //когда происходит перекрытие или другая история.
-        //  TODO: Добавить механизм подсчета позиций 
-        //Positions[username][newtrade.SecurityId].AddTrade();
-        //работа с позициями и с со сделками одновременно
-
-    };
-
+    plaza.NewMyTradeEvent += ProcessNewMyTrade;
     plaza.OrderLoadedEvent += () =>
     {
         LogMessageAsync($"Orders Loaded!");
@@ -272,13 +231,14 @@ builder.Services.AddSingleton(_ =>
         if (websockets == null)
             return;
 
-        LogMessageAsync($"New Order user ({username}) {plazaOrder.State} number = {plazaOrder.ExchangeOrderId}");
+        LogMessageAsync($"New Order user ({username}) {plazaOrder.State} number = {plazaOrder.ExchangeOrderId} error ={reason}");
 
         try
         {
             
             foreach (var connection in websockets)
             {
+                plazaOrder.Error = reason;
                 var serializedOrder = JsonSerializer.Serialize(plazaOrder, serializer);
                 await connection.Value.Send(serializedOrder).ConfigureAwait(false);
                 LogMessageAsync($"socket {connection.GetHashCode()} send info ({username}) {plazaOrder.State} number = {plazaOrder.ExchangeOrderId}");
@@ -323,8 +283,9 @@ builder.Services.AddSingleton(_ =>
         }
     };
 
-    //TODO: Выяснить что именно и как использовать и как обновлять эту бд. 
-    
+
+    Helper.CreateTimerAndStart(CalculatePnls, 5000);
+
     plaza.UpdateSecurity += sec =>
     {
         Securities[sec.Id] = sec;
@@ -333,6 +294,108 @@ builder.Services.AddSingleton(_ =>
     return plaza;
 
 });
+
+void CalculatePnls()
+{
+    try
+    {
+        if (plaza == null || plaza.ticksplaza == null)
+            return;
+
+        foreach (var pos in PositionsForProfit)
+        {
+
+            if (!plaza.ticksplaza.AllTicks.ContainsKey(pos.Key))
+                continue;
+
+            var tickPrice = plaza.ticksplaza.AllTicks[pos.Key].Price;
+
+            foreach (var userPos in pos.Value)
+            {
+                userPos.Value.CalculateUnrealizedPnl(tickPrice);
+               // LogMessageAsync($"PNL updated for {userPos.Key} sec_id ={pos.Key}");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        LogMessageAsync(ex.Message);
+    }
+}
+void ProcessNewMyTrade(MyTrade newMytrade)
+{
+    try
+    {
+        var username = newMytrade.Comment;
+
+        if (!UsersContext.ContainsKey(username))
+            return;
+
+        if (!OpenedPositions.ContainsKey(username))
+            OpenedPositions.TryAdd(username, new ConcurrentDictionary<string, Pos>());
+
+        OpenedPositions[username].TryGetValue(newMytrade.SecurityId, out var posvalue);
+
+        if (posvalue == null)
+        {
+            OpenedPositions[username][newMytrade.SecurityId] = new Pos();
+            LogMessageAsync($"Creating new Pos for {username} ");
+        }
+
+        var resultAddingTrade = OpenedPositions[username][newMytrade.SecurityId].AddTrade(newMytrade);
+        LogMessageAsync($"Update for {username} sec_id={newMytrade.SecurityId} pos {OpenedPositions[username][newMytrade.SecurityId].PosValue}");
+
+        //-------------------------- Позиции для подсчета прибыли ------------------------//
+
+        PositionsForProfit.TryGetValue(newMytrade.SecurityId, out var valuekeypair);
+        if (valuekeypair == null) PositionsForProfit[newMytrade.SecurityId] = new();
+        PositionsForProfit[newMytrade.SecurityId][username] = OpenedPositions[username][newMytrade.SecurityId];
+
+        //---------------------------Позиции для подсчета прибыли -----------------------//
+
+        if (resultAddingTrade != null && resultAddingTrade.Closed)
+        {
+            if (!ClosedPositions.ContainsKey(username))
+                ClosedPositions[username] = new();
+
+            var closedpos = OpenedPositions[username][newMytrade.SecurityId];
+
+            if (!ClosedPositions[username].ContainsKey(newMytrade.SecurityId))
+                ClosedPositions[username][newMytrade.SecurityId] = new List<Pos>();
+
+            ClosedPositions[username][newMytrade.SecurityId].Add(closedpos);
+
+            if(OpenedPositions[username].TryRemove(newMytrade.SecurityId, out var _))
+            {
+                LogMessageAsync($"Pos Deleted {username} sec_id={newMytrade.SecurityId} ");
+            }
+
+            //удаляем вообще какие либо позы юзера, потому что потом будет
+            //по этому словарю будем считать прибыль сами
+            if (OpenedPositions[username].Values.Count == 0)
+                OpenedPositions.TryRemove(username, out var _);
+
+            if (PositionsForProfit.ContainsKey(newMytrade.SecurityId) && PositionsForProfit[newMytrade.SecurityId].ContainsKey(username))
+            {
+                PositionsForProfit[newMytrade.SecurityId].TryRemove(username, out var _);
+
+                //удаляем вообще все намеки на остатки... 
+                if (PositionsForProfit[newMytrade.SecurityId].Values.Count == 0)
+                    PositionsForProfit.TryRemove(newMytrade.SecurityId, out _);
+            }
+        }
+
+        //добавилось остаточная позиция, как то так... 
+        if (resultAddingTrade != null && resultAddingTrade.RestNewTrade != null)
+        {
+            ProcessNewMyTrade(resultAddingTrade.RestNewTrade);
+        }
+    }
+    catch (Exception ex)
+    {
+        LogMessageAsync(ex.Message);
+    }
+}
 
 builder.Services.AddSingleton(_ =>
 {
@@ -480,6 +543,36 @@ RiskManager.MapPost("/CanTrade", async (HttpContext httpContext, string username
     return Results.Accepted<UserCredentials>();
 }).WithDescription("Возможность торговать");
 
+RiskManager.MapPost("/CloseAllPositions", async (HttpContext httpContext) =>
+{
+    string username = httpContext.GetUserName();
+
+    if (!UsersContext.ContainsKey(username))
+        return Results.Problem("User not found");
+
+    if (!UsersContext[username].Admin)
+        return Results.Problem("No Admin rights");
+
+    if (plaza == null)
+        return Results.Problem("Plaza Not Ready");
+ 
+    try
+    {
+        foreach (var pos in RealPositions.Values)
+        {
+            var sec = Securities[pos.SecurityId];
+            var order = new Order(sec, pos.XPosValueCurrent > 0 ? Side.Sell : Side.Buy, pos.XPosValueCurrent, plaza.Portfolio.Number, username);
+            LogMessageAsync("Sending close orders of positions " + order.ToString());
+        }   
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+
+    return Results.Accepted<UserCredentials>();
+}).WithDescription("Закрыть позиции от Админа все");
+
 var common = app.MapGroup("/Common").WithTags("Common");
 
 var Trading = app.MapGroup("/Trading").WithTags("Trading");
@@ -560,9 +653,15 @@ Trading.MapPost("/SendOrder", async (ClientOrder clientOrder, HttpContext httpCo
         //по мне так ужасный код, лучше бы свойства оставили, вместо дублирующего конструктора. 
         //В итоге еще и в самом Ордере кошмар 
 
+        var price = (decimal)clientOrder.Price;
+        var sec = plaza.Securities[clientOrder.SecID];
+
+        if (!clientOrder.Market && (price > sec.PriceLimitHigh || price < sec.PriceLimitLow))
+            return Results.Problem($"Price not in range of PriceLimitHigh = {sec.PriceLimitHigh} or PriceLimitLow = {sec.PriceLimitLow}") ;
+
         Order plazaOrder = clientOrder.Market ?
-           new Order(plaza.Securities[clientOrder.SecID], clientOrder.Side, clientOrder.Volume, plaza.Portfolio.Number, userName) :
-            new Order(plaza.Securities[clientOrder.SecID], clientOrder.Side, clientOrder.Volume, (decimal)clientOrder.Price, plaza.Portfolio.Number, userName);
+           new Order(sec, clientOrder.Side, clientOrder.Volume, plaza.Portfolio.Number, userName) :
+            new Order(sec, clientOrder.Side, clientOrder.Volume, price, plaza.Portfolio.Number, userName);
 
         if (clientOrder.NumberOrderId != null && clientOrder.NumberOrderId !=0)
             plazaOrder.NumberUserOrderId = (int)clientOrder.NumberOrderId;
@@ -584,14 +683,17 @@ Trading.MapPost("/SendOrder", async (ClientOrder clientOrder, HttpContext httpCo
 
 }).RequireAuthorization().WithDescription("NumberOrderId если отправлять Null или 0 в итоге не будет использован и будет сгенерирован системой.");
 
-Trading.MapPost("/GetClosedPositions", async (string sec_id,HttpContext httpContext) =>
+Trading.MapPost("/GetClosedPositions", async (HttpContext httpContext,string sec_id ="") =>
 {
     try
     {
         string userName = httpContext.GetUserName();
 
+        if(!ClosedPositions.ContainsKey(userName))
+            return Results.Problem("No Data Found");
+
         if (sec_id.IsNullOrEmpty())
-            return Results.Json(ClosedPositions[userName]);
+            return Results.Json(ClosedPositions[userName].Values.ToList());
 
         if (ClosedPositions.ContainsKey(userName) && ClosedPositions[userName].ContainsKey(sec_id))
             return Results.Json(ClosedPositions[userName][sec_id]);
@@ -605,17 +707,20 @@ Trading.MapPost("/GetClosedPositions", async (string sec_id,HttpContext httpCont
 
 }).RequireAuthorization().WithDescription("");
 
-Trading.MapPost("/GetOpenPosition", async (string sec_id, HttpContext httpContext) =>
+Trading.MapPost("/GetOpenPositions", async (HttpContext httpContext, string sec_id ="") =>
 {
     try
     {
         string userName = httpContext.GetUserName();
 
+        if(!OpenedPositions.ContainsKey(userName))
+            return Results.Problem("No Data Found");
+
         if (sec_id.IsNullOrEmpty())
-            return Results.Json(OpenedPositions[userName]);
+            return Results.Json(OpenedPositions[userName].Values.ToList());
 
     if (OpenedPositions.ContainsKey(userName) && OpenedPositions[userName].ContainsKey(sec_id) && OpenedPositions[userName][sec_id] != null)
-            return Results.Json(OpenedPositions[userName][sec_id]);
+            return Results.Json(new List<Pos>() { OpenedPositions[userName][sec_id] });
 
         return Results.Problem("No Data Found");
     }
@@ -624,7 +729,7 @@ Trading.MapPost("/GetOpenPosition", async (string sec_id, HttpContext httpContex
         return Results.Problem(ex.Message);
     }
 
-}).RequireAuthorization().WithDescription("");
+}).RequireAuthorization().WithDescription("Выдача всех позиций. Если sec_id = 0, то выдаст просто все открытые позиции юзера.");
 
 Trading.MapGet("/GetOrders", async (HttpContext httpContext) =>
 {
@@ -700,7 +805,7 @@ Trading.MapGet("/GetAllSecurities", async () =>
             PriceLimitLow =  sec.PriceLimitLow,
         });
     }
-    return Results.Json(securitiesJson);
+    return Results.Json(securitiesJson.OrderBy(s=>s.ShortName));
 }).RequireAuthorization();
 
 /*

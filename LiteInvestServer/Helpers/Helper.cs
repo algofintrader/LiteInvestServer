@@ -47,6 +47,17 @@ namespace LiteInvestServer.Helpers
             }
         }
 
+        public static System.Timers.Timer CreateTimerAndStart(Action method, int ms, bool repeat = true)
+        {
+            var timer = new System.Timers.Timer(ms) { AutoReset = repeat };
+            timer.Elapsed += (s, e) =>
+            {
+                method?.Invoke();
+            };
+            timer.Start();
+            return timer;
+        }
+
 
     }
 }

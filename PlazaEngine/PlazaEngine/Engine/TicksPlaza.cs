@@ -18,7 +18,7 @@ namespace PlazaEngine.Engine
     /// <summary>
     /// Класс отвечающий за подписку на тики - обезличенные сделки
     /// </summary>
-    internal class TicksPlaza :IDisposable
+    public class TicksPlaza :IDisposable
     {
 
         private PlazaConnector plazaConnector;
@@ -119,6 +119,11 @@ namespace PlazaEngine.Engine
         /// </summary>
         private ConcurrentDictionary<string, ConcurrentQueue<Trade>> Ticks = new ConcurrentDictionary<string, ConcurrentQueue<Trade>>();
 
+        /// <summary>
+        /// Это мой экспериментальный вариант для выдергивания всех тиков... 
+        /// </summary>
+        public ConcurrentDictionary<string, Trade> AllTicks = new();
+
         private int TicksMessageHandler(Connection conn, Listener listener, Message msg)
         {
             try
@@ -141,13 +146,22 @@ namespace PlazaEngine.Engine
                                     }
                                     var isin_id = replmsg["isin_id"].asInt().ToString();
 
+                                    Trade trade = new Trade(replmsg, _dealsOnLine, plazaConnector.Securities);
+
+                                    AllTicks[trade.SecurityId] = trade;
+                                    
                                     if (plazaConnector.RegisteredTicks.Contains(isin_id))
                                     {
-                                        Trade trade = new Trade(replmsg, _dealsOnLine, plazaConnector.Securities);
+
+                                        
+                                        /*
+                                        Trade trade = new Trade(replmsg, _dealsOnLine, plazaConnector.Securities);*/
+
                                         if (!Ticks.ContainsKey(trade.SecurityId))
                                         {
                                             Ticks[trade.SecurityId] = new();
                                         }
+
                                         Ticks[trade.SecurityId].Enqueue(trade);
                                         
                                         NewTickEvent?.Invoke(trade);

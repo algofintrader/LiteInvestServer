@@ -117,7 +117,8 @@ namespace PlazaEngine.Engine
         private DepthEmulator depthEmulator;
 
         private DepthPlaza depthPlaza;
-        private TicksPlaza ticksplaza;
+
+        public TicksPlaza ticksplaza { get; set; }
 
         /// <summary>
         /// maximum number of transactions per second for login/максимальное количество транзакций в секунду для логина

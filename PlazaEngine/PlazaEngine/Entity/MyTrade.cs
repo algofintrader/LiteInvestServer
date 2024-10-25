@@ -62,7 +62,7 @@ namespace PlazaEngine.Entity
         /// <summary>
         /// Комментарий к сделке, перешедший из ордера
         /// </summary>
-        public string Comment { get => comment; }
+        public string Comment { get => comment; set { comment = value; } }
         private string comment;
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace PlazaEngine.Entity
         ///  trade number
         /// номер сделки в торговой системе
         /// </summary>
-        public string NumberTrade { get => numberTrade; }
+        public string NumberTrade { get => numberTrade; set { numberTrade = value; } }
         private string numberTrade;
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace PlazaEngine.Entity
         /// instrument code
         /// код инструмента по которому прошла сделка
         /// </summary>
-        public string SecurityId { get => securityId; }
+        public string SecurityId { get => securityId; set { securityId = value; } }
         private string securityId;
 
         /// <summary>
