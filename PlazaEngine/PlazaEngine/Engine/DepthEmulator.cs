@@ -32,6 +32,7 @@ namespace PlazaEngine.Engine
 
         private void ThreadEmulating()
         {
+            int depth = 250;
             try
             {
                 Random rnd = new Random(); 
@@ -64,7 +65,7 @@ namespace PlazaEngine.Engine
                             {
                                 md.Asks.Clear();
                                 md.Bids.Clear();
-                                for (int i = 0; i < 50; i++)
+                                for (int i = 0; i < depth; i++)
                                 {
                                     decimal p = Math.Round(HiPrice - (decimal)rnd.NextDouble() * (HiPrice - LoPrice) / 2, sec.Decimals);
                                     int v = rnd.Next(1, 1000);
@@ -101,8 +102,10 @@ namespace PlazaEngine.Engine
                                     md.Bids.RemoveAt(ll);
                                 }
                             }
-                            md.Asks.Sort((x, y) => x.Price > y.Price ? 1 : x.Price == y.Price ? 0 : -1);
+                            md.Asks.Sort((x, y) => x.Price > y.Price ? -1 : x.Price == y.Price ? 0 : 1);
+                            //md.Asks.Sort((x, y) => x.Price > y.Price ? 1 : x.Price == y.Price ? 0 : -1);  // сортировка в другую сторону
                             md.Bids.Sort((x, y) => x.Price > y.Price ? -1 : x.Price == y.Price ? 0 : 1);
+                            //md.Bids.Sort((x, y) => x.Price > y.Price ? 1 : x.Price == y.Price ? 0 : -1); // сортировка в другую сторону
                             MarketDepthChanged?.Invoke(md.GetCopy());
                         }
                     }
