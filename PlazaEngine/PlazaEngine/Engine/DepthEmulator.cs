@@ -122,13 +122,18 @@ namespace PlazaEngine.Engine
             }
         }
 
-        internal void Subscription(Security security)
+        internal void Subscribe(Security security)
         {
             _depthEmulators.TryAdd(security.Id, security);
             if (!threadEmulating.IsAlive)
             {
                 threadEmulating.Start();
             }
+        }
+
+        internal void UnSubscribe(Security security)
+        {
+            _depthEmulators.Remove(security.Id, out var _);
         }
 
 

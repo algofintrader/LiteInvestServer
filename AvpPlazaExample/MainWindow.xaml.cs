@@ -69,7 +69,7 @@ namespace AvpPlazaExample
             if (RadioTest.IsChecked ?? true)
             {
                 /*Test Connection*/
-                plaza = new PlazaConnector("11111111", test: true)
+                plaza = new PlazaConnector("11111111", testTrading: true)
                 {
                     Limit = 30,
                     LoadTicksFromStart = false,
@@ -78,7 +78,7 @@ namespace AvpPlazaExample
             else if (RadioReal.IsChecked ?? false)
             {
                 /* Real Trade Connection*/
-                plaza = new PlazaConnector("02mMLX144T2yxnfzEUrCjUKzXKciQKJ", test: false, appname: "osaApplication",2)
+                plaza = new PlazaConnector("02mMLX144T2yxnfzEUrCjUKzXKciQKJ", testTrading: false, appname: "osaApplication",2)
                 {
                     Limit = 30,
                     LoadTicksFromStart = false,

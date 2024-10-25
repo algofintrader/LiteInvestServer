@@ -18,6 +18,8 @@ using System.Runtime.CompilerServices;
 using System.Data.SqlTypes;
 using System.Net.NetworkInformation;
 using System.Text;
+using System.Runtime.Serialization;
+using System.Timers;
 
 //using SKM.V3;
 //using SKM.V3.Models;
@@ -114,9 +116,12 @@ namespace PlazaEngine.Engine
         /// </summary>
         //public ConcurrentDictionary<int, string> OrdersHash = new ();
 
+        //private TickEmulator tickEmulator;
         private DepthEmulator depthEmulator;
 
         private DepthPlaza depthPlaza;
+
+
 
         public TicksPlaza ticksplaza { get; set; }
 
@@ -134,26 +139,29 @@ namespace PlazaEngine.Engine
 
         private string KeyFromFinalgoTrader { get; set; }
 
+        private bool Emulation { get; set; }
 
         /// <summary>
         /// Создать соединение с биржой через коннектор PLAZA
         /// </summary>
         /// <param name="key">Ключ программы, выдается MOEX.</param>
-        /// <param name="test">тестовый ли вариант?</param>
+        /// <param name="testTrading">тестовый ли вариант?</param>
         /// <param name="appname">название программы для подключения, соответствующий ключу</param>
         /// <param name="TickEventPeriodMilliSecond">Периодичность отправки тиков, миллисекунд</param>
-        public PlazaConnector(string key, bool test = true, string appname = "", 
+        public PlazaConnector(string key, bool emulation, bool testTrading = true, string appname = "", 
             int TickEventPeriodMilliSecond = 20,int depthEventMillisecond = 100)
         {
             AddPlazaDll();
 
-            IsTestRegim = test; //IsTestRegim = true; // тестовый
+            IsTestRegim = testTrading; //IsTestRegim = true; // тестовый
 
             if (IsTestRegim)
             {
                 appname = "ntest_send";
                 key = "11111111";
             }
+
+            Emulation = emulation;
 
             if (MaxTransaction == 0)
                    MaxTransaction = 30;
@@ -183,7 +191,7 @@ namespace PlazaEngine.Engine
 
             //p2tcp://127.0.0.1:4001;app_name=send_mt", "p2mqreply://;ref=srvlink0"
 
-            if (test)
+            if (testTrading)
                 ConnectionOpenString = "p2tcp://127.0.0.1:4001;app_name=ntest_send";
         }
 
@@ -292,11 +300,12 @@ namespace PlazaEngine.Engine
 
                 if (register)
                 {
-                    RegisterMarketDepth(sec);
+                    RegisterMarketDepth(sec, Emulation);
                 }
                 else
                 {
-                    UnRegisterMarketDepth(sec);
+
+                    UnRegisterMarketDepth(sec, Emulation);
                 }
 
                 return ;
@@ -318,7 +327,7 @@ namespace PlazaEngine.Engine
         {
             if (emulatorIsOn)
             {
-                depthEmulator.Subscription(security);
+                depthEmulator.Subscribe(security);
             }
             else
             {
@@ -330,10 +339,17 @@ namespace PlazaEngine.Engine
         /// Остановить обновление котировок у инструмента
         /// </summary>
         /// <param name="security"></param>
-        public void UnRegisterMarketDepth(Security security)
+        public void UnRegisterMarketDepth(Security security, bool emulatorIsOn)
         {
-            SecuritiesQuotes.TryRemove(security.Id, out _);
-            StopMarketDepth(security);
+            if (emulatorIsOn)
+            {
+                depthEmulator.UnSubscribe(security);
+            }
+            else
+            {
+                SecuritiesQuotes.TryRemove(security.Id, out _);
+                StopMarketDepth(security);
+            }
         }
 
 
@@ -360,11 +376,11 @@ namespace PlazaEngine.Engine
 
                 if (register)
                 {
-                    TryRegisterTicks(sec);
+                    TryRegisterTicks(sec,Emulation);
                 }
                 else
                 {
-                    UnRegisterTicks(sec);
+                    UnRegisterTicks(sec, Emulation);
                 }
 
             }
@@ -380,22 +396,37 @@ namespace PlazaEngine.Engine
         /// Если уже добавлен в список, то ничего не произойдет. 
         /// </summary>
         /// <param name="security"></param>
-        public void TryRegisterTicks(Security security)
+        public void TryRegisterTicks(Security security,bool emulation)
         {
-            if (RegisteredTicks.Add(security.Id))
-                SendLogMessage($"Tick Registered {security.Id}");
+            if (emulation)
+            {
+
+            }
+            else
+            {
+
+                if (RegisteredTicks.Add(security.Id))
+                    SendLogMessage($"Tick Registered {security.Id}");
+            }
         }
 
         /// <summary>
         /// Отписка от получения тиков по инструменту
         /// </summary>
         /// <param name="security"></param>
-        public void UnRegisterTicks(Security security)
+        public void UnRegisterTicks(Security security, bool emulation)
         {
-            if (RegisteredTicks.Contains(security.Id))
+            if (emulation)
             {
-                RegisteredTicks.Remove(security.Id);
-                SendLogMessage($"Tick UnRegistered {security.Id}");
+
+            }
+            else
+            {
+                if (RegisteredTicks.Contains(security.Id))
+                {
+                    RegisteredTicks.Remove(security.Id);
+                    SendLogMessage($"Tick UnRegistered {security.Id}");
+                }
             }
         }
 
@@ -2322,6 +2353,24 @@ namespace PlazaEngine.Engine
             smsg["comment"].set(order.Comment);
             order.timeCreate = GetTimeMoscowNow();
 
+            if (Emulation)
+            {
+                order.ExchangeOrderId = DateTime.Now.GetHashCode().ToString();
+                order.state = Order.OrderStateType.Activ;
+
+                OrderChangedEvent?.Invoke(order, "The order has been sent.");
+
+                var timer = new System.Timers.Timer(500) { AutoReset = false };
+                timer.Elapsed += (s, e) =>
+                {
+                    order.state = Order.OrderStateType.Done;
+                    OrderChangedEvent?.Invoke(order, "The order has been executed.");
+                };
+                timer.Start();
+
+                return $"Request for Emulation order #{order.numberUser} sent.";
+            }
+
             await Task.Factory.StartNew(() =>
             {
                 try
@@ -2342,6 +2391,8 @@ namespace PlazaEngine.Engine
 
                     RouterLogger.Log($"Order {order} has been  sent.", "ExecuteOrder");
                     OrderChangedEvent?.Invoke(order, "The order has been sent.");
+
+                   
                 }
                 catch (Exception ex)
                 {

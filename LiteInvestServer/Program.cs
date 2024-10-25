@@ -21,7 +21,7 @@ using MongoDB.Bson.Serialization.Serializers;
 
 //NOTE: Скорее всего у нас постоянно будет переподключение, поэтому мы должны сами обновлять постоянно инструменты
 
-ConcurrentDictionary<string, Security> Securities = new ConcurrentDictionary<string, Security>();
+ConcurrentDictionary<string, SecurityApi> Securities = new ();
 ///База юзеров 
 ConcurrentDictionary<string, User> UsersContext = new ConcurrentDictionary<string, User>();
 //База ордеров по юзеру
@@ -44,12 +44,15 @@ ConcurrentDictionary<string, PositionOnBoard> RealPositions = new();
 PlazaConnector plaza = null;
 WebSocketEngine webSocketEngine = null;
 
+object savelocker = new object();
+
 string data = "C:\\ServerData";
 var directoryInfo = new DirectoryInfo(data);
 
 //NOTE: Вбил вручную в код, почему то не находит Development settings. 
 string webscoketAdress= "ws://0.0.0.0:5000/";
 
+string securitiesBdName = $"{data}\\securities.xml";
 string userdBdName = $"{data}\\users.xml";
 string ordersBdName = $"{data}\\orders.xml";
 string tradesBdName = $"{data}\\trades.xml";
@@ -103,6 +106,8 @@ if (!Directory.Exists(data))
 
 
     //TODO: Перепишу всю эту часть, когда сделаю нормальное сохранение. 
+
+    Securities = Helper.ReadXml<ConcurrentDictionary<string, SecurityApi>>(securitiesBdName);
     UsersContext = Helper.ReadXml<ConcurrentDictionary<string, User>>(userdBdName);
     Orders = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Order>>>(ordersBdName);
     Trades = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Trade>>>(tradesBdName);
@@ -114,7 +119,7 @@ if (!Directory.Exists(data))
     if (!UsersContext.ContainsKey(admin))
         UsersContext.TryAdd(admin, new User(admin, "adminPass#1R") { Admin = true, CanTrade = false });
 
-    plaza = new PlazaConnector("02mMLX144T2yxnfzEUrCjUKzXKciQKJ", test: false, appname: "osaApplication")
+    plaza = new PlazaConnector("02mMLX144T2yxnfzEUrCjUKzXKciQKJ",Helper.isSimulation(), testTrading: false, appname: "osaApplication")
     {
         Limit = 30,
         LoadTicksFromStart = false,
@@ -285,10 +290,23 @@ if (!Directory.Exists(data))
 
 
     Helper.CreateTimerAndStart(CalculatePnls, 5000);
+    Helper.CreateTimerAndStart(SaveDb, 5000);
 
     plaza.UpdateSecurity += sec =>
     {
-        Securities[sec.Id] = sec;
+        Securities[sec.Id] = new SecurityApi()
+        {
+            id = sec.Id,
+            ShortName = sec.ShortName,
+            ClassCode = sec.ClassCode,
+            FullName = sec.FullName,
+            Type = sec.Type.ToString(),
+            Lot = sec.Lot,
+            PriceStep = sec.PriceStep,
+            Decimals = sec.Decimals,
+            PriceLimitHigh = sec.PriceLimitHigh,
+            PriceLimitLow = sec.PriceLimitLow,
+        };
     };
     plaza.Connect();
     return plaza;
@@ -560,7 +578,7 @@ RiskManager.MapPost("/CloseAllPositions", async (HttpContext httpContext) =>
     {
         foreach (var pos in RealPositions.Values)
         {
-            var sec = Securities[pos.SecurityId];
+            var sec = plaza.Securities[pos.SecurityId];
             var order = new Order(sec, pos.XPosValueCurrent > 0 ? Side.Sell : Side.Buy, pos.XPosValueCurrent, plaza.Portfolio.Number, username);
             LogMessageAsync("Sending close orders of positions " + order.ToString());
         }   
@@ -784,48 +802,12 @@ Trading.MapGet("/GetAllSecurities", async () =>
 {
     if (Securities == null || Securities.Count == 0)
         return Results.Problem("No Security");
-
     //пришлось такой брут перевод сделать,
     //чтобы наш объект сервера не зависел от объекта у плазы
+    return Results.Json(Securities.Values.OrderBy(s=>s.ShortName));
 
-    List <SecurityApi> securitiesJson = new();
-    foreach (var sec in Securities.Values)
-    {
-        securitiesJson.Add(new SecurityApi()
-        {
-            id = sec.Id,
-            ShortName = sec.ShortName,
-            ClassCode = sec.ClassCode,
-            FullName = sec.FullName,
-            Type = sec.Type.ToString(),
-            Lot= sec.Lot,
-            PriceStep = sec.PriceStep,
-            Decimals = sec.Decimals,
-            PriceLimitHigh = sec.PriceLimitHigh,
-            PriceLimitLow =  sec.PriceLimitLow,
-        });
-    }
-    return Results.Json(securitiesJson.OrderBy(s=>s.ShortName));
 }).RequireAuthorization();
 
-/*
-FuturesApi.MapGet("/SubscribeSecurityTicks", (string secKEY) =>
-{
-
-    var sec = Securities[secKEY];
-    plaza.RegisterTicks(sec);
-
-    return StatusCodes.Status200OK;
-}).WithDescription("Подписка на обезличенные тики");
-
-FuturesApi.MapGet("/SubscribeSecurityQuotes", (string secKEY) =>
-{
-
-    var sec = Securities[secKEY];
-    plaza.RegisterMarketDepth(sec, false);
-
-    return StatusCodes.Status200OK;
-});*/
 
 
 
@@ -842,14 +824,19 @@ async void LogMessageAsync(string message)
     await Console.Out.WriteLineAsync($"{dt} {message}").ConfigureAwait(false);
 }
 
+
 void SaveDb()
 {
-    Helper.SaveXml(Trades, tradesBdName);
-    Helper.SaveXml(Orders, ordersBdName);
-    Helper.SaveXml(UsersContext, userdBdName);
+    lock (savelocker)
+    {
+        Helper.SaveXml(Securities, securitiesBdName);
+        Helper.SaveXml(Trades, tradesBdName);
+        Helper.SaveXml(Orders, ordersBdName);
+        Helper.SaveXml(UsersContext, userdBdName);
 
-    Helper.SaveXml(OpenedPositions, $"{data}\\{nameof(OpenedPositions)}.xml");
-    Helper.SaveXml(ClosedPositions, $"{data}\\{nameof(ClosedPositions)}.xml");
+        Helper.SaveXml(OpenedPositions, $"{data}\\{nameof(OpenedPositions)}.xml");
+        Helper.SaveXml(ClosedPositions, $"{data}\\{nameof(ClosedPositions)}.xml");
+    }
 }
 
 //TODO: Переделать сохранение в промежутках по человечески

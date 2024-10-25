@@ -58,6 +58,15 @@ namespace LiteInvestServer.Helpers
             return timer;
         }
 
+        public static bool isSimulation()
+        {
+            if (DateTime.Now.DayOfWeek == DayOfWeek.Saturday || DateTime.Now.DayOfWeek == DayOfWeek.Sunday)
+                return true;
+
+            return false;
+            //return true;
+        }
+
 
     }
 }

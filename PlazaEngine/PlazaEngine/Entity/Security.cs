@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace PlazaEngine.Entity;
 
@@ -7,6 +8,7 @@ namespace PlazaEngine.Entity;
 /// security
 /// инструмент
 /// </summary>
+/// 
 public record Security(
     string ShortName,
     string FullName,
@@ -15,12 +17,15 @@ public record Security(
     decimal Lot)
     : INotifyPropertyChanged
 {
+ 
+
     /// <summary>
     /// Уникальный идентификатор/ключ. 
     /// Любое упоминание Security ссылается на это свойство.
     /// Запросить Security можно использовав это свойство в качестве ключа.
     /// </summary>
     public required string Id { get; init; }
+ 
     public required string Name { get; init; }
 
     private decimal _bestask;
