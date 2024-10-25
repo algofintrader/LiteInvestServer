@@ -2355,12 +2355,13 @@ namespace PlazaEngine.Engine
 
             if (Emulation)
             {
+                
                 order.ExchangeOrderId = DateTime.Now.GetHashCode().ToString();
                 order.state = Order.OrderStateType.Activ;
 
                 OrderChangedEvent?.Invoke(order, "The order has been sent.");
 
-                var timer = new System.Timers.Timer(500) { AutoReset = false };
+                var timer = new System.Timers.Timer(30000) { AutoReset = false };
                 timer.Elapsed += (s, e) =>
                 {
                     order.state = Order.OrderStateType.Done;
@@ -2470,11 +2471,25 @@ namespace PlazaEngine.Engine
                 return false;// $"Error: The order number {numberUser} is incorrect.";
             }
 
-            if (!Orders.TryGetValue(numberUser, out Order order))
+            if (!Orders.TryGetValue(numberUser, out Order order) )
             {
                 RouterLogger.Log($"Error: The order number {numberUser} not found.", "CancelOrder");
+                return false;
             }
             RouterLogger.Log($"Canceling Order {order?.ToString()??"NULL"}", "CancelOrder");
+
+            if(Emulation)
+            {
+                var timer = new System.Timers.Timer(100) { AutoReset = false };
+                timer.Elapsed += (s, e) =>
+                {
+                    order.state = Order.OrderStateType.Cancel;
+                    OrderChangedEvent?.Invoke(order, "The order has been cancelled.");
+                };
+                timer.Start();
+
+                return true;
+            }
 
             await Task.Factory.StartNew(() =>
             {

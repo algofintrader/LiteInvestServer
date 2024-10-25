@@ -773,8 +773,11 @@ Trading.MapPost("/CancelOrder", async (HttpContext httpContext, int numberId) =>
     {
         string userName = httpContext.GetUserName();
 
-        if (!UsersContext.ContainsKey(userName))
+        if (!UsersContext.ContainsKey(userName) )
             return Results.Problem("User not found");
+
+       //if (!Orders.ContainsKey(userName) || !Orders[userName].ContainsKey(numberId.ToString()))
+         //   return Results.Problem("No Order or User Order Information Found");
         //проверка, а есть ли такой юзер и может ли он торговать
 
         var user = UsersContext[userName];
@@ -787,8 +790,7 @@ Trading.MapPost("/CancelOrder", async (HttpContext httpContext, int numberId) =>
         //по мне так ужасный код, лучше бы свойства оставили, вместо дублирующего конструктора. 
         //В итоге еще и в самом Ордере кошмар 
 
-
-        await plaza.CancelOrder(numberId);
+        plaza.CancelOrder(numberId);
 
         return Results.Accepted<ClientOrder>();
     }
