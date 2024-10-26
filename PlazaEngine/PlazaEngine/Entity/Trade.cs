@@ -60,8 +60,11 @@ public class Trade
                 }
                 return securityName??default;
             }
-        } 
-    
+        }
+        set
+        {
+            securityName = value;
+        }
     }
     private string? securityName;
 
@@ -80,13 +83,13 @@ public class Trade
     /// <summary>
     /// Время сделки в часовом поясе MSK (utc+2)
     /// </summary>
-    public DateTime Time {get => time;}
+    public DateTime Time {get => time; set { time = value; } }
     DateTime time;
 
     /// <summary>
     /// Сделка получена в онлайне
     /// </summary>
-    internal bool IsOnline { get => isOnline; }
+    internal bool IsOnline { get => isOnline; set { isOnline = value; } }
     bool isOnline;
 
     [JsonPropertyName("d")]

@@ -170,6 +170,7 @@ namespace PlazaEngine.Engine
 
             depthEmulator = new DepthEmulator();
             depthEmulator.MarketDepthChanged += (md) => { MarketDepthChangeEvent?.Invoke(md); };
+            depthEmulator.NewTickCollectionEvent += (t) => NewTickCollectionEvent?.Invoke(t);
 
             depthPlaza = new DepthPlaza(this, depthEventMillisecond);
 
@@ -400,7 +401,7 @@ namespace PlazaEngine.Engine
         {
             if (emulation)
             {
-
+                depthEmulator.SubscribeTick(security);
             }
             else
             {
@@ -418,7 +419,7 @@ namespace PlazaEngine.Engine
         {
             if (emulation)
             {
-
+                depthEmulator.UnSubscribeTick(security);
             }
             else
             {

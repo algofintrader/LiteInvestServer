@@ -14,13 +14,16 @@ namespace PlazaEngine.Engine
     internal class DepthEmulator
     {
         private ConcurrentDictionary<string, Security> _depthEmulators;
+        private ConcurrentDictionary<string, Security> _ticksEmulators;
         private Dictionary<string, MarketDepth> _marketDepths;
         private Thread threadEmulating;
+        
+
         public DepthEmulator()
         {
             _depthEmulators = new ConcurrentDictionary<string, Security>();
             _marketDepths = new Dictionary<string, MarketDepth>();
-            
+            _ticksEmulators = new ConcurrentDictionary<string, Security>();
 
             threadEmulating = new Thread(ThreadEmulating);
             threadEmulating.Name = "ThreadEmulating";
@@ -29,6 +32,8 @@ namespace PlazaEngine.Engine
         }
 
         public event Action<MarketDepth>? MarketDepthChanged;
+        public event Action<Dictionary<string, List<Trade>>>? NewTickCollectionEvent;
+
 
         private void ThreadEmulating()
         {
@@ -107,6 +112,8 @@ namespace PlazaEngine.Engine
                             md.Bids.Sort((x, y) => x.Price > y.Price ? -1 : x.Price == y.Price ? 0 : 1);
                             //md.Bids.Sort((x, y) => x.Price > y.Price ? 1 : x.Price == y.Price ? 0 : -1); // сортировка в другую сторону
                             MarketDepthChanged?.Invoke(md.GetCopy());
+
+                            TickCollectionEmulating(md);
                         }
                     }
                     catch (Exception ex)
@@ -122,6 +129,73 @@ namespace PlazaEngine.Engine
             }
         }
 
+        DateTime lastTickCollection = DateTime.Now;
+
+        int MaxTicksRandomPause = 10;   // секунд, чем меньше, тем чаще
+        int MaxTicksRandomCountInPack = 3;  
+
+        internal void TickCollectionEmulating(MarketDepth md)
+        {
+            
+
+            try
+            {
+                if (!_ticksEmulators.ContainsKey(md.SecurityId))
+                {
+                    return;
+                }
+                Dictionary<string, List<Trade>> ticks = new();
+                Random rnd = new Random();
+                int _ticksPause = rnd.Next(MaxTicksRandomPause);
+                if (lastTickCollection.AddSeconds(_ticksPause) > DateTime.Now)
+                {
+                    return;
+                }
+                var ask = md.Asks.Last();
+                var bid = md.Bids.First();
+                List<Trade> trades = new List<Trade>();
+
+                int _maxTickCountInPack = rnd.Next(MaxTicksRandomCountInPack) + 1;
+
+                for (int i = 0; i < _maxTickCountInPack; i++)
+                {
+                    trades.Add(new Trade()
+                    {
+                        Price = ask.Price,
+                        SecurityId = md.SecurityId,
+                        Side = Side.Buy,
+                        TransactionID = DateTime.Now.Ticks.ToString(),
+                        Volume = (decimal)Math.Round(rnd.NextDouble() * (double)ask.Volume),
+                        Time = md.Time.AddMilliseconds(10 * i),
+                        IsOnline = true,
+                        SecurityName = _ticksEmulators[md.SecurityId].Name
+                    });
+
+                    trades.Add(new Trade()
+                    {
+                        Price = bid.Price,
+                        SecurityId = md.SecurityId,
+                        Side = Side.Sell,
+                        TransactionID = DateTime.Now.Ticks.ToString(),
+                        Volume = (decimal)Math.Round(rnd.NextDouble() * (double)bid.Volume),
+                        Time = md.Time.AddMilliseconds(30 * i),
+                        IsOnline = true,
+                        SecurityName = _ticksEmulators[md.SecurityId].Name
+                    });
+                }
+                ticks.Add(md.SecurityId, trades);
+                NewTickCollectionEvent?.Invoke(ticks);
+                lastTickCollection = DateTime.Now;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+            
+        }
+
+        
+
         internal void Subscribe(Security security)
         {
             _depthEmulators.TryAdd(security.Id, security);
@@ -136,6 +210,15 @@ namespace PlazaEngine.Engine
             _depthEmulators.Remove(security.Id, out var _);
         }
 
+        internal void SubscribeTick(Security security)
+        {
+            _ticksEmulators.TryAdd(security.Id, security);
+        }
+
+        internal void UnSubscribeTick(Security security)
+        {
+            _ticksEmulators.Remove(security.Id, out var _);
+        }
 
     }
 }
