@@ -132,7 +132,7 @@ namespace PlazaEngine.Engine
         DateTime lastTickCollection = DateTime.Now;
 
         int MaxTicksRandomPause = 10;   // секунд, чем меньше, тем чаще
-        int MaxTicksRandomCountInPack = 3;  
+        int MaxTicksRandomCountInPack = 10; // максимальное кол-во тиков в одной пачке
 
         internal void TickCollectionEmulating(MarketDepth md)
         {
@@ -155,7 +155,7 @@ namespace PlazaEngine.Engine
                 var bid = md.Bids.First();
                 List<Trade> trades = new List<Trade>();
 
-                int _maxTickCountInPack = rnd.Next(MaxTicksRandomCountInPack) + 1;
+                int _maxTickCountInPack = rnd.Next(MaxTicksRandomCountInPack / 2) + 1;
 
                 for (int i = 0; i < _maxTickCountInPack; i++)
                 {
