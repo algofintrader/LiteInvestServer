@@ -18,6 +18,7 @@ builder.Services.AddDevExpressBlazor(config => config.BootstrapVersion = DevExpr
 builder.Services.AddMvc();
 
 builder.Services.AddSingleton<ApiDataService>();
+builder.Services.AddScoped<BufferService>();
 
 var app = builder.Build();
 

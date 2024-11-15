@@ -1,96 +1,102 @@
-﻿
+﻿@using LiteInvestServer.Json
+@using System.Collections.Concurrent
+@using BlazorApp3.Data
+
+@inject ApiDataService _apidataservice
+@inject BufferService bufferService
 
 <div class="card">
-	<DxMenu 
-		
-		Title="LiteInvest"
-		ItemsPosition="ItemPosition.Center"
-			DropDownActionMode="MenuDropDownActionMode.Click">
-		<Items>
-			<DxMenuItem Text="Торговля" IconCssClass="oi oi-layers" >
-				<Items>
-					<DxMenuItem Text="Позиции" />
-					<DxMenuItem Text="Ордера" />
-				</Items>
-			</DxMenuItem>
-			<DxMenuItem Text="Настройки" IconCssClass="oi oi-person">
-				<Items>
-					<DxMenuItem Text="Базовые настройки" />
-					<DxMenuItem Text="Настройки профиля" />
-				</Items>
-			</DxMenuItem>
-			<DxMenuItem Text="Документация" IconCssClass="oi oi-book" BeginGroup="true" />
-			
-			
-			<DxMenuItem Text="Логин" IconCssClass="oi oi-book" BeginGroup="true" Click="@OnClick" Position="ItemPosition.End">
-					
-			</DxMenuItem>
+    <DxMenu Title="LiteInvest" ItemsPosition="ItemPosition.Center" DropDownActionMode="MenuDropDownActionMode.Click">
+        <Items>
+            <DxMenuItem Text="Торговля" IconCssClass="oi oi-layers">
+                <Items>
+                    <DxMenuItem Text="Позиции" />
+                    <DxMenuItem Text="Ордера" />
+                </Items>
+            </DxMenuItem>
 
-			<!--<DxMenuItem CssClass="notoggle" Position="ItemPosition.End">
-				<TextTemplate>
-					<div class="menu-icon-user-profile menu-icon" />
-				</TextTemplate>
-				<SubMenuTemplate>
-					<div class="w-100 user-profile">
-						<div class="flex-column align-items-center justify-content-center">
-							<div class="logo-container d-flex align-items-center justify-content-center">
-								<div class="menu-icon-user-profile menu-icon menu-icon-large" />
-							</div>
-							<div class="user-name-container bm-3 mb-2">
-								<div class="tm-8 text-center">User Name</div>
-								<div class="text-center">John Heart</div>
-							</div>
-							<div class="d-flex justify-content-center log-off-btn">
-								<DxButton Text="Логин" RenderStyle="@ButtonRenderStyle.Secondary"></DxButton>
-							</div>
-						</div>
-					</div>
-				</SubMenuTemplate>
-			</DxMenuItem>-->
+            <DxMenuItem Text="Настройки" IconCssClass="oi oi-person">
+                <Items>
+                    <DxMenuItem Text="Базовые настройки" />
+                    <DxMenuItem Text="Настройки профиля" />
+                </Items>
+            </DxMenuItem>
 
-		</Items>
-	</DxMenu>
+            <DxMenuItem Text="Документация" IconCssClass="oi oi-book" BeginGroup="true" />
+
+            <!-- Элемент меню для ComboBox, перед "Логином" -->
+            <DxMenuItem CssClass="align-self-center" Position="ItemPosition.End" style="margin-right: 4px">
+                <Template>
+                    <DxComboBox Data="@bufferService.Securities"
+                                Value="@bufferService.securityApiSelected"
+                                ValueChanged="@((SecurityApi sec) => SecChanged(sec))"
+                                TextFieldName="@nameof(bufferService.securityApiSelected.Isin)"
+                                SearchMode="@ListSearchMode.AutoSearch"
+                                SearchFilterCondition="@ListSearchFilterCondition.Contains"
+                                ListRenderMode="ListRenderMode.Entire"
+                                CssClass="cw-480"
+                                InputId="cbVirtualScrolling" />
+                </Template>
+            </DxMenuItem>
+
+            @if (bufferService.UserLoggedIn)
+            {
+                <DxMenuItem Text="Log out" IconCssClass="oi oi-person" BeginGroup="true" Click="@OnClick" Position="ItemPosition.End" />
+            }
+            else
+            {
+                <DxMenuItem Text="Log in" IconCssClass="oi oi-person" BeginGroup="true" Click="@OnClick" Position="ItemPosition.End" />
+            }
+
+        </Items>
+    </DxMenu>
+
 </div>
 
-<DxWindow @ref=windowRef
-          AllowResize="true"
-          ShowCloseButton="true"
-          CloseOnEscape="true"
-          HeaderText="Login"
-          FooterText="Footer"
-          ShowFooter="true"
-          Width="max(25vw, 250px)"
-          MinWidth="300"
-          MinHeight="200"
-          MaxWidth="800"
-          MaxHeight="500"
-          @bind-Visible=windowVisible>
+<DxWindow
+    AllowResize="false"
+    ShowCloseButton="true"
+    CloseOnEscape="true"
+    HeaderText="Login"
+    ShowFooter="false"
+    Width="max(25vw, 250px)"
+    MinWidth="300"
+    MinHeight="200"
+    MaxWidth="800"
+    MaxHeight="500"
+    @bind-Visible=bufferService.windowVisible>
 	
 	<BodyContentTemplate>
-		<SampleEditForm />
+		<SampleEditForm/>
 	</BodyContentTemplate>
 
 </DxWindow>
 
-
-
-								
 @code
-	{
+{
+    protected async override Task OnInitializedAsync()
+    {
+        bufferService.OnLogin += () => InvokeAsync(StateHasChanged);
+    }
 
-	DxWindow windowRef;
-	ElementReference popupTarget;
-	bool windowVisible;
-	string GetButtonText() => !windowVisible ? "SHOW A WINDOW" : "CLOSE A WINDOW";
-	async Task TogglePopupVisibilityAsync() {
-		if (windowVisible)
-			await windowRef.CloseAsync();
-		else
-			await windowRef.ShowAtAsync(popupTarget);
+	string GetButtonText() => !bufferService.windowVisible ? "SHOW A WINDOW" : "CLOSE A WINDOW";
+
+	private async void OpenClick(MouseEventArgs args)
+	{
+		Console.WriteLine($"Subscribing for Quotes {bufferService.securityApiSelected.id}!");
+		bufferService.SecuritiesRegiestered.TryAdd(bufferService.securityApiSelected.id, bufferService.securityApiSelected);
+
+		bufferService.OnComboBoxValuePicked?.Invoke();
+	}
+
+	void SecChanged(SecurityApi sec)
+	{
+		bufferService.securityApiSelected = sec;
+		OpenClick(null);
 	}
 
 	void OnClick()
 	{
-		windowVisible = true;
+		bufferService.windowVisible = true;
 	}
 }

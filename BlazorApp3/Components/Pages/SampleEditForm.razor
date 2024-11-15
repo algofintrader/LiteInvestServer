@@ -1,54 +1,62 @@
-﻿<DxFormLayout CssClass="w-100">
-    <DxFormLayoutItem Caption="Contact Name:">
-        <DxTextBox @bind-Text="@Name" />
+﻿@using BlazorApp3.Data
+
+@inject ApiDataService _apidataservice
+@inject BufferService bufferService
+
+<style>
+    .form-row {
+        text-align: center;
+    }
+    .form-row input {
+        text-align: center;
+    }
+</style>
+
+<DxFormLayout>
+    <DxFormLayoutItem ColSpanMd="12" CssClass="form-row">
+        <DxTextBox @bind-Text="@Username" NullText="Username" />
     </DxFormLayoutItem>
-    <DxFormLayoutItem>
-        <CaptionTemplate>
-            <div class="email-caption">
-                <label for="contactEmail">Email</label>
-                <DxButton CssClass="info-icon-btn"
-                          IconCssClass="info-icon text-info"
-                          RenderStyle="@ButtonRenderStyle.None"
-                          Click="() => IsInfoOpen = !IsInfoOpen"
-                          tabindex="-1"
-                          aria-hidden="true" />
-                <DxFlyout @bind-IsOpen=@IsInfoOpen
-                          PositionTarget=".info-icon-btn"
-                          PreventCloseOnPositionTargetClick="true"
-                          Width="240">
-                    Email must contain the company's domain name.
-                </DxFlyout>
-            </div>
-        </CaptionTemplate>
-        <Template>
-            <DxTextBox @bind-Text="@Email" InputId="contactEmail" />
-        </Template>
+
+    <DxFormLayoutItem ColSpanMd="12" CssClass="form-row">
+        <DxTextBox @bind-Text="@Password" NullText="Password" />
     </DxFormLayoutItem>
-    <DxFormLayoutItem Caption="Birth Date:">
-        <DxDateEdit @bind-Date="@BirthDate" Mask="@DateTimeMask.ShortDate" />
+
+    <DxFormLayoutItem ColSpanMd="12" CssClass="form-row">
+        <DxTextBox @bind-Text="@Email" NullText="Email" />
     </DxFormLayoutItem>
-    <DxFormLayoutItem Caption="Years Worked:">
-        <DxSpinEdit @bind-Value="@YearsWorked" />
-    </DxFormLayoutItem>
-    <DxFormLayoutItem Caption="On Vacation:">
-        <DxCheckBox @bind-Checked="@OnVacation" />
+
+    <DxFormLayoutItem ColSpanMd="12" CssClass="form-row">
+        <button onclick="@LogInClick" class="login-button">Log in</button>
     </DxFormLayoutItem>
 </DxFormLayout>
-<div class="w-100 mx-0 mt-3">
-    <p class="demo-text col-12 mt-2">
-        @nameof(Name)=<b>@Name</b>,
-        @nameof(Email)=<b>@Email</b>,
-        @nameof(BirthDate)=<b>@BirthDate</b>,
-        @nameof(YearsWorked)=<b>@YearsWorked</b>,
-        @nameof(OnVacation)=<b>@OnVacation</b>
-    </p>
-</div>
 
 @code {
-    string Name { get; set; } = "Nancy Davolio";
-    string Email { get; set; } = "NancyDavolio@sample.com";
-    DateTime BirthDate { get; set; } = DateTime.Now.AddYears(-20);
-    int YearsWorked { get; set; } = 3;
-    bool OnVacation { get; set; } = true;
+    string Username { get; set; } = "Nancy Davolio";
+    string Password { get; set; } = "pass2"; // Можно заменить на любой безопасный пароль
+    string Email { get; set; } = "samujan1@yandex.ru";
+    bool RememberMe { get; set; } = true;
     bool IsInfoOpen { get; set; } = false;
+
+    private async void LogInClick()
+    {
+        var r = await _apidataservice.LogIn(Email, Password);
+
+        if (r != null)
+        {
+            Console.WriteLine("Connected!");
+            bufferService.windowVisible = false;
+            bufferService.UserLoggedIn = true;
+            bufferService.OnLogin?.Invoke();
+            GetInstruments();
+        }
+
+        StateHasChanged();
+    }
+
+    private async void GetInstruments()
+    {
+        bufferService.Securities = await _apidataservice.GetInstruments();
+        Console.WriteLine($"Instruments = {bufferService.Securities.Count()} Received");
+        StateHasChanged();
+    }
 }
