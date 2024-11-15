@@ -1,0 +1,100 @@
+﻿@page "/"
+@rendermode InteractiveServer
+
+@using System.Collections.Concurrent
+@using BlazorApp3.Data
+@using System.ComponentModel.DataAnnotations
+@using LiteInvestServer.Json
+@using PlazaEngine.Entity
+
+@inject ApiDataService _apidataservice
+
+
+<Menu></Menu>
+
+<DxButton  RenderStyle="ButtonRenderStyle.Primary" RenderStyleMode="ButtonRenderStyleMode.Contained"
+          Text="@textLogin" Click="@Handler" />
+
+<DxComboBox Data="@Securities"
+            Value="@securityApiSelected"
+            ValueChanged="@((SecurityApi sec) => SecChanged(sec))"
+			TextFieldName="@nameof(securityApiSelected.Isin)"
+            SearchMode="@ListSearchMode.AutoSearch"
+            SearchFilterCondition="@ListSearchFilterCondition.Contains"
+            ListRenderMode="ListRenderMode.Entire"
+            CssClass="cw-480"
+			InputId="cbVirtualScrolling" />
+
+<DxStackLayout CssClass="w-100 ch-480" Orientation="Orientation.Horizontal">
+	<Items>
+				@for (int i = 0; i < SecuritiesRegiestered.Count; i++)
+				{
+					<DxStackLayoutItem>
+						<Template>
+							<div class="stacklayout-header stacklayout-item">
+								<WorkWindow secid="@securityApiSelected.id" ApiDataService="@_apidataservice"/>
+							</div>
+						</Template>
+					</DxStackLayoutItem>
+				}
+	</Items>
+</DxStackLayout>
+
+
+<DxLoadingPanel Visible="@visibleloading" />
+
+@code {
+
+	string textLogin = "Login";
+	bool visibleloading;
+
+	SecurityApi securityApiSelected;
+
+	ConcurrentDictionary<string, SecurityApi> SecuritiesRegiestered = new ();
+
+	IEnumerable<SecurityApi> Securities { get; set; }
+	
+
+	private async void Handler(MouseEventArgs args)
+	{
+		visibleloading = true;
+		var r = await _apidataservice.LogIn("samujan1@yandex.ru","pass2");
+
+		if (r != null)
+		{
+			Console.WriteLine("Connected!");
+			GetInstruments();
+		}
+
+		StateHasChanged();
+		visibleloading = false;
+		textLogin = "Logged!";
+	}
+
+	private async void GetInstruments()
+	{
+		Securities = await _apidataservice.GetInstruments();
+		Console.WriteLine($"Instruments = {Securities.Count()} Received");
+		StateHasChanged();
+	}
+
+
+	private async void OpenClick(MouseEventArgs args)
+	{
+		Console.WriteLine($"Subscribing for Quotes {securityApiSelected.id}!");
+		SecuritiesRegiestered.TryAdd(securityApiSelected.id, securityApiSelected);
+
+		StateHasChanged();
+	}
+
+
+	void SecChanged(SecurityApi sec)
+	{
+		securityApiSelected = sec;
+		OpenClick(null);
+	}
+
+    
+
+   
+}

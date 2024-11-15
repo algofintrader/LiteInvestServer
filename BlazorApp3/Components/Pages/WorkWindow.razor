@@ -1,0 +1,202 @@
+﻿@using BlazorApp3.Data
+@using PlazaEngine.Entity
+
+<style type="text/css">
+
+	.dxbl-grid {
+		height: 522px;
+	}
+	.highlighted-item > td {
+		background-color: var(--bs-danger-bg-subtle)
+	}
+
+	.highlighted-item > td:first-child {
+		background-color: transparent;
+	}
+
+	.highlighted-item2 > td {
+		background-color: var(--bs-success-bg-subtle)
+	}
+
+	.highlighted-item > td:first-child {
+		background-color: transparent;
+	}
+
+</style>
+
+
+<DxStackLayout CssClass="w-100 ch-480" Orientation="Orientation.Horizontal">
+	<Items>
+		<DxStackLayoutItem>
+			<Template>
+				<div class="stacklayout-header stacklayout-item">
+					Кластеры
+				</div>
+			</Template>
+		</DxStackLayoutItem>
+		<DxStackLayoutItem >
+			<Template>
+				<div class="stacklayout-content stacklayout-item">
+					<DxChart
+						@ref="Chart"
+						Data="Ticks"
+							 Width="100%"
+							 LabelOverlap="ChartLabelOverlap.Hide">
+						<DxChartLineSeries Name="ticksLineSeries"
+
+										   T="Trade"
+										   TArgument="DateTime"
+										   TValue="decimal"
+										   ArgumentField="si => si.Time"
+										   ValueField="si => si.Price"
+										   HoverMode="ChartContinuousSeriesHoverMode.Series">
+							<!--<DxChartSeriesPoint Visible="true"
+												HoverMode="ChartSeriesPointHoverMode.None" />-->
+							<!--<DxChartSeriesLabel Visible="true"
+												ValueFormat="ChartElementFormat.Thousands(1)" />-->
+						</DxChartLineSeries>
+						
+						<DxChartLegend Position="RelativePosition.Outside"
+						               HorizontalAlignment="HorizontalAlignment.Right" />
+						
+						<!--
+						<DxChartTooltip Enabled="true">
+							@context.Point.Render((seriesPoint) =>
+								@<div style="margin: 0.75rem">
+									<div>@seriesPoint.SeriesName</div>
+									<span>@($"{seriesPoint.Argument: MMMM yyyy}: ")</span>
+									<span>@($"{seriesPoint.Value: $0,.0}K")</span>
+								</div>
+																)
+						</DxChartTooltip>-->
+					</DxChart>
+
+				</div>
+			</Template>
+		</DxStackLayoutItem>
+		<DxStackLayoutItem>
+			<Template>
+				<div class="stacklayout-content stacklayout-item">
+					<div class="grid-container">
+						<DxGrid @ref=Grid
+							Data="@Quotes"
+							ShowAllRows="true"
+							ColumnResizeMode="GridColumnResizeMode.NextColumn"
+							TextWrapEnabled="false"
+							CustomizeElement="Grid_CustomizeElement"
+							ShowGroupPanel="false"
+							HighlightRowOnHover="true">
+
+							<Columns>
+								<DxGridDataColumn FieldName="Volume" Width="100"/>
+								<DxGridDataColumn FieldName="Price" Width="100"/>
+								<DxGridDataColumn FieldName="Type" Width="100" Visible="false"  />
+							</Columns>
+						</DxGrid>
+					</div>
+				</div>
+			</Template>
+		</DxStackLayoutItem>
+	</Items>
+</DxStackLayout>
+
+@code {
+	DxChart<Trade> Chart;
+
+	IGrid Grid;
+	//А вдруг у меня все получится
+	//Влруг я буду прав
+
+	List<Trade> Ticks { get; set; } = new List<Trade>();
+
+	[Parameter]
+	public string secid { get; set; }
+
+	[Parameter]
+	public ApiDataService ApiDataService { get; set; }
+
+
+	int i = 1;
+	protected override Task OnInitializedAsync()
+	{
+		var sec = secid;
+		ApiDataService.NewMarketDepth += async (bestbid,secinstrument,md) =>
+		{
+
+			if(secinstrument!=sec)
+				return;
+
+
+			Quotes = md;
+
+			Ticks.Add(new Trade()
+			{  
+				Price = bestbid.Price,//Quotes.ToArray()[new Random().Next(1, Quotes.Count())].Price,
+				Time = DateTime.Now
+			});
+
+			if (Ticks.Count > 10)
+				Ticks.RemoveAt(0);
+
+			await InvokeAsync(() =>
+			{
+				Chart.RefreshData();
+				
+				//Console.WriteLine($"{DateTime.Now} New Quotes!");
+				//ScrollToLastRow1(bestbid);
+				
+				StateHasChanged();
+			});
+		};
+
+		ApiDataService.SubscribeInstument(secid);
+		return base.OnInitializedAsync();
+	}
+
+	//TODO: Тут надо подумать конечно. 
+	void ScrollToLastRow1(MarketDepthLevel level)
+	{
+		Grid.MakeDataItemVisibleAsync(level);
+
+		Console.WriteLine("visible row "+ Grid.GetStartRowVisibleIndex());
+	}
+
+	void ScrollToLastRow(int count)
+	{
+		Console.WriteLine($"{count} scroll");
+		//Grid.(count);
+		
+	}
+
+	void Grid_CustomizeElement(GridCustomizeElementEventArgs e)
+	{
+		if (e.ElementType == GridElementType.DataRow && (PlazaEngine.Entity.Side)e.Grid.GetRowValue(e.VisibleIndex, "Type") == Side.Sell)
+		{
+			e.CssClass = "highlighted-item";
+		}
+
+		if (e.ElementType == GridElementType.DataRow && (PlazaEngine.Entity.Side)e.Grid.GetRowValue(e.VisibleIndex, "Type") == Side.Buy)
+		{
+			e.CssClass = "highlighted-item2";
+		}
+		
+		
+	}
+
+	Orientation currentOrientation;
+	IEnumerable<MarketDepthLevel> Quotes;
+
+	string messageConnection { get; set; }
+
+	
+
+	
+
+	
+
+
+
+	
+   
+
+}

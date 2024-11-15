@@ -8,6 +8,9 @@ namespace LiteInvestServer.Json
         [DataMember]
         public string id { get; set; }
         [DataMember]
+        public string Isin { get; set; }
+
+        [DataMember]
         public string ShortName { get; set; }
         [DataMember]
         public string ClassCode { get; set; }

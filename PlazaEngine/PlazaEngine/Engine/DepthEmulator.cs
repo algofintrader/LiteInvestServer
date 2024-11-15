@@ -205,17 +205,22 @@ namespace PlazaEngine.Engine
             }
         }
 
-        internal void UnSubscribe(Security security)
+        public void UnSubscribe(Security security)
         {
             _depthEmulators.Remove(security.Id, out var _);
         }
 
-        internal void SubscribeTick(Security security)
+        public void SubscribeTick(Security security)
         {
             _ticksEmulators.TryAdd(security.Id, security);
+
+            if (!threadEmulating.IsAlive)
+            {
+                threadEmulating.Start();
+            }
         }
 
-        internal void UnSubscribeTick(Security security)
+        public void UnSubscribeTick(Security security)
         {
             _ticksEmulators.Remove(security.Id, out var _);
         }

@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace PlazaEngine.Entity;
 
@@ -17,18 +18,21 @@ public class MarketDepth
     /// </summary>
     public DateTime Time;
 
+    [JsonPropertyName("asks")]
     /// <summary>
     /// levels of sales. best with index 0
     /// уровни продаж. лучшая с индексом 0
     /// </summary>
     public List<MarketDepthLevel> Asks = [];
 
+    [JsonPropertyName("bids")]
     /// <summary>
     /// purchase levels. best with index 0
     /// уровни покупок. лучшая с индексом 0
     /// </summary>
     public List<MarketDepthLevel> Bids = [];
 
+    [JsonIgnore]
     /// <summary>
     /// total sales volume
     /// суммарный объём в продажах
@@ -46,6 +50,7 @@ public class MarketDepth
         }
     }
 
+    [JsonIgnore]
     /// <summary>
     /// total amount in purchases
     /// суммарный объём в покупках
@@ -198,25 +203,44 @@ public class MarketDepth
 public record MarketDepthLevel
 {
 
-    [JsonIgnore]
+
+    //[JsonIgnore]
+    //[JsonPropertyName("a")]
     /// <summary>
     /// number of contracts for sale at this price level
     /// количество контрактов на продажу по этому уровню цены
     /// </summary>
     public decimal Ask { get; set; }
 
-    [JsonIgnore]
+    //[JsonIgnore]
+    //[JsonPropertyName("b")]
     /// <summary>
     /// \number of purchase contracts at this price level
     /// количество контрактов на покупку по этому уровню цены
     /// </summary>
     public decimal Bid { get; set; }
 
-    [JsonPropertyName("Volume")]
     public decimal Volume { get => Ask == 0 ? Bid : Ask; }
 
+    /// <summary>
+    /// BID =0
+    /// ASK =1
+    /// </summary>
+    public Side Type
+    {
+	    get
+	    {
+		    if (Volume == 0)
+			    return Side.Empty;
 
-    [JsonPropertyName("Price")]
+		    if (Bid != 0) return Side.Buy;
+
+		    return Side.Sell;
+	    }
+}
+
+    
+
     /// <summary>
     /// price
     /// цена

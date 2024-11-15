@@ -86,6 +86,9 @@ namespace Fleck
       {
           const string errorMessage = "Data sent while closing or after close. Ignoring.";
           FleckLog.Warn(errorMessage);
+
+          //NOTE: если сокет не але, то закрываем его... пусть клиент переподключается
+          CloseSocket();
           
           var taskForException = new TaskCompletionSource<object>();
           taskForException.SetException(new ConnectionNotAvailableException(errorMessage));

@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+﻿
 using PlazaEngine.Engine;
 using PlazaEngine.Entity;
 using System.Collections.Concurrent;
@@ -12,7 +12,7 @@ using LiteInvestServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using MongoDB.Bson.Serialization.Serializers;
+
 
 
 
@@ -151,8 +151,8 @@ if (!Directory.Exists(data))
         
         foreach (var tick in ticksDictionary)
         {
-            if(tick.Value.Count!=0)
-            LogMessageAsync($"tiks arrive {tick.Key} count = {tick.Value.Count()} priceFirst = {tick.Value.First().Price}");
+           // if(tick.Value.Count!=0)
+           // LogMessageAsync($"tiks arrive {tick.Key} count = {tick.Value.Count()} priceFirst = {tick.Value.First().Price}");
         }
 
         try
@@ -174,7 +174,7 @@ if (!Directory.Exists(data))
             //проверяем всех наших подписантов
             foreach (var secIdsubcription in wesbokcets)
             {
-                LogMessageAsync($"sec {secIdsubcription.Key}");
+                //LogMessageAsync($"sec {secIdsubcription.Key}");
                 //в тиках есть тики, которые мы должны отправить
 
 
@@ -185,7 +185,7 @@ if (!Directory.Exists(data))
                     //собственно отправляем их 
                     foreach (var socket in secIdsubcription.Value)
                     {
-                        LogMessageAsync($"{socket.Key} Sending pack of ticks");
+                       // LogMessageAsync($"{socket.Key} Sending pack of ticks");
                         socket.Value.Send(serializedOrder);
                     }
                 }
@@ -299,6 +299,7 @@ if (!Directory.Exists(data))
             id = sec.Id,
             ShortName = sec.ShortName,
             ClassCode = sec.ClassCode,
+            Isin = sec.Name,
             FullName = sec.FullName,
             Type = sec.Type.ToString(),
             Lot = sec.Lot,
@@ -308,6 +309,26 @@ if (!Directory.Exists(data))
             PriceLimitLow = sec.PriceLimitLow,
         };
     };
+
+
+    if(plaza.Emulation)
+    {
+        foreach(var sec in Securities)
+        {
+            plaza.Securities.TryAdd(sec.Key, new Security(sec.Value.ShortName, sec.Value.FullName, SecurityType.Futures, sec.Value.ClassCode, sec.Value.Lot)
+            {
+                Id = sec.Value.id,
+                Name = "Emulation Security",
+                ShortName = sec.Value.ShortName,
+                PriceStep = sec.Value.PriceStep,
+                PriceLimitLow = sec.Value.PriceLimitHigh,
+                PriceLimitHigh = sec.Value.PriceLimitLow,
+                PriceStepCost = 1,
+
+            });
+        }
+    }
+
     plaza.Connect();
     return plaza;
 
@@ -446,9 +467,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.Events = new JwtBearerEvents 
         {OnMessageReceived = (context)=>
         {
-            context.Token = context.Request.Cookies[authkeyname];
+           //NOTE: Сделал два варианта. Берем и из куки
+           //и если чисто просто запрос, то можем и из хедера взять..
+           //(для чистоганских запросов, потому что куки прописывать тяжело)
+           context.Token = context.Request.Headers[authkeyname];
+
+            if (context.Token.IsNullOrEmpty())
+               context.Token = context.Request.Cookies[authkeyname];
+
             return Task.CompletedTask;
-        }};
+        }
+        };
         services.AddAuthorization();
     });
 
@@ -674,8 +703,8 @@ Trading.MapPost("/SendOrder", async (ClientOrder clientOrder, HttpContext httpCo
         var price = (decimal)clientOrder.Price;
         var sec = plaza.Securities[clientOrder.SecID];
 
-        if (!clientOrder.Market && (price > sec.PriceLimitHigh || price < sec.PriceLimitLow))
-            return Results.Problem($"Price not in range of PriceLimitHigh = {sec.PriceLimitHigh} or PriceLimitLow = {sec.PriceLimitLow}") ;
+        //if (!clientOrder.Market && (price > sec.PriceLimitHigh || price < sec.PriceLimitLow))
+         //   return Results.Problem($"Price not in range of PriceLimitHigh = {sec.PriceLimitHigh} or PriceLimitLow = {sec.PriceLimitLow}") ;
 
         Order plazaOrder = clientOrder.Market ?
            new Order(sec, clientOrder.Side, clientOrder.Volume, plaza.Portfolio.Number, userName) :

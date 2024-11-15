@@ -104,7 +104,18 @@ namespace PlazaEngine.Engine
         
         public ConcurrentDictionary<string, PositionOnBoard> Positions = new ConcurrentDictionary<string, PositionOnBoard>();
         public ConcurrentDictionary<string, Portfolio> Portfolios = new ConcurrentDictionary<string, Portfolio>();
-        public Portfolio Portfolio => Portfolios.Single().Value;
+        public Portfolio Portfolio { get
+            {
+
+                if (Emulation)
+                    return new Portfolio()
+                    {
+                        Number = "EmulationPortfolio",
+                        ValueBegin = 20000,
+                    };
+                return Portfolios.Single().Value;
+
+            } }
 
         /// <summary>
         /// сюда записываю поступающие из бэка ордера
@@ -139,7 +150,7 @@ namespace PlazaEngine.Engine
 
         private string KeyFromFinalgoTrader { get; set; }
 
-        private bool Emulation { get; set; }
+        public bool Emulation { get; set; }
 
         /// <summary>
         /// Создать соединение с биржой через коннектор PLAZA
@@ -607,6 +618,7 @@ namespace PlazaEngine.Engine
                 _plazaThreadLocker = new object();
 
                 CGate.Open(GateOpenString);
+                
                 ConnectionObjectPlaza = new Connection(ConnectionOpenString);
                 
                 _statusNeeded = ServerConnectStatus.Connect;
@@ -1083,6 +1095,10 @@ namespace PlazaEngine.Engine
         /// </summary>
         private void StartRouterPlaza()
         {
+
+            if (Emulation)
+                return;
+
            // return; //тест
 
             var processRouter = Process.GetProcessesByName("P2MQRouter64");
@@ -1234,6 +1250,7 @@ namespace PlazaEngine.Engine
                                         replmsg["name"].asUnicodeString(),
                                         SecurityType.Futures,
                                         "FORTS",
+                                        //NOTE: Почему то не открыто?
                                         1) //Convert.ToDecimal(replmsg["lot_volume"].asInt());
                                     {
                                         Id = replmsg["isin_id"].asInt().ToString(),
@@ -2327,7 +2344,27 @@ namespace PlazaEngine.Engine
             }
 
             Orders[order.NumberUserOrderId] = order;
-            
+
+            if (Emulation)
+            {
+
+                order.ExchangeOrderId = DateTime.Now.GetHashCode().ToString();
+                order.state = Order.OrderStateType.Activ;
+
+                OrderChangedEvent?.Invoke(order, "The order has been sent.");
+
+                var timer = new System.Timers.Timer(30000) { AutoReset = false };
+                timer.Elapsed += (s, e) =>
+                {
+                    order.state = Order.OrderStateType.Done;
+                    OrderChangedEvent?.Invoke(order, "The order has been executed.");
+                };
+                timer.Start();
+
+                return $"Request for Emulation order #{order.numberUser} sent.";
+            }
+
+
             Message sendMessage = _publisher.NewMessage(MessageKeyType.KeyName, "AddOrder");
             DataMessage smsg = (DataMessage)sendMessage;
 
@@ -2354,24 +2391,7 @@ namespace PlazaEngine.Engine
             smsg["comment"].set(order.Comment);
             order.timeCreate = GetTimeMoscowNow();
 
-            if (Emulation)
-            {
-                
-                order.ExchangeOrderId = DateTime.Now.GetHashCode().ToString();
-                order.state = Order.OrderStateType.Activ;
-
-                OrderChangedEvent?.Invoke(order, "The order has been sent.");
-
-                var timer = new System.Timers.Timer(30000) { AutoReset = false };
-                timer.Elapsed += (s, e) =>
-                {
-                    order.state = Order.OrderStateType.Done;
-                    OrderChangedEvent?.Invoke(order, "The order has been executed.");
-                };
-                timer.Start();
-
-                return $"Request for Emulation order #{order.numberUser} sent.";
-            }
+           
 
             await Task.Factory.StartNew(() =>
             {
