@@ -8,6 +8,7 @@ using ru.micexrts.cgate.message;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -146,7 +147,18 @@ namespace PlazaEngine.Engine
                                     }
                                     var isin_id = replmsg["isin_id"].asInt().ToString();
 
-                                    Trade trade = new Trade(replmsg, _dealsOnLine, plazaConnector.Securities);
+
+                                   
+
+                                    Trade trade = new Trade( _dealsOnLine, plazaConnector.Securities)
+                                    {
+										TransactionID = replmsg["id_deal"].asLong().ToString(),
+										SecurityId = replmsg["isin_id"].asInt().ToString(),
+										Time = replmsg["moment"].asDateTime(),
+										Side = replmsg["public_order_id_buy"].asLong() > replmsg["public_order_id_sell"].asLong() ? Side.Buy : Side.Sell,
+										Volume = replmsg["xamount"].asInt(),
+                                        Price = Convert.ToDecimal(replmsg["price"].asDecimal())
+									};
 
                                     AllTicks[trade.SecurityId] = trade;
                                     

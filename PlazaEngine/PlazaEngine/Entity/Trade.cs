@@ -1,8 +1,4 @@
-﻿using PlazaEngine.Engine;
-
-using ru.micexrts.cgate.message;
-
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -23,20 +19,23 @@ public class Trade
     /// <param name="replmsg">Сообщение от Биржи</param>
     /// <param name="isDealsOnline">В онлайне</param>
     /// <param name="securities">Словарь инструментов Id->Name </param>
-    public Trade(StreamDataMessage replmsg, bool isDealsOnline, ConcurrentDictionary<string, Security> securities)
+    public Trade( bool isDealsOnline, ConcurrentDictionary<string, Security> securities)
     {
-        TransactionID = replmsg["id_deal"].asLong().ToString();
-        SecurityId = replmsg["isin_id"].asInt().ToString();
-        if (securities.TryGetValue(replmsg["isin_id"].asInt().ToString(), out Security? _secname))
-            securityName = _secname.Name;
-        time = replmsg["moment"].asDateTime();
+
+	    /*TransactionID = replmsg["id_deal"].asLong().ToString(),
+								      SecurityId = replmsg["isin_id"].asInt().ToString(),
+								      if (securities.TryGetValue(replmsg["isin_id"].asInt().ToString(), out Security? _secname))
+								      securityName = _secname.Name;
+								      time = replmsg["moment"].asDateTime();
+								      isOnline = isDealsOnline;
+								      side = replmsg["public_order_id_buy"].asLong() > replmsg["public_order_id_sell"].asLong() ? Side.Buy : Side.Sell;
+								      volume = replmsg["xamount"].asInt();
+								      price = Convert.ToDecimal(replmsg["price"].asDecimal());*/
+
+
+		Trade.securities = securities;
         isOnline = isDealsOnline;
-        side = replmsg["public_order_id_buy"].asLong() > replmsg["public_order_id_sell"].asLong() ? Side.Buy : Side.Sell;
-        volume = replmsg["xamount"].asInt();
-        price = Convert.ToDecimal(replmsg["price"].asDecimal());
-        
-        Trade.securities = securities;
-    }
+	}
 
     private static ConcurrentDictionary<string, Security>? securities;
 
@@ -106,7 +105,7 @@ public class Trade
     public decimal Volume { get => volume; set { volume = value; } }
     decimal volume;
 
-    [JsonPropertyName("p")]
+	[JsonPropertyName("p")]
     /// <summary>
     /// Цена сделки
     /// </summary>

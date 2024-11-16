@@ -19,7 +19,32 @@ using System.Web;
 namespace BlazorApp3.Data
 {
 
-    public static class UriExtensions
+	// сделал промежуточный класс
+	public partial class TradeApi
+	{
+		[JsonProperty("sn")]
+		public string SecurityName { get; set; }
+
+		[JsonProperty("tid")]
+		public string TransactionID { get; set; }
+
+		[JsonProperty("s")]
+		public string SecurityId { get; set; }
+
+		[JsonProperty("t")]
+		public DateTime Time { get; set; }
+
+		[JsonProperty("d")]
+		public Side Side { get; set; }
+
+		[JsonProperty("v")]
+		public decimal Volume { get; set; }
+
+		[JsonProperty("p")]
+		public decimal Price { get; set; }
+	}
+
+	public static class UriExtensions
     {
         /// <summary>
         /// Adds the specified parameter to the Query String.
@@ -62,8 +87,9 @@ namespace BlazorApp3.Data
 		string token = "";
 
         public Action<MarketDepthLevel,string,IEnumerable<MarketDepthLevel>> NewMarketDepth;
+        public Action<string,List<TradeApi>> NewTicks;
 
-        public ApiDataService()
+		public ApiDataService()
         {
             client = new RestClient(mainadress);
             Securities = new ConcurrentDictionary<string, SecurityApi>();
@@ -120,6 +146,7 @@ namespace BlazorApp3.Data
 
         }
 
+        //TODO: отписки нет толком
         public async void SubcribeTick(string secid)
         {
 
@@ -134,14 +161,24 @@ namespace BlazorApp3.Data
 
 	        websocketClient.MessageReceived.Subscribe(msg =>
 	        {
-		        
+		        try
+		        {
+			       // var ticks = JsonConvert.DeserializeObject<List<Trade>>(msg.Text);
+                    var ticks = JsonConvert.DeserializeObject<List<TradeApi>>(msg.Text);
+					NewTicks?.Invoke(ticks[0].SecurityId, ticks);
+		        }
+		        catch (Exception ex)
+		        {
+			        Console.WriteLine(ex.ToString());
+		        }
+
 	        });
 
 	        websocketClient.Start();
 
 		}
 
-		public async void SubscribeInstument(string secid)
+		public async void SubscribeOrderBook(string secid)
         {
             var webscoketrequest=
                 websocketurl
