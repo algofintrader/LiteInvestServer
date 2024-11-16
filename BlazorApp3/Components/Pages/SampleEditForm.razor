@@ -44,19 +44,16 @@
         if (r != null)
         {
             Console.WriteLine("Connected!");
+            await GetInstruments();
             bufferService.windowVisible = false;
             bufferService.UserLoggedIn = true;
             bufferService.OnLogin?.Invoke();
-            GetInstruments();
         }
-
-        StateHasChanged();
     }
 
-    private async void GetInstruments()
+    private async Task GetInstruments()
     {
         bufferService.Securities = await _apidataservice.GetInstruments();
         Console.WriteLine($"Instruments = {bufferService.Securities.Count()} Received");
-        StateHasChanged();
     }
 }
