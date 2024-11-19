@@ -140,6 +140,10 @@ namespace LiteInvestMainFront.Data
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="secid">ID инструмента</param>
         public async void SubscribeInstument(string secid)
         {
             var webscoketrequest =

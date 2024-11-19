@@ -94,8 +94,6 @@ namespace LiteInvestMainFront.Data
             //TODO: возможно стоит взять другой вариант, поработать со стринг, тогда может он не перемешает это все в кашу. 
             var sorted = AllLevels.Values.OrderByDescending(s => s.Price);
 
-
-
             Mdupdated?.Invoke(bestbid, Sec.id, sorted);
         }
 

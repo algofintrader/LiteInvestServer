@@ -1,6 +1,7 @@
 ﻿
 @using DevExpress.Data.Browsing
 @using LiteInvestMainFront.Data
+@using LiteInvestServer.Json
 @using PlazaEngine.Entity
 @using Orientation = DevExpress.Blazor.Orientation
 
@@ -16,7 +17,7 @@
 		font-weight: 500;
 		text-align: center;
 		width: 100%;
-		height: 100%;
+		height: 800px;
 		text-align: center;
 		position: relative;
 		z-index: 0;
@@ -53,18 +54,36 @@
 	
 	.dxgrid {
 		height: 100%;
+		
+	}
+	
+	.dxbl-grid 
+	{
+		--dxbl-grid-font-size: 10px;
 	}
 
 	.chart {
 		height: 100%;
 	}
+
+	.highlighted-item > td {
+		background-color: var(--bs-danger-bg-subtle)
+	}
+
+	
+
+	.highlighted-item2 > td {
+		background-color: var(--bs-success-bg-subtle)
+	}
+
+	
 	
 </style>
 
 
 <div class="card cardnew">
 			<div class="card-header">
-				@secid
+				@secutityMain.Isin
 				<button  type="button" class="buttonclose btn-close" aria-label="Close" @onclick="OnClosingMain" ></button>
 			</div>
 <div class="card-body">
@@ -138,20 +157,21 @@
 				<Template>
 					<div class="gridlayout-right-side-bar gridlayout-item">
 						<DxGrid CssClass="dxgrid"
-							@ref=Grid
-									Data="@Quotes"
-									ShowAllRows="true"
-									TextWrapEnabled="false"
-									CustomizeElement="Grid_CustomizeElement"
-									ShowGroupPanel="false"
-							HighlightRowOnHover="true"
-							>
-								<Columns>
-									<DxGridDataColumn FieldName="Volume" Width="30%"/>
-									<DxGridDataColumn FieldName="Price" Width="70%"  />
-									<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
-								</Columns>
-							</DxGrid>
+						        @ref=Grid
+						        Data="@Quotes"
+						        ShowAllRows="true"
+						        ColumnResizeMode="GridColumnResizeMode.NextColumn"
+						        TextWrapEnabled="false"
+						        CustomizeElement="Grid_CustomizeElement"
+						        ShowGroupPanel="false"
+						        HighlightRowOnHover="true">
+
+							<Columns>
+								<DxGridDataColumn FieldName="Volume" Width="30%"/>
+								<DxGridDataColumn FieldName="Price" Width="70%"/>
+								<DxGridDataColumn FieldName="Type" Width="0" Visible="false"/>
+							</Columns>
+						</DxGrid>
 					</div>
 				</Template>
 			</DxGridLayoutItem>
@@ -174,7 +194,7 @@
 	public Action<string>? OnClosing { get; set; }
 
 	[Parameter]
-	public string secid { get; set; }
+	public SecurityApi secutityMain { get; set; }
 
 	[Parameter]
 	public ApiDataService ApiDataService { get; set; }
@@ -184,17 +204,15 @@
 	protected override Task OnInitializedAsync()
 	{
 
-		var sec = secid;
-
-		if (sec == null)
+		
+		if (secutityMain== null)
 			return base.OnInitializedAsync();
 
-		ApiDataService.NewMarketDepth += async (bestbid, secinstrument, md) =>
+		ApiDataService.NewMarketDepth += async (bestbid, secID, md) =>
 		{
 
-			if (secinstrument != sec)
+			if (secutityMain.id != secID)
 				return;
-
 
 			Quotes = md;
 
@@ -218,7 +236,7 @@
 			});
 		};
 
-		ApiDataService.SubscribeInstument(secid);
+		ApiDataService.SubscribeInstument(secutityMain.id);
 		return base.OnInitializedAsync();
 	}
 
@@ -257,7 +275,7 @@
 
 		//TODO: Сделать отписку по инструментам и полный Dispose
 
-		OnClosing?.Invoke(secid);
+		OnClosing?.Invoke(secutityMain.Isin);
 		return Task.CompletedTask;
 	}
 
