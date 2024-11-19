@@ -1,0 +1,277 @@
+﻿@page "/"
+@using System.Collections.Concurrent
+@using System.Collections.ObjectModel
+@using LiteInvestMainFront.Data
+@using LiteInvestServer.Json
+@using Orientation = DevExpress.Blazor.Orientation
+@rendermode InteractiveServer
+
+@inject ApiDataService _apidataservice
+
+<style>
+
+	.internalSearch {
+		margin: 10px
+	}
+
+	.stacklayout-item {
+		font-size: 1.2em;
+		font-weight: 500;
+		text-align: center;
+		height: 100%;
+		padding: 0.5rem;
+		text-align: center;
+		position: relative;
+		z-index: 0;
+		display: flex;
+		align-items: flex-start;
+		justify-content: flex-start;
+	}
+	.stacklayout-item:before {
+		content: " ";
+		position: absolute;
+		z-index: -1;
+		width: 100%;
+			height: 100%;
+		left: 0;
+		top: 0;
+		opacity: 0.4;
+	}
+	.stacklayout-header:before {
+		background-color: var(--bs-red);
+	}
+	.stacklayout-content:before {
+		background-color: var(--bs-yellow);
+	}
+	.stacklayout-left-side-bar:before {
+		background-color: var(--bs-green);
+	}
+	.stacklayout-right-side-bar:before {
+		background-color: var(--bs-info);
+	}
+	.stacklayout-footer:before {
+		background-color: var(--bs-blue);
+		opacity: 0.5;
+	}
+
+
+	.buttonclose {
+
+		float: right;
+
+	}
+
+	@@media (max-width: 575.98px) {
+	.stacklayout-item {
+		font-size: 0.9em;
+	}
+	}
+
+
+</style>
+
+<!--<AutoComplete @bind-Value="customerName"
+			  TItem="Customer"
+			  DataProvider="CustomersDataProvider"
+			  PropertyName="CustomerName"
+			  Placeholder="Выберите инструмент"
+			  OnChanged="(Customer customer) => OnAutoCompleteChanged(customer)" />-->
+
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
+	<div class="container-fluid">
+		<a class="navbar-brand" href="#">LiteInvest</a>
+
+		<form class="d-flex internalSearch" role="search">
+			<DxComboBox Data="@Instruments"
+			            Value="@securitySelected"
+			            ValueChanged="@((SecurityApi sec) => OnAutoCompleteChanged(sec))"
+			            TextFieldName="@nameof(securitySelected.Isin)"
+			            SearchMode="@ListSearchMode.AutoSearch"
+			            SearchFilterCondition="@ListSearchFilterCondition.Contains"
+			            ListRenderMode="ListRenderMode.Entire"
+			            CssClass="cw-480"
+			            InputId="cbVirtualScrolling" />
+
+			<!--<AutoComplete @bind-Value="securitySelected"
+			              TItem="SecurityApi"
+			              DataProvider="InstrumentsDataProvider"
+			              PropertyName="Isin"
+			              Placeholder="Выберите инструмент"
+			              OnChanged="(SecurityApi customer) => OnAutoCompleteChanged(customer)" />-->
+			<!--<input class="form-control me-2" type="search" placeholder="Инструменты"  aria-label="Search">
+			<button class="btn btn-outline-success" type="submit">Search</button>-->
+		</form>
+
+		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item dropdown">
+					<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+						Торговля
+					</a>
+					<ul class="dropdown-menu">
+						<li><a class="dropdown-item" href="#">Позиции</a></li>
+						<li><a class="dropdown-item" href="#">Счета</a></li>
+						<li><hr class="dropdown-divider"></li>
+						<li><a class="dropdown-item" href="#">Ордера</a></li>
+					</ul>
+				</li>
+			</ul>
+
+			<ul class="nav navbar-nav ml-auto">
+				<!--<li class="nav-item">
+					<a class="nav-link" href="#"><span class="fas fa-user"></span> Sign Up</a>
+				</li>-->
+				<li class="nav-item">
+					<a class="nav-link" href="#" onclick="@OnLogin"><span class="fas fa-sign-in-alt"></span>@textlogin</a>
+				</li>
+			</ul>
+
+		</div>
+	</div>
+</nav>
+
+
+
+<DxLoadingPanel @bind-Visible="loadingLogIn"
+                IsContentBlocked="true"
+                ApplyBackgroundShading="true"
+                IndicatorAreaVisible="false"
+                Text="Входим..." />
+
+<DxWindow @ref=windowRef
+		  AllowResize="true"
+		  ShowCloseButton="true"
+		  CloseOnEscape="true"
+		  HeaderText="Авторизация"
+		  FooterText="Footer"
+		  ShowFooter="true"
+		  Width="max(25vw, 250px)"
+		  MinWidth="300"
+		  MinHeight="200"
+		  MaxWidth="800"
+		  MaxHeight="500"
+		  @bind-Visible=windowVisible>
+	<BodyContentTemplate>
+		<LogInForm @ref="logform" />
+	</BodyContentTemplate>
+
+	<FooterContentTemplate>
+		<DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Primary" Text="OK" Click="@OnLoginClick" />
+	</FooterContentTemplate>
+	</DxWindow>
+
+
+
+
+
+<DxStackLayout CssClass="w-100 ch-480" Orientation="Orientation.Horizontal">
+	<Items>
+		@foreach (var instr in RegisteredInstruments)
+		{
+			<DxStackLayoutItem>
+				<Template>
+					<div >
+						<WorkWindow OnClosing="OnClosingWorkingWindow" secid="@instr.Key" ApiDataService="@_apidataservice"/>
+					</div>
+				</Template>
+			</DxStackLayoutItem>
+		}
+	</Items>
+</DxStackLayout>
+
+
+
+@code {
+
+	string textlogin = "Войти";
+	bool loadingLogIn;
+
+	DxWindow windowRef;
+	bool windowVisible;
+	LogInForm logform;
+
+	private SecurityApi securitySelected;
+	public IEnumerable<SecurityApi>? Instruments = new List<SecurityApi>();
+
+	ConcurrentDictionary<string, SecurityApi> RegisteredInstruments = new();
+
+	Task OnLogin()
+	{
+		windowVisible = true;
+		return Task.CompletedTask;
+	}
+
+	private async Task<AutoCompleteDataProviderResult<SecurityApi>> InstrumentsDataProvider(AutoCompleteDataProviderRequest<SecurityApi> request)
+	{
+		try
+		{
+
+
+			if (request == null)
+				return null;
+
+			//securitySelected = instruments.FirstOrDefault();
+			return await Task.FromResult(request.ApplyTo(Instruments.OrderBy(sec => sec.Isin)));
+		}
+		catch (Exception ex)
+		{
+			return null;
+		}
+
+	}
+
+	/*
+	private IEnumerable<Customer> GetCustomers()
+		{
+		return new List<Customer>
+			{
+			new(1, "Pich S"),
+			new(2, "sfh Sobi"),
+		};
+	}*/
+
+
+
+	private void OnAutoCompleteChanged(SecurityApi securityApi)
+	{
+
+		if(securityApi==null)
+			return;
+
+		RegisteredInstruments.TryAdd(securityApi.Isin,securityApi);
+
+		Console.WriteLine($"'{securityApi.Isin}' selected.");
+
+		InvokeAsync(StateHasChanged);
+	}
+
+	private async void OnLoginClick(MouseEventArgs obj)
+	{
+		if (logform != null)
+		{
+			loadingLogIn =true;
+			var res = await _apidataservice.LogIn(logform.Email, logform.pass);
+			Instruments = await _apidataservice.GetInstruments();
+
+			Console.WriteLine($"Loaded instruments {Instruments.Count()}");
+
+			loadingLogIn = false;
+			textlogin = "ON";
+		}
+
+		windowRef.CloseAsync();
+	}
+
+
+	private void OnClosingWorkingWindow(string instr)
+	{
+		RegisteredInstruments.Remove(instr, out var _);
+		InvokeAsync(StateHasChanged);
+	}
+
+}

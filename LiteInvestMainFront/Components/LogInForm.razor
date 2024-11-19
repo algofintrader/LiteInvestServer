@@ -1,0 +1,33 @@
+﻿
+
+<DxFormLayout CssClass="w-100">
+	<!--<DxFormLayoutItem Caption="Contact Name:">
+		<DxTextBox @bind-Text="@Name" />
+	</DxFormLayoutItem>-->
+	
+	<DxFormLayoutItem Caption="Email" ColSpanMd="12">
+		<DxTextBox @bind-Text="@Email"/>
+	</DxFormLayoutItem>
+		
+		
+	<DxFormLayoutItem Caption="Пароль" ColSpanMd="12">
+		<DxTextBox @bind-Text="@pass"/>
+	</DxFormLayoutItem>
+
+
+	<DxFormLayoutItem Caption="Регистрация">
+		<DxCheckBox @bind-Checked="@OnRegistration" />
+	</DxFormLayoutItem>
+</DxFormLayout>
+
+
+
+@code {
+
+	public string Email { get; set; } = "samujan1@yandex.ru";
+	public string pass { get; set; } = "pass2";
+
+	public bool OnRegistration { get; set; }
+
+
+}

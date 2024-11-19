@@ -1,0 +1,269 @@
+﻿
+@using DevExpress.Data.Browsing
+@using LiteInvestMainFront.Data
+@using PlazaEngine.Entity
+@using Orientation = DevExpress.Blazor.Orientation
+
+
+<style>
+	.cardnew {
+		height: 800px;
+
+	}
+
+	.gridlayout-item {
+		font-size: 1.2em;
+		font-weight: 500;
+		text-align: center;
+		width: 100%;
+		height: 100%;
+		text-align: center;
+		position: relative;
+		z-index: 0;
+		display: flex;
+		align-items: start;
+		justify-content: start;
+	}
+	.gridlayout-item:before {
+		content: " ";
+		position: absolute;
+		z-index: -1;
+		width: 100%;
+		height: 100%;
+		left: 0;
+		top: 0;
+		opacity: 0.4;
+	}
+	.gridlayout-header:before {
+		background-color: var(--bs-red);
+	}
+	.gridlayout-content:before {
+		background-color: var(--bs-yellow);
+	}
+	.gridlayout-left-side-bar:before {
+		background-color: var(--bs-green);
+	}
+	.gridlayout-right-side-bar:before {
+		
+	}
+	.gridlayout-footer:before {
+		background-color: var(--bs-blue);
+		opacity: 0.5;
+	}
+	
+	.dxgrid {
+		height: 100%;
+	}
+
+	.chart {
+		height: 100%;
+	}
+	
+</style>
+
+
+<div class="card cardnew">
+			<div class="card-header">
+				@secid
+				<button  type="button" class="buttonclose btn-close" aria-label="Close" @onclick="OnClosingMain" ></button>
+			</div>
+<div class="card-body">
+
+	<DxGridLayout CssClass="w-100 ch-480">
+		<Rows>
+			<DxGridLayoutRow />
+			<DxGridLayoutRow Height="auto" />
+		</Rows>
+		<Columns>
+			<DxGridLayoutColumn  />
+			<DxGridLayoutColumn  />
+			<DxGridLayoutColumn />
+		</Columns>
+		<Items>
+			<DxGridLayoutItem Row="0" Column="0">
+				<Template>
+					<div class="gridlayout-left-side-bar gridlayout-item">
+						Left Bar
+					</div>
+				</Template>
+			</DxGridLayoutItem>
+
+			<DxGridLayoutItem Row="0" Column="1">
+				<Template>
+					<div class="gridlayout-content gridlayout-item">
+						<DxChart CssClass="chart"
+							@ref="Chart"
+							Data="Ticks"
+							Width="100%"
+							LabelOverlap="ChartLabelOverlap.Hide">
+							<DxChartLineSeries Name="ticksLineSeries"
+							                   
+							                   T="Trade"
+							                   TArgument="DateTime"
+							                   TValue="decimal"
+							                   ArgumentField="si => si.Time"
+							                   ValueField="si => si.Price"
+							                   HoverMode="ChartContinuousSeriesHoverMode.Series">
+								
+								<DxChartLegend Visible="false" />
+								
+								<!--<DxChartSeriesPoint Visible="true"
+												HoverMode="ChartSeriesPointHoverMode.None" />-->
+								<!--<DxChartSeriesLabel Visible="true"
+												ValueFormat="ChartElementFormat.Thousands(1)" />-->
+							</DxChartLineSeries>
+						
+							<DxChartLegend Position="RelativePosition.Outside"
+							               HorizontalAlignment="HorizontalAlignment.Right" />
+							
+							<DxChartValueAxis Visible="false" />
+							<DxChartArgumentAxis Visible="false" />
+						
+							<!--
+						<DxChartTooltip Enabled="true">
+							@context.Point.Render((seriesPoint) =>
+								@<div style="margin: 0.75rem">
+									<div>@seriesPoint.SeriesName</div>
+									<span>@($"{seriesPoint.Argument: MMMM yyyy}: ")</span>
+									<span>@($"{seriesPoint.Value: $0,.0}K")</span>
+								</div>
+																)
+						</DxChartTooltip>-->
+						</DxChart>
+					</div>
+				</Template>
+			</DxGridLayoutItem>
+			
+			<DxGridLayoutItem Row="0" Column="2">
+				<Template>
+					<div class="gridlayout-right-side-bar gridlayout-item">
+						<DxGrid CssClass="dxgrid"
+							@ref=Grid
+									Data="@Quotes"
+									ShowAllRows="true"
+									TextWrapEnabled="false"
+									CustomizeElement="Grid_CustomizeElement"
+									ShowGroupPanel="false"
+							HighlightRowOnHover="true"
+							>
+								<Columns>
+									<DxGridDataColumn FieldName="Volume" Width="30%"/>
+									<DxGridDataColumn FieldName="Price" Width="70%"  />
+									<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
+								</Columns>
+							</DxGrid>
+					</div>
+				</Template>
+			</DxGridLayoutItem>
+		</Items>
+	</DxGridLayout>
+</div>
+</div>
+
+
+@code {
+	DxChart<Trade> Chart;
+
+	IGrid Grid;
+	//А вдруг у меня все получится
+	//Влруг я буду прав
+
+	List<Trade> Ticks { get; set; } = new List<Trade>();
+
+	[Parameter]
+	public Action<string>? OnClosing { get; set; }
+
+	[Parameter]
+	public string secid { get; set; }
+
+	[Parameter]
+	public ApiDataService ApiDataService { get; set; }
+
+
+	int i = 1;
+	protected override Task OnInitializedAsync()
+	{
+
+		var sec = secid;
+
+		if (sec == null)
+			return base.OnInitializedAsync();
+
+		ApiDataService.NewMarketDepth += async (bestbid, secinstrument, md) =>
+		{
+
+			if (secinstrument != sec)
+				return;
+
+
+			Quotes = md;
+
+			Ticks.Add(new Trade()
+				{
+					Price = bestbid.Price,//Quotes.ToArray()[new Random().Next(1, Quotes.Count())].Price,
+					Time = DateTime.Now
+				});
+
+			if (Ticks.Count > 10)
+				Ticks.RemoveAt(0);
+
+			await InvokeAsync(() =>
+			{
+				Chart.RefreshData();
+
+				//Console.WriteLine($"{DateTime.Now} New Quotes!");
+				//ScrollToLastRow1(bestbid);
+
+				StateHasChanged();
+			});
+		};
+
+		ApiDataService.SubscribeInstument(secid);
+		return base.OnInitializedAsync();
+	}
+
+	//TODO: Тут надо подумать конечно.
+	void ScrollToLastRow1(MarketDepthLevel level)
+	{
+		Grid.MakeDataItemVisibleAsync(level);
+
+		Console.WriteLine("visible row " + Grid.GetStartRowVisibleIndex());
+	}
+
+	void ScrollToLastRow(int count)
+	{
+		Console.WriteLine($"{count} scroll");
+		//Grid.(count);
+
+	}
+
+	void Grid_CustomizeElement(GridCustomizeElementEventArgs e)
+	{
+		if (e.ElementType == GridElementType.DataRow && (PlazaEngine.Entity.Side)e.Grid.GetRowValue(e.VisibleIndex, "Type") == Side.Sell)
+		{
+			e.CssClass = "highlighted-item";
+		}
+
+		if (e.ElementType == GridElementType.DataRow && (PlazaEngine.Entity.Side)e.Grid.GetRowValue(e.VisibleIndex, "Type") == Side.Buy)
+		{
+			e.CssClass = "highlighted-item2";
+		}
+
+
+	}
+
+	Task OnClosingMain()
+	{
+
+		//TODO: Сделать отписку по инструментам и полный Dispose
+
+		OnClosing?.Invoke(secid);
+		return Task.CompletedTask;
+	}
+
+	Orientation currentOrientation;
+	IEnumerable<MarketDepthLevel> Quotes;
+
+	string messageConnection { get; set; }
+
+}
