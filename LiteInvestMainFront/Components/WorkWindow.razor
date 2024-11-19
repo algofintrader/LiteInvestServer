@@ -1,4 +1,5 @@
 ﻿
+@using System.Drawing
 @using DevExpress.Data.Browsing
 @using LiteInvestMainFront.Data
 @using LiteInvestServer.Json
@@ -111,12 +112,13 @@
 				<Template>
 					<div class="gridlayout-content gridlayout-item">
 						<DxChart CssClass="chart"
+						         CustomizeSeriesPoint="@PrepareSeriesPoint"
 							@ref="Chart"
 							Data="Ticks"
 							Width="100%"
 							LabelOverlap="ChartLabelOverlap.Hide">
 							<DxChartLineSeries Name="ticksLineSeries"
-							                   
+							                  
 							                   T="Trade"
 							                   TArgument="DateTime"
 							                   TValue="decimal"
@@ -135,8 +137,13 @@
 							<DxChartLegend Position="RelativePosition.Outside"
 							               HorizontalAlignment="HorizontalAlignment.Right" />
 							
-							<DxChartValueAxis Visible="false" />
+						
 							<DxChartArgumentAxis Visible="false" />
+
+							<DxChartValueAxis Visible="false">
+								<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart"/>
+
+							</DxChartValueAxis>
 						
 							<!--
 						<DxChartTooltip Enabled="true">
@@ -164,7 +171,9 @@
 						        TextWrapEnabled="false"
 						        CustomizeElement="Grid_CustomizeElement"
 						        ShowGroupPanel="false"
-						        HighlightRowOnHover="true">
+						        HighlightRowOnHover="true"
+								FocusedRowEnabled="true"
+						        >
 
 							<Columns>
 								<DxGridDataColumn FieldName="Volume" Width="30%"/>
@@ -199,6 +208,9 @@
 	[Parameter]
 	public ApiDataService ApiDataService { get; set; }
 
+	decimal minchart = 10000;
+	decimal maxchart = 12000;
+
 
 	int i = 1;
 	protected override Task OnInitializedAsync()
@@ -208,26 +220,23 @@
 		if (secutityMain== null)
 			return base.OnInitializedAsync();
 
-		ApiDataService.NewMarketDepth += async (bestbid, secID, md) =>
+		ApiDataService.NewMarketDepth += async (bestbid,secinstrument,md) =>
 		{
-
-			if (secutityMain.id != secID)
+			if (secinstrument != secutityMain.id)
 				return;
 
 			Quotes = md;
 
-			Ticks.Add(new Trade()
-				{
-					Price = bestbid.Price,//Quotes.ToArray()[new Random().Next(1, Quotes.Count())].Price,
-					Time = DateTime.Now
-				});
+			maxchart = bestbid.Price + 100;
+			minchart = bestbid.Price - 100;
 
-			if (Ticks.Count > 10)
-				Ticks.RemoveAt(0);
+			
+			//int visibleitem = Grid.GetStartRowVisibleIndex();
+			//Console.WriteLine("видимая строка " + Quotes.ToArray()[visibleitem].Price + $@"к1={Grid.GetVisibleRowCount()} к2={Quotes.Count()}");
 
 			await InvokeAsync(() =>
 			{
-				Chart.RefreshData();
+
 
 				//Console.WriteLine($"{DateTime.Now} New Quotes!");
 				//ScrollToLastRow1(bestbid);
@@ -236,7 +245,38 @@
 			});
 		};
 
-		ApiDataService.SubscribeInstument(secutityMain.id);
+		var dt = DateTime.Now;
+		int start = 0;
+
+		ApiDataService.NewTicks += async (string secinstrument, List<TradeApi> ticks) =>
+		{
+			if (secinstrument != secutityMain.id)
+				return;
+
+			Console.WriteLine(ticks[0].SecurityId + " new tick !" + ticks[0].Price);
+
+			foreach (var tick in ticks)
+			{
+				start++;
+				Ticks.Add(new Trade()
+				{  
+					Price = tick.Price,//Quotes.ToArray()[new Random().Next(1, Quotes.Count())].Price,
+					Time = dt+TimeSpan.FromSeconds(start),
+					Volume = tick.Volume,
+					Side = tick.Side
+				});
+
+				if (Ticks.Count > 15)
+					Ticks.RemoveAt(0);
+			}
+
+			await InvokeAsync(() => { Chart.RefreshData(); });
+
+		};
+
+		ApiDataService.SubscribeOrderBook(secutityMain.id);
+		ApiDataService.SubcribeTick(secutityMain.id);
+
 		return base.OnInitializedAsync();
 	}
 
@@ -257,6 +297,10 @@
 
 	void Grid_CustomizeElement(GridCustomizeElementEventArgs e)
 	{
+		if (e.Grid.IsRowFocused(e.VisibleIndex)) {
+			e.Style = "background-color: red";
+		}
+
 		if (e.ElementType == GridElementType.DataRow && (PlazaEngine.Entity.Side)e.Grid.GetRowValue(e.VisibleIndex, "Type") == Side.Sell)
 		{
 			e.CssClass = "highlighted-item";
@@ -269,6 +313,29 @@
 
 
 	}
+
+	protected void PrepareSeriesPoint(ChartSeriesPointCustomizationSettings pointSettings)
+	{
+		//всегда 1 элемент
+		var t = (Trade)pointSettings.Point.DataItems.ToArray()[0];
+
+		//показывать объём сверху
+		pointSettings.PointLabel.Texts = new string[] { t.Volume.ToString() };
+		pointSettings.PointLabel.Visible = true;
+
+		//кружок
+		pointSettings.PointAppearance.Symbol = ChartPointSymbol.Circle;
+
+		//TODO: Исправить размеры - сделать адаптивными
+		pointSettings.PointAppearance.Size = (int)t.Volume * 5;
+
+		if (t.Side == Side.Sell)
+			pointSettings.PointAppearance.Color = Color.Red;
+		else if (t.Side == Side.Buy)
+			pointSettings.PointAppearance.Color = Color.Green;
+
+	}
+
 
 	Task OnClosingMain()
 	{

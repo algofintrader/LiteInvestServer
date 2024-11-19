@@ -1,4 +1,5 @@
-﻿@using BlazorApp3.Data
+﻿@using System.Drawing
+@using BlazorApp3.Data
 @using PlazaEngine.Entity
 
 <style type="text/css">
@@ -39,26 +40,34 @@
 				<div class="stacklayout-content stacklayout-item">
 					<DxChart
 						@ref="Chart"
-						Data="Ticks"
-							 Width="100%"
-							 LabelOverlap="ChartLabelOverlap.Hide">
-						<DxChartLineSeries Name="ticksLineSeries"
+							 CustomizeSeriesPoint="@PrepareSeriesPoint"
 
-										   T="Trade"
-										   TArgument="DateTime"
-										   TValue="decimal"
-										   ArgumentField="si => si.Time"
-										   ValueField="si => si.Price"
-										   HoverMode="ChartContinuousSeriesHoverMode.Series">
+						Data="Ticks"
+						Width="100%"
+						LabelOverlap="ChartLabelOverlap.Hide">
+						<DxChartLineSeries T="Trade"
+						                   TArgument="DateTime"
+						                   TValue="decimal"
+						                   ArgumentField="si => si.Time"
+						                   ValueField="si => si.Price"
+						                   HoverMode="ChartContinuousSeriesHoverMode.Series">
 							<!--<DxChartSeriesPoint Visible="true"
 												HoverMode="ChartSeriesPointHoverMode.None" />-->
 							<!--<DxChartSeriesLabel Visible="true"
 												ValueFormat="ChartElementFormat.Thousands(1)" />-->
+							
+							<DxChartSeriesLabel Position="RelativePosition.Inside" VerticalOffset="30" FormatPattern="{value:#.##}">
+								<DxChartSeriesLabelConnector Visible="true"
+								                             Width="3" />
+							</DxChartSeriesLabel>
 						</DxChartLineSeries>
+
+						<DxChartValueAxis Visible="false" />
+						<DxChartArgumentAxis Visible="false" />
 						
 						<DxChartLegend Position="RelativePosition.Outside"
-						               HorizontalAlignment="HorizontalAlignment.Right" />
-						
+						               HorizontalAlignment="HorizontalAlignment.Right"  />
+
 						<!--
 						<DxChartTooltip Enabled="true">
 							@context.Point.Render((seriesPoint) =>
@@ -120,36 +129,55 @@
 	protected override Task OnInitializedAsync()
 	{
 		var sec = secid;
-		ApiDataService.NewMarketDepth += async (bestbid,secinstrument,md) =>
+		ApiDataService.NewMarketDepth += async (bestbid, secinstrument, md) =>
 		{
-
-			if(secinstrument!=sec)
+			if (secinstrument != sec)
 				return;
-
 
 			Quotes = md;
 
-			Ticks.Add(new Trade()
-			{  
-				Price = bestbid.Price,//Quotes.ToArray()[new Random().Next(1, Quotes.Count())].Price,
-				Time = DateTime.Now
-			});
 
-			if (Ticks.Count > 10)
-				Ticks.RemoveAt(0);
 
 			await InvokeAsync(() =>
 			{
-				Chart.RefreshData();
-				
+
+
 				//Console.WriteLine($"{DateTime.Now} New Quotes!");
 				//ScrollToLastRow1(bestbid);
-				
+
 				StateHasChanged();
 			});
 		};
+		var dt = DateTime.Now;
+		int start = 0;
+		ApiDataService.NewTicks += async (string secinstrument, List<TradeApi> ticks) =>
+		{
+			if (secinstrument != sec)
+				return;
 
-		ApiDataService.SubscribeInstument(secid);
+
+			foreach (var tick in ticks)
+			{
+				start++;
+				Ticks.Add(new Trade()
+					{
+						Price = tick.Price,//Quotes.ToArray()[new Random().Next(1, Quotes.Count())].Price,
+						Time = dt + TimeSpan.FromSeconds(start),
+						Volume = tick.Volume,
+						Side = tick.Side
+					});
+
+				if (Ticks.Count > 15)
+					Ticks.RemoveAt(0);
+			}
+
+			await InvokeAsync(() => { Chart.RefreshData(); });
+
+		};
+
+		ApiDataService.SubscribeOrderBook(secid);
+		ApiDataService.SubcribeTick(secid);
+
 		return base.OnInitializedAsync();
 	}
 
@@ -182,6 +210,39 @@
 		
 		
 	}
+
+	protected void PrepareSeriesPoint(ChartSeriesPointCustomizationSettings pointSettings)
+	{
+
+		try
+		{
+			var t = (Trade)pointSettings.Point.DataItems.ToArray()[0];
+
+			Console.WriteLine("цена" + t.Price);
+
+			pointSettings.PointLabel.Texts = new string[] { t.Volume.ToString() };
+
+			pointSettings.PointLabel.Visible = true;
+
+			pointSettings.PointAppearance.Symbol = ChartPointSymbol.Circle;
+
+			//NOTE: просто приспобил к объёму
+			pointSettings.PointAppearance.Size = (int)t.Volume * 5;
+
+			if (t.Side == Side.Sell)
+				pointSettings.PointAppearance.Color = Color.Red;
+			else if (t.Side == Side.Buy)
+				pointSettings.PointAppearance.Color = Color.Green;
+		}
+		catch (Exception ex)
+		{
+
+		}
+
+	}
+
+
+
 
 	Orientation currentOrientation;
 	IEnumerable<MarketDepthLevel> Quotes;
