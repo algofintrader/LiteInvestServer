@@ -233,87 +233,20 @@
 
 	int i = 1;
 	int orderbookcount = 0;
+	int start = 0;
+
+	public DateTime dt { get; set; }
+
 	protected override async Task<Task> OnInitializedAsync()
 	{
-
-
 		if (secutityMain== null)
 			return base.OnInitializedAsync();
 
 		WebSockets = new List<WebsocketClient>();
 
-		ApiDataService.NewMarketDepth += async (bestbid,secinstrument,md) =>
-		{
-			if (secinstrument != secutityMain.id)
-				return;
-
-			Quotes = md;
-
-			//TODO - при масштабированини этот уровень лучше менять. 
-			maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
-			minchart = bestbid.Price - levelsFromBest * secutityMain.PriceStep;
-
-			var dictionary = Quotes.Select(t => new { t.Price, t })
-				.ToDictionary(t => t.Price, t => t);
-
-
-			//int visibleitem = Grid.GetStartRowVisibleIndex();
-			//Console.WriteLine("видимая строка " + Quotes.ToArray()[visibleitem].Price + $@"к1={Grid.GetVisibleRowCount()} к2={Quotes.Count()}");
-
-			await InvokeAsync(() =>
-			{
-				orderbookcount++;
-
-				if (orderbookcount < 3)
-				{
-
-					//Console.WriteLine($"{DateTime.Now} New Quotes!");
-					if (dictionary.ContainsKey(maxchart))
-					{
-						Console.WriteLine($"Scroll to {maxchart}!");
-						ScrollToLastRow1(dictionary[maxchart].t);
-					}
-
-					if (dictionary.ContainsKey(minchart))
-					{
-						Console.WriteLine($"Scroll to {minchart}!");
-						ScrollToLastRow1(dictionary[minchart].t);
-					}
-
-				}
-
-				StateHasChanged();
-			});
-		};
-
-		var dt = DateTime.Now;
-		int start = 0;
-
-		ApiDataService.NewTicks += async (string secinstrument, List<TradeApi> ticks) =>
-		{
-			if (secinstrument != secutityMain.id)
-				return;
-
-			Console.WriteLine(ticks[0].SecurityId + " new tick !" + ticks[0].Price);
-
-			foreach (var tick in ticks)
-			{
-				start++;
-				Ticks.Add(new Trade()
-				{  
-					Price = tick.Price,//Quotes.ToArray()[new Random().Next(1, Quotes.Count())].Price,
-					Time = dt+TimeSpan.FromSeconds(start),
-					Volume = tick.Volume,
-					Side = tick.Side
-				});
-
-				if (Ticks.Count > 15)
-					Ticks.RemoveAt(0);
-			}
-
-			await InvokeAsync(() => { Chart.RefreshData(); });
-
-		};
+		dt = DateTime.Now;
+		ApiDataService.NewMarketDepth += OnNewMarketDepth;
+		ApiDataService.NewTicks += OnNewTicks;
 
 		WebSockets.Add(await ApiDataService.SubscribeOrderBook(secutityMain.id));
 		WebSockets.Add(await ApiDataService.SubcribeTick(secutityMain.id));
@@ -321,6 +254,69 @@
 		return base.OnInitializedAsync();
 	}
 
+	private async void OnNewMarketDepth(MarketDepthLevel bestbid, string secinstrument, IEnumerable<MarketDepthLevel> md)
+	{
+		if (secinstrument != secutityMain.id) return;
+
+		Quotes = md;
+
+		//TODO - при масштабированини этот уровень лучше менять. 
+		maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
+		minchart = bestbid.Price - levelsFromBest * secutityMain.PriceStep;
+
+		var dictionary = Quotes.Select(t => new { t.Price, t })
+			.ToDictionary(t => t.Price, t => t);
+
+
+		//int visibleitem = Grid.GetStartRowVisibleIndex();
+		//Console.WriteLine("видимая строка " + Quotes.ToArray()[visibleitem].Price + $@"к1={Grid.GetVisibleRowCount()} к2={Quotes.Count()}");
+
+		await InvokeAsync(() =>
+		{
+			orderbookcount++;
+
+			if (orderbookcount < 3)
+			{
+				//Console.WriteLine($"{DateTime.Now} New Quotes!");
+				if (dictionary.ContainsKey(maxchart))
+				{
+					Console.WriteLine($"Scroll to {maxchart}!");
+					ScrollToLastRow1(dictionary[maxchart].t);
+				}
+
+				if (dictionary.ContainsKey(minchart))
+				{
+					Console.WriteLine($"Scroll to {minchart}!");
+					ScrollToLastRow1(dictionary[minchart].t);
+				}
+			}
+
+			StateHasChanged();
+		});
+	}
+
+	private async void OnNewTicks(string secinstrument, List<TradeApi> ticks)
+	{
+		if (secinstrument != secutityMain.id) return;
+
+		Console.WriteLine(ticks[0].SecurityId + " new tick !" + ticks[0].Price);
+
+		foreach (var tick in ticks)
+		{
+			start++;
+			Ticks.Add(new Trade()
+			{
+				Price = tick.Price, //Quotes.ToArray()[new Random().Next(1, Quotes.Count())].Price,
+				Time = dt + TimeSpan.FromSeconds(start),
+				Volume = tick.Volume,
+				Side = tick.Side
+			});
+
+			if (Ticks.Count > 15) Ticks.RemoveAt(0);
+		}
+
+		await InvokeAsync(() => { Chart.RefreshData(); });
+	}
 
 
 	//TODO: Тут надо подумать конечно.
@@ -379,6 +375,9 @@
 
 	Task OnClosingMain()
 	{
+		ApiDataService.NewMarketDepth -= OnNewMarketDepth;
+		ApiDataService.NewTicks -= OnNewTicks;
+
 		foreach (var webSocket in WebSockets)
 		{
 			try
