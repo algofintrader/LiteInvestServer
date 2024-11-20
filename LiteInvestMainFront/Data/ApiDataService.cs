@@ -146,7 +146,7 @@ namespace LiteInvestMainFront.Data
 		}
 
 		//TODO: отписки нет толком
-		public async void SubcribeTick(string secid)
+		public async Task<WebsocketClient> SubcribeTick(string secid)
 		{
 
 			var webscoketrequest =
@@ -174,10 +174,16 @@ namespace LiteInvestMainFront.Data
 			});
 
 			websocketClient.Start();
+			return websocketClient;
 
 		}
 
-		public async void SubscribeOrderBook(string secid)
+		/// <summary>
+		/// Пока что сделал отписку по самому простому принципу. 
+		/// </summary>
+		/// <param name="secid"></param>
+		/// <returns></returns>
+		public async Task<WebsocketClient> SubscribeOrderBook(string secid)
 		{
 			var webscoketrequest =
 				websocketurl
@@ -195,7 +201,9 @@ namespace LiteInvestMainFront.Data
 			});
 
 			websocketClient.Start();
+			return websocketClient;
 		}
+
 
 		/// <summary>
 		/// free lock структура для обработки стаканов. 

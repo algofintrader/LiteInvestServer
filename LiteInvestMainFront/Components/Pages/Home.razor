@@ -176,7 +176,7 @@
 			<DxStackLayoutItem>
 				<Template>
 					<div >
-						<WorkWindow OnClosing="OnClosingWorkingWindow" secutityMain="@instr.Value" ApiDataService="@_apidataservice"/>
+						<WorkWindow OnClosing="OnClosingWorkingWindow" secutityMain="@instr" ApiDataService="@_apidataservice"/>
 					</div>
 				</Template>
 			</DxStackLayoutItem>
@@ -198,7 +198,8 @@
 	private SecurityApi securitySelected;
 	public IEnumerable<SecurityApi>? Instruments = new List<SecurityApi>();
 
-	ConcurrentDictionary<string, SecurityApi> RegisteredInstruments = new();
+	//ConcurrentDictionary<string, SecurityApi> RegisteredInstruments = new();
+	List<SecurityApi> RegisteredInstruments = new();
 
 	Task OnLogin()
 	{
@@ -243,9 +244,10 @@
 		if(securityApi==null)
 			return;
 
-		RegisteredInstruments.TryAdd(securityApi.Isin,securityApi);
+		RegisteredInstruments.Add(securityApi);
+		//RegisteredInstruments.TryAdd(securityApi.Isin,securityApi);
 
-		Console.WriteLine($"'{securityApi.Isin}' selected.");
+		Console.WriteLine($"'{securityApi.Isin}' registered.");
 
 		InvokeAsync(StateHasChanged);
 	}
@@ -268,9 +270,10 @@
 	}
 
 
-	private void OnClosingWorkingWindow(string instr)
+	private void OnClosingWorkingWindow(SecurityApi instr)
 	{
-		RegisteredInstruments.Remove(instr, out var _);
+		RegisteredInstruments.Remove(instr);
+		//RegisteredInstruments.Remove(instr, out var _);
 		InvokeAsync(StateHasChanged);
 	}
 

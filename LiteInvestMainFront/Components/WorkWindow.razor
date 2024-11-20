@@ -1,10 +1,13 @@
 ﻿
 @using System.Drawing
+@using System.Net.WebSockets
 @using DevExpress.Data.Browsing
 @using LiteInvestMainFront.Data
 @using LiteInvestServer.Json
 @using PlazaEngine.Entity
+@using Websocket.Client
 @using Orientation = DevExpress.Blazor.Orientation
+
 
 
 <style>
@@ -43,6 +46,7 @@
 		background-color: var(--bs-yellow);
 	}
 	.gridlayout-left-side-bar:before {
+		
 		background-color: var(--bs-green);
 	}
 	.gridlayout-right-side-bar:before {
@@ -102,15 +106,15 @@
 		<Items>
 			<DxGridLayoutItem Row="0" Column="0">
 				<Template>
-					<div class="gridlayout-left-side-bar gridlayout-item">
-						Left Bar
+					<div class="gridlayout-item">
+						Clasters
 					</div>
 				</Template>
 			</DxGridLayoutItem>
 
 			<DxGridLayoutItem Row="0" Column="1">
 				<Template>
-					<div class="gridlayout-content gridlayout-item">
+					<div class=" gridlayout-item">
 						<DxChart CssClass="chart"
 						         CustomizeSeriesPoint="@PrepareSeriesPoint"
 							@ref="Chart"
@@ -138,11 +142,23 @@
 							               HorizontalAlignment="HorizontalAlignment.Right" />
 							
 						
-							<DxChartArgumentAxis Visible="false" />
+							<DxChartArgumentAxis Visible="false">
+									<DxChartAxisTick Visible="false" />
+									<DxChartAxisMinorTick Visible="false" />
+									<DxChartAxisGridLines Visible="true" />
+									
+									
+
+							</DxChartArgumentAxis>
 
 							<DxChartValueAxis Visible="false">
-								<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart"/>
 
+								<DxChartAxisTick Visible="false"/>
+								<DxChartAxisMinorTick Visible="false"/>
+
+								<DxChartAxisGridLines Visible="true"/>
+
+								<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart"/>
 							</DxChartValueAxis>
 						
 							<!--
@@ -162,7 +178,7 @@
 			
 			<DxGridLayoutItem Row="0" Column="2">
 				<Template>
-					<div class="gridlayout-right-side-bar gridlayout-item">
+					<div class=" gridlayout-item">
 						<DxGrid CssClass="dxgrid"
 						        @ref=Grid
 						        Data="@Quotes"
@@ -176,8 +192,8 @@
 						        >
 
 							<Columns>
-								<DxGridDataColumn FieldName="Volume" Width="30%"/>
-								<DxGridDataColumn FieldName="Price" Width="70%"/>
+								<DxGridDataColumn FieldName="Volume" Width="30px"/>
+								<DxGridDataColumn FieldName="Price" Width="30px"/>
 								<DxGridDataColumn FieldName="Type" Width="0" Visible="false"/>
 							</Columns>
 						</DxGrid>
@@ -200,7 +216,7 @@
 	List<Trade> Ticks { get; set; } = new List<Trade>();
 
 	[Parameter]
-	public Action<string>? OnClosing { get; set; }
+	public Action<SecurityApi>? OnClosing { get; set; }
 
 	[Parameter]
 	public SecurityApi secutityMain { get; set; }
@@ -211,14 +227,20 @@
 	decimal minchart = 10000;
 	decimal maxchart = 12000;
 
+	public List<WebsocketClient> WebSockets { get; set; }
+
+	int levelsFromBest = 20;
 
 	int i = 1;
-	protected override Task OnInitializedAsync()
+	int orderbookcount = 0;
+	protected override async Task<Task> OnInitializedAsync()
 	{
 
-		
+
 		if (secutityMain== null)
 			return base.OnInitializedAsync();
+
+		WebSockets = new List<WebsocketClient>();
 
 		ApiDataService.NewMarketDepth += async (bestbid,secinstrument,md) =>
 		{
@@ -227,19 +249,38 @@
 
 			Quotes = md;
 
-			maxchart = bestbid.Price + 100;
-			minchart = bestbid.Price - 100;
+			//TODO - при масштабированини этот уровень лучше менять. 
+			maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
+			minchart = bestbid.Price - levelsFromBest * secutityMain.PriceStep;
 
-			
+			var dictionary = Quotes.Select(t => new { t.Price, t })
+				.ToDictionary(t => t.Price, t => t);
+
+
 			//int visibleitem = Grid.GetStartRowVisibleIndex();
 			//Console.WriteLine("видимая строка " + Quotes.ToArray()[visibleitem].Price + $@"к1={Grid.GetVisibleRowCount()} к2={Quotes.Count()}");
 
 			await InvokeAsync(() =>
 			{
+				orderbookcount++;
 
+				if (orderbookcount < 3)
+				{
 
-				//Console.WriteLine($"{DateTime.Now} New Quotes!");
-				//ScrollToLastRow1(bestbid);
+					//Console.WriteLine($"{DateTime.Now} New Quotes!");
+					if (dictionary.ContainsKey(maxchart))
+					{
+						Console.WriteLine($"Scroll to {maxchart}!");
+						ScrollToLastRow1(dictionary[maxchart].t);
+					}
+
+					if (dictionary.ContainsKey(minchart))
+					{
+						Console.WriteLine($"Scroll to {minchart}!");
+						ScrollToLastRow1(dictionary[minchart].t);
+					}
+
+				}
 
 				StateHasChanged();
 			});
@@ -274,11 +315,13 @@
 
 		};
 
-		ApiDataService.SubscribeOrderBook(secutityMain.id);
-		ApiDataService.SubcribeTick(secutityMain.id);
+		WebSockets.Add(await ApiDataService.SubscribeOrderBook(secutityMain.id));
+		WebSockets.Add(await ApiDataService.SubcribeTick(secutityMain.id));
 
 		return base.OnInitializedAsync();
 	}
+
+
 
 	//TODO: Тут надо подумать конечно.
 	void ScrollToLastRow1(MarketDepthLevel level)
@@ -297,9 +340,6 @@
 
 	void Grid_CustomizeElement(GridCustomizeElementEventArgs e)
 	{
-		if (e.Grid.IsRowFocused(e.VisibleIndex)) {
-			e.Style = "background-color: red";
-		}
 
 		if (e.ElementType == GridElementType.DataRow && (PlazaEngine.Entity.Side)e.Grid.GetRowValue(e.VisibleIndex, "Type") == Side.Sell)
 		{
@@ -327,7 +367,7 @@
 		pointSettings.PointAppearance.Symbol = ChartPointSymbol.Circle;
 
 		//TODO: Исправить размеры - сделать адаптивными
-		pointSettings.PointAppearance.Size = (int)t.Volume * 5;
+		pointSettings.PointAppearance.Size = (int)t.Volume * 3;
 
 		if (t.Side == Side.Sell)
 			pointSettings.PointAppearance.Color = Color.Red;
@@ -339,10 +379,20 @@
 
 	Task OnClosingMain()
 	{
-
+		foreach (var webSocket in WebSockets)
+		{
+			try
+			{
+				webSocket.Stop(WebSocketCloseStatus.NormalClosure, "Закрыта вкладка");
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine(ex.Message);
+			}
+		}
 		//TODO: Сделать отписку по инструментам и полный Dispose
 
-		OnClosing?.Invoke(secutityMain.Isin);
+		OnClosing?.Invoke(secutityMain);
 		return Task.CompletedTask;
 	}
 
