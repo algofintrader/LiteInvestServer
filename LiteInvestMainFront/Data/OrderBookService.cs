@@ -28,10 +28,10 @@ namespace LiteInvestMainFront.Data
 
 
             // обычный вариант
-            var asklevels = md.Asks;
-            var bidlevels = md.Bids;
+           // var asklevels = md.Asks;
+            //var bidlevels = md.Bids;
 
-            /*
+            
 			 md.Asks.ForEach(b =>
 			 {
 				 b.Bid = b.Ask;
@@ -45,7 +45,7 @@ namespace LiteInvestMainFront.Data
 			 });
 
 			 var asklevels = md.Bids;
-			 var bidlevels = md.Asks;*/
+			 var bidlevels = md.Asks;
 
             var bestbid = bidlevels[0];
 
