@@ -168,26 +168,23 @@
 
 
 
-
-
 <DxStackLayout CssClass="w-100 ch-480" Orientation="Orientation.Horizontal">
 	<Items>
-		
-		<!-- ЗДЕСЬ БАГА потому что каждый раз меняет инструмент и в итоге уй пойми что получается -->
+
 		@foreach (var instr in RegisteredInstruments)
 		{
+			Console.WriteLine($"ReRendering {instr.Isin}");
 			<DxStackLayoutItem>
 				<Template>
-					<div >
-						<WorkWindow OnClosing="OnClosingWorkingWindow" secutityMain="@instr" ApiDataService="@_apidataservice"/>
+					<div>
+						<WorkWindow OnClosing="OnClosingWorkingWindow" secutityMain="@instr" ApiDataService="@_apidataservice" />
 					</div>
 				</Template>
 			</DxStackLayoutItem>
 		}
+
 	</Items>
 </DxStackLayout>
-
-
 
 @code {
 	DxComboBox<SecurityApi, SecurityApi> combobox;
@@ -199,16 +196,18 @@
 	bool windowVisible;
 	LogInForm logform;
 
-
+	private SecurityApi _securitySelected;
 	private SecurityApi securitySelected
 	{
 		get
 		{
-			return null;
+			return _securitySelected;
 		}
 		set
 		{
+			_securitySelected = value;
 			OnAutoCompleteChanged(value);
+			
 		}
 	}
 
@@ -273,7 +272,7 @@
 	private void OnClosingWorkingWindow(SecurityApi instr)
 	{
 		RegisteredInstruments.Remove(instr);
-		//RegisteredInstruments.Remove(instr, out var _);
+		//RegisteredInstruments.TryRemove(instr.Isin, out var _);
 		InvokeAsync(StateHasChanged);
 	}
 

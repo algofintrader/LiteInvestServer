@@ -89,122 +89,106 @@
 
 
 <div class="card cardnew">
-			<div class="card-header">
-				@secutityMain.Isin
-				<button  type="button" class="buttonclose btn-close" aria-label="Close" @onclick="OnClosingMain" ></button>
-			</div>
-<div class="card-body">
+	<div class="card-header">
+		@secutityMain.Isin
+		<button type="button" class="buttonclose btn-close" aria-label="Close" @onclick="OnClosingMain"></button>
+	</div>
+	<div class="card-body">
 
-	<DxGridLayout CssClass="w-100 ch-480">
-		<Rows>
-			<DxGridLayoutRow />
-			<DxGridLayoutRow Height="auto" />
-		</Rows>
-		<Columns>
-			<DxGridLayoutColumn  />
-			<DxGridLayoutColumn  />
-			<DxGridLayoutColumn />
-		</Columns>
-		<Items>
-			<DxGridLayoutItem Row="0" Column="0">
-				<Template>
-					<div class="gridlayout-item">
-						Clasters
-					</div>
-				</Template>
-			</DxGridLayoutItem>
+		<DxGridLayout CssClass="w-100 ch-480">
+			<Rows>
+				<DxGridLayoutRow />
+				<DxGridLayoutRow Height="auto" />
+			</Rows>
+			<Columns>
+				<DxGridLayoutColumn />
+				<DxGridLayoutColumn />
+				<DxGridLayoutColumn />
+			</Columns>
+			<Items>
+				<DxGridLayoutItem Row="0" Column="0">
+					<Template>
+						<div class="gridlayout-item">
+							Clasters
+						</div>
+					</Template>
+				</DxGridLayoutItem>
 
-			<DxGridLayoutItem Row="0" Column="1">
-				<Template>
-					<div class=" gridlayout-item">
-						<DxChart CssClass="chart"
-						         CustomizeSeriesPoint="@PrepareSeriesPoint"
-							@ref="Chart"
-							Data="Ticks"
-							Width="100%"
-							LabelOverlap="ChartLabelOverlap.Hide">
-							<DxChartLineSeries Name="ticksLineSeries"
-							                  
-							                   T="Trade"
-							                   TArgument="DateTime"
-							                   TValue="decimal"
-							                   ArgumentField="si => si.Time"
-							                   ValueField="si => si.Price"
-							                   HoverMode="ChartContinuousSeriesHoverMode.Series">
-								
-								<DxChartLegend Visible="false" />
-								
-								<!--<DxChartSeriesPoint Visible="true"
-												HoverMode="ChartSeriesPointHoverMode.None" />-->
-								<!--<DxChartSeriesLabel Visible="true"
-												ValueFormat="ChartElementFormat.Thousands(1)" />-->
-							</DxChartLineSeries>
-						
-							<DxChartLegend Position="RelativePosition.Outside"
-							               HorizontalAlignment="HorizontalAlignment.Right" />
+				<DxGridLayoutItem Row="0" Column="1">
+					<Template>
+						<div class=" gridlayout-item">
+							<DxChart CssClass="chart"
+									 CustomizeSeriesPoint="@PrepareSeriesPoint"
+									 @ref="Chart"
+									 Data="Ticks"
+									 Width="100%"
+									 LabelOverlap="ChartLabelOverlap.Hide">
+								<DxChartLineSeries Name="ticksLineSeries"
+												   T="Trade"
+												   TArgument="DateTime"
+												   TValue="decimal"
+												   ArgumentField="si => si.Time"
+												   ValueField="si => si.Price"
+												   HoverMode="ChartContinuousSeriesHoverMode.Series">
 
+									<DxChartLegend Visible="false" />
+
+									<!--<DxChartSeriesPoint Visible="true"
+													HoverMode="ChartSeriesPointHoverMode.None" />-->
+									<!--<DxChartSeriesLabel Visible="true"
+													ValueFormat="ChartElementFormat.Thousands(1)" />-->
+								</DxChartLineSeries>
 
 								<DxChartArgumentAxis Visible="false">
+
 									<DxChartAxisTick Visible="false" />
 									<DxChartAxisMinorTick Visible="false" />
+
 									<DxChartAxisGridLines Visible="true" />
-									
-									
 
 								</DxChartArgumentAxis>
 
+
 								<DxChartValueAxis Visible="false">
 
-								<DxChartAxisTick Visible="false"/>
-								<DxChartAxisMinorTick Visible="false"/>
+									<DxChartAxisTick Visible="false" />
+									<DxChartAxisMinorTick Visible="false" />
 
-								<DxChartAxisGridLines Visible="true"/>
+									<DxChartAxisGridLines Visible="true" />
 
-								<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart"/>
+									<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart" />
 								</DxChartValueAxis>
-						
-							<!--
-						<DxChartTooltip Enabled="true">
-							@context.Point.Render((seriesPoint) =>
-								@<div style="margin: 0.75rem">
-									<div>@seriesPoint.SeriesName</div>
-									<span>@($"{seriesPoint.Argument: MMMM yyyy}: ")</span>
-									<span>@($"{seriesPoint.Value: $0,.0}K")</span>
-								</div>
-																)
-						</DxChartTooltip>-->
-						</DxChart>
-					</div>
-				</Template>
-			</DxGridLayoutItem>
-			
-			<DxGridLayoutItem Row="0" Column="2">
-				<Template>
-					<div class=" gridlayout-item">
-						<DxGrid CssClass="dxgrid"
-						        @ref=Grid
-						        Data="@Quotes"
-						        ShowAllRows="true"
-						        ColumnResizeMode="GridColumnResizeMode.NextColumn"
-						        TextWrapEnabled="false"
-						        CustomizeElement="Grid_CustomizeElement"
-						        ShowGroupPanel="false"
-						        HighlightRowOnHover="true"
-								FocusedRowEnabled="true"
-						        >
+							</DxChart>
+						</div>
+					</Template>
+				</DxGridLayoutItem>
 
-							<Columns>
-								<DxGridDataColumn FieldName="Volume" Width="30px"/>
-								<DxGridDataColumn FieldName="Price" Width="30px"/>
-								<DxGridDataColumn FieldName="Type" Width="0" Visible="false"/>
-							</Columns>
-						</DxGrid>
-					</div>
-				</Template>
-			</DxGridLayoutItem>
-		</Items>
-	</DxGridLayout>
-</div>
+				<DxGridLayoutItem Row="0" Column="2">
+					<Template>
+						<div class=" gridlayout-item">
+							<DxGrid CssClass="dxgrid"
+									@ref=Grid
+									Data="@Quotes"
+									ShowAllRows="true"
+									ColumnResizeMode="GridColumnResizeMode.NextColumn"
+									TextWrapEnabled="false"
+									CustomizeElement="Grid_CustomizeElement"
+									ShowGroupPanel="false"
+									HighlightRowOnHover="true"
+									FocusedRowEnabled="true">
+
+								<Columns>
+									<DxGridDataColumn FieldName="Volume" Width="30px" />
+									<DxGridDataColumn FieldName="Price" Width="30px" />
+									<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
+								</Columns>
+							</DxGrid>
+						</div>
+					</Template>
+				</DxGridLayoutItem>
+			</Items>
+		</DxGridLayout>
+	</div>
 </div>
 
 
@@ -246,6 +230,8 @@
 
 		WebSockets = new List<WebsocketClient>();
 
+
+
 		dt = DateTime.Now;
 		ApiDataService.NewMarketDepth += OnNewMarketDepth;
 		ApiDataService.NewTicks += OnNewTicks;
@@ -258,48 +244,75 @@
 
 	private async void OnNewMarketDepth(MarketDepthLevel bestbid, string secinstrument, IEnumerable<MarketDepthLevel> md)
 	{
-		if (secinstrument != secutityMain.id) return;
 
-		Quotes = md;
-
-		//TODO - при масштабированини этот уровень лучше менять. 
-		maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
-		minchart = bestbid.Price - levelsFromBest * secutityMain.PriceStep;
-
-		var dictionary = Quotes.Select(t => new { t.Price, t })
-			.ToDictionary(t => t.Price, t => t);
-
-
-		//int visibleitem = Grid.GetStartRowVisibleIndex();
-		//Console.WriteLine("видимая строка " + Quotes.ToArray()[visibleitem].Price + $@"к1={Grid.GetVisibleRowCount()} к2={Quotes.Count()}");
-
-		await InvokeAsync(() =>
+		try
 		{
-			orderbookcount++;
 
-			if (orderbookcount < 3)
+			if (secinstrument != secutityMain.id) return;
+
+			if (md == null)
+				return;
+
+			Quotes = md;
+
+			//TODO - при масштабированини этот уровень лучше менять. 
+			maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
+			minchart = bestbid.Price - levelsFromBest * secutityMain.PriceStep;
+
+			Console.WriteLine($"MD recevied {secutityMain.id} NAME={secutityMain.Isin}");
+
+			var dictionary = Quotes.Select(t => new { t.Price, t })
+				.ToDictionary(t => t.Price, t => t);
+
+
+			//int visibleitem = Grid.GetStartRowVisibleIndex();
+			//Console.WriteLine("видимая строка " + Quotes.ToArray()[visibleitem].Price + $@"к1={Grid.GetVisibleRowCount()} к2={Quotes.Count()}");
+
+			await InvokeAsync(() =>
 			{
-				//Console.WriteLine($"{DateTime.Now} New Quotes!");
-				if (dictionary.ContainsKey(maxchart))
+				try
 				{
-					Console.WriteLine($"Scroll to {maxchart}!");
-					ScrollToLastRow1(dictionary[maxchart].t);
-				}
 
-				if (dictionary.ContainsKey(minchart))
+					orderbookcount++;
+
+
+					/*
+					if (orderbookcount < 3)
+					{
+						//Console.WriteLine($"{DateTime.Now} New Quotes!");
+						if (dictionary.ContainsKey(maxchart))
+						{
+							Console.WriteLine($"Scroll to {maxchart}!");
+							ScrollToLastRow1(dictionary[maxchart].t);
+						}
+
+						if (dictionary.ContainsKey(minchart))
+						{
+							Console.WriteLine($"Scroll to {minchart}!");
+							ScrollToLastRow1(dictionary[minchart].t);
+						}
+					}*/
+
+					StateHasChanged();
+				}
+				catch (Exception ex)
 				{
-					Console.WriteLine($"Scroll to {minchart}!");
-					ScrollToLastRow1(dictionary[minchart].t);
-				}
-			}
 
-			StateHasChanged();
-		});
+				}
+			});
+		}
+		catch (Exception ex)
+		{
+
+		}
 	}
 
 	private async void OnNewTicks(string secinstrument, List<TradeApi> ticks)
 	{
 		if (secinstrument != secutityMain.id) return;
+
+		if(ticks==null)
+			return;
 
 		Console.WriteLine(ticks[0].SecurityId + " new tick !" + ticks[0].Price);
 
@@ -332,7 +345,7 @@
 	void ScrollToLastRow(int count)
 	{
 		Console.WriteLine($"{count} scroll");
-		//Grid.(count);
+		Grid.MakeRowVisible(count);
 
 	}
 
@@ -365,7 +378,8 @@
 		pointSettings.PointAppearance.Symbol = ChartPointSymbol.Circle;
 
 		//TODO: Исправить размеры - сделать адаптивными
-		pointSettings.PointAppearance.Size = (int)t.Volume * 3;
+		//TODO: написать логику расчета адаптивных элементов 
+		pointSettings.PointAppearance.Size = (int)(t.Volume * 1.1m);
 
 		if (t.Side == Side.Sell)
 			pointSettings.PointAppearance.Color = Color.Red;
@@ -375,17 +389,24 @@
 	}
 
 
-	Task OnClosingMain()
+	async Task<Task> OnClosingMain()
 	{
 		ApiDataService.NewMarketDepth -= OnNewMarketDepth;
 		ApiDataService.NewTicks -= OnNewTicks;
+
+		ApiDataService.StopOrderBookProcesor(secutityMain.id);
 
 		foreach (var webSocket in WebSockets)
 		{
 			try
 			{
-				webSocket.Stop(WebSocketCloseStatus.NormalClosure, "Закрыта вкладка");
-			}
+				var r = await webSocket.StopOrFail(WebSocketCloseStatus.NormalClosure, "Закрыта вкладка");
+
+				if (!r)
+				{
+
+				}
+		     }
 			catch (Exception ex)
 			{
 				Console.WriteLine(ex.Message);

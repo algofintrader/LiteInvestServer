@@ -173,7 +173,9 @@ namespace LiteInvestMainFront.Data
 
 			});
 
-			websocketClient.Start();
+			Console.WriteLine(webscoketrequest);
+		
+			await websocketClient.Start();
 			return websocketClient;
 
 		}
@@ -195,15 +197,31 @@ namespace LiteInvestMainFront.Data
 
 			websocketClient.MessageReceived.Subscribe(msg =>
 			{
-				//почему то не хочет десериализовывать стакан нормальнь
-				var md = JsonConvert.DeserializeObject<MarketDepth>(msg.Text, new JsonSerializerSettings() { CheckAdditionalContent = true, });
-				ProcessOrderBook(md);
+				try
+				{
+					//почему то не хочет десериализовывать стакан нормальнь
+					var md = JsonConvert.DeserializeObject<MarketDepth>(msg.Text,
+						new JsonSerializerSettings() { CheckAdditionalContent = true, });
+					ProcessOrderBook(md);
+				}
+				catch (Exception ex)
+				{
+
+				}
 			});
 
-			websocketClient.Start();
+
+			Console.WriteLine(webscoketrequest);
+
+			await websocketClient.Start();
 			return websocketClient;
 		}
 
+		public void StopOrderBookProcesor(string secId)
+		{
+			if(OrderBookProcessors.TryRemove(secId, out var _))
+				Console.WriteLine("REMOVED "+secId);
+		}
 
 		/// <summary>
 		/// free lock структура для обработки стаканов. 
@@ -211,12 +229,18 @@ namespace LiteInvestMainFront.Data
 		/// <param name="md"></param>
 		void ProcessOrderBook(MarketDepth md)
 		{
+
+			
 			var secid = md.SecurityId;
 
 			if (!OrderBookProcessors.ContainsKey(secid))
 				OrderBookProcessors[secid] = new OrderBookService(Securities[secid], NewMarketDepth);
 
+			Console.WriteLine($"Orderbook processed {secid}");
+
 			OrderBookProcessors[secid].Process(md);
+
+
 
 		}
 
