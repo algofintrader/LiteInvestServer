@@ -7,7 +7,7 @@
 @using PlazaEngine.Entity
 @using Websocket.Client
 @using Orientation = DevExpress.Blazor.Orientation
-
+@implements IDisposable;
 
 
 <style>
@@ -278,16 +278,16 @@
 
 					/*
 					if (orderbookcount < 3)
-					{
+						{
 						//Console.WriteLine($"{DateTime.Now} New Quotes!");
 						if (dictionary.ContainsKey(maxchart))
-						{
+							{
 							Console.WriteLine($"Scroll to {maxchart}!");
 							ScrollToLastRow1(dictionary[maxchart].t);
 						}
 
 						if (dictionary.ContainsKey(minchart))
-						{
+							{
 							Console.WriteLine($"Scroll to {minchart}!");
 							ScrollToLastRow1(dictionary[minchart].t);
 						}
@@ -391,9 +391,6 @@
 
 	async Task<Task> OnClosingMain()
 	{
-		ApiDataService.NewMarketDepth -= OnNewMarketDepth;
-		ApiDataService.NewTicks -= OnNewTicks;
-
 		ApiDataService.StopOrderBookProcesor(secutityMain.id);
 
 		foreach (var webSocket in WebSockets)
@@ -406,7 +403,7 @@
 				{
 
 				}
-		     }
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine(ex.Message);
@@ -423,4 +420,9 @@
 
 	string messageConnection { get; set; }
 
+	void IDisposable.Dispose()
+	{
+		ApiDataService.NewMarketDepth -= OnNewMarketDepth;
+		ApiDataService.NewTicks -= OnNewTicks;
+	}
 }
