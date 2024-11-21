@@ -83,9 +83,10 @@
 		<a class="navbar-brand" href="#">LiteInvest</a>
 
 		<form class="d-flex internalSearch" role="search">
-			<DxComboBox Data="@Instruments"
-			            Value="@securitySelected"
-			            ValueChanged="@((SecurityApi sec) => OnAutoCompleteChanged(sec))"
+
+			<DxComboBox @ref=combobox
+				Data="@Instruments"
+						@bind-Value="@securitySelected"
 			            TextFieldName="@nameof(securitySelected.Isin)"
 			            SearchMode="@ListSearchMode.AutoSearch"
 			            SearchFilterCondition="@ListSearchFilterCondition.Contains"
@@ -171,6 +172,8 @@
 
 <DxStackLayout CssClass="w-100 ch-480" Orientation="Orientation.Horizontal">
 	<Items>
+		
+		<!-- ЗДЕСЬ БАГА потому что каждый раз меняет инструмент и в итоге уй пойми что получается -->
 		@foreach (var instr in RegisteredInstruments)
 		{
 			<DxStackLayoutItem>
@@ -187,6 +190,7 @@
 
 
 @code {
+	DxComboBox<SecurityApi, SecurityApi> combobox;
 
 	string textlogin = "Войти";
 	bool loadingLogIn;
@@ -195,11 +199,25 @@
 	bool windowVisible;
 	LogInForm logform;
 
-	private SecurityApi securitySelected;
+
+	private SecurityApi securitySelected
+	{
+		get
+		{
+			return null;
+		}
+		set
+		{
+			OnAutoCompleteChanged(value);
+		}
+	}
+
+
 	public IEnumerable<SecurityApi>? Instruments = new List<SecurityApi>();
 
 	//ConcurrentDictionary<string, SecurityApi> RegisteredInstruments = new();
 	List<SecurityApi> RegisteredInstruments = new();
+
 
 	Task OnLogin()
 	{
@@ -207,24 +225,6 @@
 		return Task.CompletedTask;
 	}
 
-	private async Task<AutoCompleteDataProviderResult<SecurityApi>> InstrumentsDataProvider(AutoCompleteDataProviderRequest<SecurityApi> request)
-	{
-		try
-		{
-
-
-			if (request == null)
-				return null;
-
-			//securitySelected = instruments.FirstOrDefault();
-			return await Task.FromResult(request.ApplyTo(Instruments.OrderBy(sec => sec.Isin)));
-		}
-		catch (Exception ex)
-		{
-			return null;
-		}
-
-	}
 
 	/*
 	private IEnumerable<Customer> GetCustomers()
