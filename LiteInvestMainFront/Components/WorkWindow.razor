@@ -75,7 +75,9 @@
 		background-color: var(--bs-danger-bg-subtle)
 	}
 
-	
+	.card-body{
+		padding: 0;
+	}
 
 	.highlighted-item2 > td {
 		background-color: var(--bs-success-bg-subtle)
@@ -140,18 +142,18 @@
 						
 							<DxChartLegend Position="RelativePosition.Outside"
 							               HorizontalAlignment="HorizontalAlignment.Right" />
-							
-						
-							<DxChartArgumentAxis Visible="false">
+
+
+								<DxChartArgumentAxis Visible="false">
 									<DxChartAxisTick Visible="false" />
 									<DxChartAxisMinorTick Visible="false" />
 									<DxChartAxisGridLines Visible="true" />
 									
 									
 
-							</DxChartArgumentAxis>
+								</DxChartArgumentAxis>
 
-							<DxChartValueAxis Visible="false">
+								<DxChartValueAxis Visible="false">
 
 								<DxChartAxisTick Visible="false"/>
 								<DxChartAxisMinorTick Visible="false"/>
@@ -159,7 +161,7 @@
 								<DxChartAxisGridLines Visible="true"/>
 
 								<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart"/>
-							</DxChartValueAxis>
+								</DxChartValueAxis>
 						
 							<!--
 						<DxChartTooltip Enabled="true">
