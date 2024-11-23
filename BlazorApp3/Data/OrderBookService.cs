@@ -33,23 +33,7 @@ namespace BlazorApp3.Data
 	        var asklevels = md.Asks;
 	        var bidlevels = md.Bids;
 
-			/*
-			 md.Asks.ForEach(b =>
-			 {
-				 b.Bid = b.Ask;
-				 b.Ask = 0;
-			 });
-
-			 md.Bids.ForEach(b =>
-			 {
-				 b.Ask=b.Bid;
-				 b.Bid = 0;
-			 });
-
-			 var asklevels = md.Bids;
-			 var bidlevels = md.Asks;*/
-
-			 var bestbid = bidlevels[0];
+	        var bestbid = bidlevels[0];
 
 			//проще кинуть скорее всего просто Dictionary c типом
 
@@ -96,7 +80,6 @@ namespace BlazorApp3.Data
 			//TODO: возможно стоит взять другой вариант, поработать со стринг, тогда может он не перемешает это все в кашу. 
 			var sorted = AllLevels.Values.OrderByDescending(s => s.Price);
 
-			
 
 			Mdupdated?.Invoke(bestbid, Sec.id, sorted);
 		}

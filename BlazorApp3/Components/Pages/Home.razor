@@ -4,6 +4,7 @@
 @using System.Collections.Concurrent
 @using BlazorApp3.Data
 @using System.ComponentModel.DataAnnotations
+@using System.Runtime.InteropServices.JavaScript
 @using LiteInvestServer.Json
 @using PlazaEngine.Entity
 
@@ -27,16 +28,12 @@
 
 <DxStackLayout CssClass="w-100 ch-480" Orientation="Orientation.Horizontal">
 	<Items>
-				@for (int i = 0; i < SecuritiesRegiestered.Count; i++)
-				{
-					<DxStackLayoutItem>
-						<Template>
-							<div class="stacklayout-header stacklayout-item">
-								<WorkWindow secid="@securityApiSelected.id" ApiDataService="@_apidataservice"/>
-							</div>
-						</Template>
-					</DxStackLayoutItem>
-				}
+		
+		@for (int i=0;i<SecuritiesRegiestered.Count;i++)
+		{
+			<WorkWindow @key="SecuritiesRegiestered[i].SpecialHash" Index="i" secid="@SecuritiesRegiestered[i].id" ApiDataService="@_apidataservice" Closed="@ClosedWindow" />
+
+		}
 	</Items>
 </DxStackLayout>
 
@@ -50,10 +47,10 @@
 
 	SecurityApi securityApiSelected;
 
-	ConcurrentDictionary<string, SecurityApi> SecuritiesRegiestered = new ();
+	List<SecurityApi> SecuritiesRegiestered = new ();
 
 	IEnumerable<SecurityApi> Securities { get; set; }
-	
+
 
 	private async void Handler(MouseEventArgs args)
 	{
@@ -78,11 +75,16 @@
 		StateHasChanged();
 	}
 
-
+	int hash = 0;
 	private async void OpenClick(MouseEventArgs args)
 	{
 		Console.WriteLine($"Subscribing for Quotes {securityApiSelected.id}!");
-		SecuritiesRegiestered.TryAdd(securityApiSelected.id, securityApiSelected);
+
+		var clone = (SecurityApi) securityApiSelected.Clone();
+
+		hash++;
+		clone.SpecialHash = DateTime.Now.GetHashCode().ToString()+hash;
+		SecuritiesRegiestered.Add(clone);
 
 		StateHasChanged();
 	}
@@ -94,7 +96,12 @@
 		OpenClick(null);
 	}
 
-    
 
-   
+	private void ClosedWindow(int index)
+	{
+		SecuritiesRegiestered.RemoveAt(index);
+
+		InvokeAsync(StateHasChanged);
+	}
+
 }

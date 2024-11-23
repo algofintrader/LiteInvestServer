@@ -26,54 +26,59 @@
 
 </style>
 
+<div class="card cardnew">
+	<div class="card-header">
+		@secid
+		<button type="button" class="buttonclose btn-close" aria-label="Close" @onclick="OnClosingMain"></button>
+	</div>
+	<div class="card-body">
+		<DxStackLayout CssClass="w-100 ch-480" Orientation="Orientation.Horizontal">
+			<Items>
+				<DxStackLayoutItem>
+					<Template>
+						<div class="stacklayout-header stacklayout-item">
+							Кластеры
+						</div>
+					</Template>
+				</DxStackLayoutItem>
+				<DxStackLayoutItem >
+					<Template>
+						<div class="stacklayout-content stacklayout-item">
+							<DxChart
+								@ref="Chart"
+								CustomizeSeriesPoint="@PrepareSeriesPoint"
 
-<DxStackLayout CssClass="w-100 ch-480" Orientation="Orientation.Horizontal">
-	<Items>
-		<DxStackLayoutItem>
-			<Template>
-				<div class="stacklayout-header stacklayout-item">
-					Кластеры
-				</div>
-			</Template>
-		</DxStackLayoutItem>
-		<DxStackLayoutItem >
-			<Template>
-				<div class="stacklayout-content stacklayout-item">
-					<DxChart
-						@ref="Chart"
-						CustomizeSeriesPoint="@PrepareSeriesPoint"
-
-						Data="Ticks"
-							 Width="100%"
-							 LabelOverlap="ChartLabelOverlap.Hide">
-						<DxChartLineSeries T="Trade"
-						                   TArgument="DateTime"
-						                   TValue="decimal"
-						                   ArgumentField="si => si.Time"
-						                   ValueField="si => si.Price"
-						                   HoverMode="ChartContinuousSeriesHoverMode.Series">
-							<!--<DxChartSeriesPoint Visible="true"
+								Data="Ticks"
+								Width="100%"
+								LabelOverlap="ChartLabelOverlap.Hide">
+								<DxChartLineSeries T="Trade"
+								                   TArgument="DateTime"
+								                   TValue="decimal"
+								                   ArgumentField="si => si.Time"
+								                   ValueField="si => si.Price"
+								                   HoverMode="ChartContinuousSeriesHoverMode.Series">
+									<!--<DxChartSeriesPoint Visible="true"
 												HoverMode="ChartSeriesPointHoverMode.None" />-->
-							<!--<DxChartSeriesLabel Visible="true"
+									<!--<DxChartSeriesLabel Visible="true"
 												ValueFormat="ChartElementFormat.Thousands(1)" />-->
 							
-							<DxChartSeriesLabel Position="RelativePosition.Inside" VerticalOffset="30" FormatPattern="{value:#.##}">
-								<DxChartSeriesLabelConnector Visible="true"
-								                             Width="3" />21
-							</DxChartSeriesLabel>
-						</DxChartLineSeries>
+									<DxChartSeriesLabel Position="RelativePosition.Inside" VerticalOffset="30" FormatPattern="{value:#.##}">
+										<DxChartSeriesLabelConnector Visible="true"
+										                             Width="3" />21
+									</DxChartSeriesLabel>
+								</DxChartLineSeries>
 						
 					
 
-						<DxChartValueAxis Visible="false" />
-						<DxChartArgumentAxis Visible="false" />
+								<DxChartValueAxis Visible="false" />
+								<DxChartArgumentAxis Visible="false" />
 						
-						<DxChartLegend Position="RelativePosition.Outside"
-						               HorizontalAlignment="HorizontalAlignment.Right"  />
+								<DxChartLegend Position="RelativePosition.Outside"
+								               HorizontalAlignment="HorizontalAlignment.Right"  />
 						
 						
 						
-						<!--
+								<!--
 						<DxChartTooltip Enabled="true">
 							@context.Point.Render((seriesPoint) =>
 								@<div style="margin: 0.75rem">
@@ -83,36 +88,41 @@
 								</div>
 																)
 						</DxChartTooltip>-->
-					</DxChart>
+							</DxChart>
 
-				</div>
-			</Template>
-		</DxStackLayoutItem>
-		<DxStackLayoutItem>
-			<Template>
-				<div class="stacklayout-content stacklayout-item">
-					<div class="grid-container">
-						<DxGrid @ref=Grid
-							Data="@Quotes"
-							ShowAllRows="true"
-							ColumnResizeMode="GridColumnResizeMode.NextColumn"
-							TextWrapEnabled="false"
-							CustomizeElement="Grid_CustomizeElement"
-							ShowGroupPanel="false"
-							HighlightRowOnHover="true">
+						</div>
+					</Template>
+				</DxStackLayoutItem>
+				<DxStackLayoutItem>
+					<Template>
+						<div class="stacklayout-content stacklayout-item">
+							<div class="grid-container">
+								<DxGrid @ref=Grid
+								        Data="@Quotes"
+								        ShowAllRows="true"
+								        ColumnResizeMode="GridColumnResizeMode.NextColumn"
+								        TextWrapEnabled="false"
+								        CustomizeElement="Grid_CustomizeElement"
+								        ShowGroupPanel="false"
+								        HighlightRowOnHover="true">
 
-							<Columns>
-								<DxGridDataColumn FieldName="Volume" Width="100"/>
-								<DxGridDataColumn FieldName="Price" Width="100"/>
-								<DxGridDataColumn FieldName="Type" Width="100" Visible="false"  />
-							</Columns>
-						</DxGrid>
-					</div>
-				</div>
-			</Template>
-		</DxStackLayoutItem>
-	</Items>
-</DxStackLayout>
+									<Columns>
+										<DxGridDataColumn FieldName="Volume" Width="100"/>
+										<DxGridDataColumn FieldName="Price" Width="100"/>
+										<DxGridDataColumn FieldName="Type" Width="100" Visible="false"  />
+									</Columns>
+								</DxGrid>
+							</div>
+						</div>
+					</Template>
+				</DxStackLayoutItem>
+			</Items>
+		</DxStackLayout>
+	</div>
+</div>
+
+
+
 
 @code {
 	DxChart<Trade> Chart;
@@ -128,6 +138,18 @@
 
 	[Parameter]
 	public ApiDataService ApiDataService { get; set; }
+
+	[Parameter]
+	public Action<int> Closed { get; set; }
+
+	[Parameter]
+	public int Index { get; set; }
+
+
+	public void OnClosingMain()
+	{
+		Closed?.Invoke(Index);
+	}
 
 
 	int i = 1;
@@ -231,7 +253,7 @@
 		pointSettings.PointAppearance.Symbol = ChartPointSymbol.Circle;
 
 		//NOTE: просто приспобил к объёму
-		pointSettings.PointAppearance.Size = (int)t.Volume * 5;
+		pointSettings.PointAppearance.Size =1;
 
 		if (t.Side == Side.Sell)
 			pointSettings.PointAppearance.Color = Color.Red;
