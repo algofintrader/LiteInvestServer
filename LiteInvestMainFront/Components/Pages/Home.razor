@@ -169,27 +169,27 @@
 
 
 <DxStackLayout CssClass="w-100 ch-480" Orientation="Orientation.Horizontal">
-	<Items>
-
+<Items>
 		@foreach (var secKey in RegisteredApis)
 		{
-			Console.WriteLine($"ReRendering secID={secKey}");
-			<DxStackLayoutItem>
-				<Template>
-					<div>
-						<WorkWindow OnClosing="OnClosingWorkingWindow"  MainWorkWindowService="@WorkWindowsServices[secKey.id]" 
-						            ApiDataService="@_apidataservice" />
-					</div>
-				</Template>
-			</DxStackLayoutItem>
-		}
+			Console.WriteLine($"ReRendering secID={secKey.Isin}");
+			<WorkWindow @ref="workWindow" OnClosing="OnClosingWorkingWindow" MainWorkWindowService="@GetValue(secKey.id)"
+			            ApiDataService="@_apidataservice"/>
 
+		}
 	</Items>
 </DxStackLayout>
 
-@code 
+		@code 
 
 {
+
+	private WorkWindowService GetValue(string secid)
+	{
+		WorkWindowsServices.TryGetValue(secid,out var somevalue);
+		return somevalue;
+	}
+
 
 	[Inject] ModalService ModalService { get; set; } = default!;
 
@@ -218,6 +218,20 @@
 			OnAutoCompleteChanged(value);
 
 		}
+	}
+
+	public List<WorkWindow> WorkWindows = new List<WorkWindow>();
+
+	private WorkWindow _workWindow;
+	public WorkWindow workWindow
+	{
+		get => _workWindow;
+		set
+		{
+			WorkWindows.Add(value);
+			_workWindow = value;
+		}
+
 	}
 
 
@@ -270,7 +284,8 @@
 		}
 
 		RegisteredApis.Add(securityApi);
-		WorkWindowsServices[securityApi.id] = new WorkWindowService(){securityApi = securityApi};
+		WorkWindowsServices[securityApi.id] = new WorkWindowService(){ApiDataService = _apidataservice, securityApi = securityApi};
+		WorkWindowsServices[securityApi.id].Start();
 
 		Console.WriteLine($"'{securityApi.Isin}' registered.");
 		InvokeAsync(StateHasChanged);
@@ -296,7 +311,7 @@
 
 	private void OnClosingWorkingWindow(int index,SecurityApi instr)
 	{
-		RegisteredApis.RemoveAt(index);
+		RegisteredApis.Remove(instr);
 		WorkWindowsServices.Remove(instr.id, out var _);
 		
 		InvokeAsync(StateHasChanged);

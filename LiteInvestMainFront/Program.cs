@@ -1,5 +1,6 @@
 using LiteInvestMainFront.Components;
 using LiteInvestMainFront.Data;
+using Toolbelt.Blazor.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,7 @@ builder.Services.AddBlazorBootstrap();
 
 builder.Services.AddMvc();
 
+//builder.Services.AddHotKeys2();
 builder.Services.AddSingleton<ApiDataService>();
 
 var app = builder.Build();

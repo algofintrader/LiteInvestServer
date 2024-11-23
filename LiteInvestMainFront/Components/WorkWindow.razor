@@ -1,6 +1,7 @@
 ﻿
 @using System.Drawing
 @using System.Net.WebSockets
+@using DevExpress.Blazor.Internal
 @using DevExpress.Data.Browsing
 @using LiteInvestMainFront.Data
 @using LiteInvestServer.Json
@@ -88,110 +89,109 @@
 	
 </style>
 
+	<div class="card cardnew">
+		<div class="card-header">
+			@MainWorkWindowService.securityApi.Isin
+			<button type="button" class="buttonclose btn-close" aria-label="Close" @onclick="OnClosingMain"></button>
+		</div>
+		<div class="card-body">
 
-<div class="card cardnew">
-	<div class="card-header">
-		@MainWorkWindowService.securityApi.Isin
-		<button type="button" class="buttonclose btn-close" aria-label="Close" @onclick="OnClosingMain"></button>
-	</div>
-	<div class="card-body">
+			<DxGridLayout CssClass="w-100 ch-480">
+				<Rows>
+					<DxGridLayoutRow />
+					<DxGridLayoutRow Height="auto" />
+				</Rows>
+				<Columns>
+					<DxGridLayoutColumn />
+					<DxGridLayoutColumn />
+					<DxGridLayoutColumn />
+				</Columns>
+				<Items>
+					<DxGridLayoutItem Row="0" Column="0">
+						<Template>
+							<div class="gridlayout-item">
+								Clasters
+							</div>
+						</Template>
+					</DxGridLayoutItem>
 
-		<DxGridLayout CssClass="w-100 ch-480">
-			<Rows>
-				<DxGridLayoutRow />
-				<DxGridLayoutRow Height="auto" />
-			</Rows>
-			<Columns>
-				<DxGridLayoutColumn />
-				<DxGridLayoutColumn />
-				<DxGridLayoutColumn />
-			</Columns>
-			<Items>
-				<DxGridLayoutItem Row="0" Column="0">
-					<Template>
-						<div class="gridlayout-item">
-							Clasters
-						</div>
-					</Template>
-				</DxGridLayoutItem>
+					<DxGridLayoutItem Row="0" Column="1">
+						<Template>
+							<div class=" gridlayout-item">
+								<DxChart CssClass="chart"
+								         CustomizeSeriesPoint="@PrepareSeriesPoint"
+								         @ref="Chart"
+								         Data="MainWorkWindowService.Ticks"
+								         Width="100%"
+								         LabelOverlap="ChartLabelOverlap.Hide">
+									<DxChartLineSeries Name="ticksLineSeries"
+									                   T="TradeApi"
+									                   TArgument="DateTime"
+									                   TValue="decimal"
+									                   ArgumentField="si => si.Time"
+									                   ValueField="si => si.Price"
+									                   HoverMode="ChartContinuousSeriesHoverMode.Series">
 
-				<DxGridLayoutItem Row="0" Column="1">
-					<Template>
-						<div class=" gridlayout-item">
-							<DxChart CssClass="chart"
-									 CustomizeSeriesPoint="@PrepareSeriesPoint"
-									 @ref="Chart"
-									 Data="MainWorkWindowService.Ticks"
-									 Width="100%"
-									 LabelOverlap="ChartLabelOverlap.Hide">
-								<DxChartLineSeries Name="ticksLineSeries"
-												   T="TradeApi"
-												   TArgument="DateTime"
-												   TValue="decimal"
-												   ArgumentField="si => si.Time"
-												   ValueField="si => si.Price"
-												   HoverMode="ChartContinuousSeriesHoverMode.Series">
+										<DxChartLegend Visible="false" />
 
-									<DxChartLegend Visible="false" />
-
-									<!--<DxChartSeriesPoint Visible="true"
+										<!--<DxChartSeriesPoint Visible="true"
 													HoverMode="ChartSeriesPointHoverMode.None" />-->
-									<!--<DxChartSeriesLabel Visible="true"
+										<!--<DxChartSeriesLabel Visible="true"
 													ValueFormat="ChartElementFormat.Thousands(1)" />-->
-								</DxChartLineSeries>
+									</DxChartLineSeries>
 
-								<DxChartArgumentAxis Visible="false">
+									<DxChartArgumentAxis Visible="false">
 
-									<DxChartAxisTick Visible="false" />
-									<DxChartAxisMinorTick Visible="false" />
+										<DxChartAxisTick Visible="false" />
+										<DxChartAxisMinorTick Visible="false" />
 
-									<DxChartAxisGridLines Visible="true" />
+										<DxChartAxisGridLines Visible="true" />
 
-								</DxChartArgumentAxis>
+									</DxChartArgumentAxis>
 
 
-								<DxChartValueAxis Visible="false">
+									<DxChartValueAxis Visible="false">
 
-									<DxChartAxisTick Visible="false" />
-									<DxChartAxisMinorTick Visible="false" />
+										<DxChartAxisTick Visible="false" />
+										<DxChartAxisMinorTick Visible="false" />
 
-									<DxChartAxisGridLines Visible="true" />
+										<DxChartAxisGridLines Visible="true" />
 
-									<DxChartAxisRange StartValue="@MainWorkWindowService.minchart"
-									                  EndValue="@MainWorkWindowService.maxchart" />
-								</DxChartValueAxis>
-							</DxChart>
-						</div>
-					</Template>
-				</DxGridLayoutItem>
+										<DxChartAxisRange StartValue="@MainWorkWindowService.minchart"
+										                  EndValue="@MainWorkWindowService.maxchart" />
+									</DxChartValueAxis>
+								</DxChart>
+							</div>
+						</Template>
+					</DxGridLayoutItem>
 
-				<DxGridLayoutItem Row="0" Column="2">
-					<Template>
-						<div class=" gridlayout-item">
-							<DxGrid CssClass="dxgrid"
-									@ref=Grid
-									Data="@MainWorkWindowService.Quotes"
-									ShowAllRows="true"
-									ColumnResizeMode="GridColumnResizeMode.NextColumn"
-									TextWrapEnabled="false"
-									CustomizeElement="Grid_CustomizeElement"
-									ShowGroupPanel="false"
-									HighlightRowOnHover="true"
-									FocusedRowEnabled="true">
+					<DxGridLayoutItem Row="0" Column="2">
+						<Template>
+							<div class=" gridlayout-item">
+								<DxGrid CssClass="dxgrid"
+								        @ref=Grid
+								        Data="@MainWorkWindowService.Quotes"
+								        ShowAllRows="true"
+								        ColumnResizeMode="GridColumnResizeMode.NextColumn"
+								        TextWrapEnabled="false"
+								        CustomizeElement="Grid_CustomizeElement"
+								        ShowGroupPanel="false"
+								        HighlightRowOnHover="true"
+								        FocusedRowEnabled="true">
 
-								<Columns>
-									<DxGridDataColumn FieldName="Volume" Width="30px" />
-									<DxGridDataColumn FieldName="Price" Width="30px" />
-									<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
-								</Columns>
-							</DxGrid>
-						</div>
-					</Template>
-				</DxGridLayoutItem>
-			</Items>
-		</DxGridLayout>
+									<Columns>
+										<DxGridDataColumn FieldName="Volume" Width="30px" />
+										<DxGridDataColumn FieldName="Price" Width="30px" />
+										<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
+									</Columns>
+								</DxGrid>
+							</div>
+						</Template>
+					</DxGridLayoutItem>
+				</Items>
+			</DxGridLayout>
+		</div>
 	</div>
-</div>
 
 
 @code 
@@ -207,159 +207,115 @@
 	[Parameter]
 	public int Index { get; set; }
 
-	/*
-	private SecurityApi _securityMain;
-
-	[Parameter]
-	public SecurityApi secutityMain
-		{
-		get => _securityMain;
-			set
-			{
-			var lastvalue = _securityMain == null ? "empty" : _securityMain.Isin;
-
-			if (secutityMain != null && _securityMain != value)
-				{
-				var ticks = Ticks;
-			}
-
-			Console.WriteLine($"new value = {value.Isin} prev value = {lastvalue}");
-			_securityMain = value;
-		}
-	}*/
-
 	private WorkWindowService _mainWorkWindowService;
 
 	[Parameter]
 	public WorkWindowService MainWorkWindowService
 	{
 		get => _mainWorkWindowService;
-		set { _mainWorkWindowService = value; }
+		set
+		{
+
+			parameterchanged = true;
+
+
+			var previous = _mainWorkWindowService == null ? "empty" : _mainWorkWindowService.securityApi.Isin;
+
+			
+			if(value!=null)
+			Console.WriteLine($"NEW {value.securityApi.Isin} previous = {previous}");
+
+			if (value!=null && _mainWorkWindowService != null && _mainWorkWindowService.securityApi != value.securityApi)
+			{
+				//произошла смена. 
+				//Значит 
+				//1) Дергаем стакан.. 
+				//2) Дергаем тики последние
+				//В данном контексте это просто StateHasChanged?
+
+
+			}
+
+			_mainWorkWindowService = value;
+		}
 	}
 
 	[Parameter]
 	public ApiDataService ApiDataService { get; set; }
 
 
-	//когда это не перелопачивается?
-
 	protected override async Task<Task> OnInitializedAsync()
 	{
-		if (MainWorkWindowService== null)
-			return base.OnInitializedAsync();
 
-		MainWorkWindowService.dt = DateTime.Now;
-		ApiDataService.NewMarketDepth += OnNewMarketDepth;
-		ApiDataService.NewTicks += OnNewTicks;
+		MainWorkWindowService.QuotesRefresh = UpdateQuotes;
+		MainWorkWindowService.TicksRefresh = UpdateChartTicks;
 
 		return base.OnInitializedAsync();
 	}
 
+	protected override void OnParametersSet()
+	{
+		base.OnParametersSet();
+
+
+
+	}
+
+	bool parameterchanged;
 	protected override async Task<Task> OnAfterRenderAsync(bool firstRender)
 	{
 
-		Console.WriteLine($"OnAfterRenderAsync sec {MainWorkWindowService.securityApi.Isin} firstrender={firstRender}");
+		//Console.WriteLine($"OnAfterRenderAsync sec {MainWorkWindowService.securityApi.Isin} firstrender={firstRender}");
+		if (parameterchanged)
+		{
+			parameterchanged = false;
 
-		MainWorkWindowService.WebSockets.Add(await ApiDataService.SubscribeOrderBook(MainWorkWindowService.securityApi.id));
-		MainWorkWindowService.WebSockets.Add(await ApiDataService.SubcribeTick(MainWorkWindowService.securityApi.id));
+			MainWorkWindowService.QuotesRefresh = UpdateQuotes;
+			MainWorkWindowService.TicksRefresh = UpdateChartTicks;
+		}
 
 		return base.OnAfterRenderAsync(firstRender);
 	}
 
-	/// <summary>
-	/// Подписка на все стаканы.
-	/// </summary>
-	/// <param name="bestbid"></param>
-	/// <param name="secinstrument"></param>
-	/// <param name="md"></param>
-	private async void OnNewMarketDepth(MarketDepthLevel bestbid, string secinstrument, IEnumerable<MarketDepthLevel> md)
+	private async void UpdateQuotes()
 	{
 
-		try
+		await InvokeAsync(() =>
 		{
-
-			if (MainWorkWindowService.securityApi.id != secinstrument) return;
-
-			if (md == null)
-				return;
-
-			MainWorkWindowService.Quotes = md;
-
-			//TODO - при масштабированини этот уровень лучше менять. 
-			MainWorkWindowService.maxchart = bestbid.Price + MainWorkWindowService.levelsFromBest * MainWorkWindowService.securityApi.PriceStep;
-			MainWorkWindowService.minchart = bestbid.Price - MainWorkWindowService.levelsFromBest * MainWorkWindowService.securityApi.PriceStep;
-
-			//Console.WriteLine($"MD recevied {secutityMain.id} NAME={secutityMain.Isin}");
-
-			var dictionary = MainWorkWindowService.Quotes.Select(t => new { t.Price, t })
-				.ToDictionary(t => t.Price, t => t);
-
-
-			//int visibleitem = Grid.GetStartRowVisibleIndex();
-			//Console.WriteLine("видимая строка " + Quotes.ToArray()[visibleitem].Price + $@"к1={Grid.GetVisibleRowCount()} к2={Quotes.Count()}");
-
-			await InvokeAsync(() =>
+			try
 			{
-				try
-				{
 
-					//orderbookcount++;
+				//orderbookcount++;
 
-
-					/*
-					if (orderbookcount < 3)
+				/*
+				if (orderbookcount < 3)
+					{
+					//Console.WriteLine($"{DateTime.Now} New Quotes!");
+					if (dictionary.ContainsKey(maxchart))
 						{
-						//Console.WriteLine($"{DateTime.Now} New Quotes!");
-						if (dictionary.ContainsKey(maxchart))
-							{
-							Console.WriteLine($"Scroll to {maxchart}!");
-							ScrollToLastRow1(dictionary[maxchart].t);
-						}
+						Console.WriteLine($"Scroll to {maxchart}!");
+						ScrollToLastRow1(dictionary[maxchart].t);
+					}
 
-						if (dictionary.ContainsKey(minchart))
-							{
-							Console.WriteLine($"Scroll to {minchart}!");
-							ScrollToLastRow1(dictionary[minchart].t);
-						}
-					}*/
+					if (dictionary.ContainsKey(minchart))
+						{
+						Console.WriteLine($"Scroll to {minchart}!");
+						ScrollToLastRow1(dictionary[minchart].t);
+					}
+				}*/
 
-					StateHasChanged();
-				}
-				catch (Exception ex)
-				{
+				StateHasChanged();
+			}
+			catch (Exception ex)
+			{
 
-				}
-			});
-		}
-		catch (Exception ex)
-		{
-
-		}
+			}
+		});
 	}
 
-	/// <summary>
-	/// Подписка на все тики
-	/// </summary>
-	/// <param name="secinstrument"></param>
-	/// <param name="ticks"></param>
-	private async void OnNewTicks(string secinstrument, List<TradeApi> ticks)
+
+	private async void UpdateChartTicks()
 	{
-		if (MainWorkWindowService.securityApi.id != secinstrument) return;
-
-		if(ticks==null)
-			return;
-
-		//Console.WriteLine(ticks[0].SecurityId + " new tick !" + ticks[0].Price);
-
-		foreach (var tick in ticks)
-		{
-			MainWorkWindowService.start++;
-			tick.Time = MainWorkWindowService.dt + TimeSpan.FromSeconds(MainWorkWindowService.start);
-			MainWorkWindowService.Ticks.Add(tick);
-			if (MainWorkWindowService.Ticks.Count > 15) MainWorkWindowService.Ticks.RemoveAt(0);
-		}
-
-
 		await InvokeAsync(() => { Chart.RefreshData(); });
 	}
 
@@ -395,6 +351,11 @@
 
 	}
 
+	int max = 30;
+	int min = 1;
+
+
+	//TODO: сделать гибкие кружочки
 	protected void PrepareSeriesPoint(ChartSeriesPointCustomizationSettings pointSettings)
 	{
 		//всегда 1 элемент
@@ -404,12 +365,14 @@
 		pointSettings.PointLabel.Texts = new string[] { t.Volume.ToString() };
 		pointSettings.PointLabel.Visible = true;
 
+		pointSettings.PointLabel.BackgroundColor= Color.Black;
+
 		//кружок
 		pointSettings.PointAppearance.Symbol = ChartPointSymbol.Circle;
 
 		//TODO: Исправить размеры - сделать адаптивными
 		//TODO: написать логику расчета адаптивных элементов 
-		pointSettings.PointAppearance.Size = (int)(t.Volume * 1.1m);
+		pointSettings.PointAppearance.Size = 1;
 
 		if (t.Side == Side.Sell)
 			pointSettings.PointAppearance.Color = Color.Red;
@@ -420,28 +383,7 @@
 
 	async Task<Task> OnClosingMain()
 	{
-		ApiDataService.NewMarketDepth -= OnNewMarketDepth;
-		ApiDataService.NewTicks -= OnNewTicks;
-
-		ApiDataService.StopOrderBookProcesor(MainWorkWindowService.securityApi.id);
-
-		foreach (var webSocket in MainWorkWindowService.WebSockets.ToList())
-		{
-			try
-			{
-				var r = await webSocket.StopOrFail(WebSocketCloseStatus.NormalClosure, "Закрыта вкладка");
-
-				if (!r)
-				{
-
-				}
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine(ex.Message);
-			}
-		}
-		//TODO: Сделать отписку по инструментам и полный Dispose
+		MainWorkWindowService.Stop();
 
 		OnClosing?.Invoke(Index, MainWorkWindowService.securityApi);
 		return Task.CompletedTask;
@@ -450,8 +392,9 @@
 
 	void IDisposable.Dispose()
 	{
-		//не уверен, то это корректно работает.
-
-	
+		//MainWorkWindowService.Dispose();
+		//this.Chart = null;
+		//this.Grid = null;
+		
 	}
 }

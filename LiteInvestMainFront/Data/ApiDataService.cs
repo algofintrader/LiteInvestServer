@@ -152,8 +152,8 @@ namespace LiteInvestMainFront.Data
 		/// <returns></returns>
 		public async Task<WebsocketClient> SubcribeTick(string secid)
 		{
-			if (TickSubscriptions.ContainsKey(secid))
-				return TickSubscriptions[secid];
+			//if (TickSubscriptions.ContainsKey(secid))
+			//	return TickSubscriptions[secid];
 
 			var webscoketrequest =
 				websocketurl
@@ -199,8 +199,8 @@ namespace LiteInvestMainFront.Data
 		/// <returns></returns>
 		public async Task<WebsocketClient> SubscribeOrderBook(string secid)
 		{
-			if (OrderBookSubscrtiptions.ContainsKey(secid))
-				return OrderBookSubscrtiptions[secid];
+			//if (OrderBookSubscrtiptions.ContainsKey(secid))
+			//	return OrderBookSubscrtiptions[secid];
 
 
 			var webscoketrequest =
