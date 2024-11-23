@@ -4,6 +4,7 @@
 @using DevExpress.Data.Browsing
 @using LiteInvestMainFront.Data
 @using LiteInvestServer.Json
+@using Microsoft.AspNetCore.RateLimiting
 @using PlazaEngine.Entity
 @using Websocket.Client
 @using Orientation = DevExpress.Blazor.Orientation
@@ -90,7 +91,7 @@
 
 <div class="card cardnew">
 	<div class="card-header">
-		@secutityMain.Isin
+		@MainWorkWindowService.securityApi.Isin
 		<button type="button" class="buttonclose btn-close" aria-label="Close" @onclick="OnClosingMain"></button>
 	</div>
 	<div class="card-body">
@@ -120,11 +121,11 @@
 							<DxChart CssClass="chart"
 									 CustomizeSeriesPoint="@PrepareSeriesPoint"
 									 @ref="Chart"
-									 Data="Ticks"
+									 Data="MainWorkWindowService.Ticks"
 									 Width="100%"
 									 LabelOverlap="ChartLabelOverlap.Hide">
 								<DxChartLineSeries Name="ticksLineSeries"
-												   T="Trade"
+												   T="TradeApi"
 												   TArgument="DateTime"
 												   TValue="decimal"
 												   ArgumentField="si => si.Time"
@@ -156,7 +157,8 @@
 
 									<DxChartAxisGridLines Visible="true" />
 
-									<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart" />
+									<DxChartAxisRange StartValue="@MainWorkWindowService.minchart"
+									                  EndValue="@MainWorkWindowService.maxchart" />
 								</DxChartValueAxis>
 							</DxChart>
 						</div>
@@ -168,7 +170,7 @@
 						<div class=" gridlayout-item">
 							<DxGrid CssClass="dxgrid"
 									@ref=Grid
-									Data="@Quotes"
+									Data="@MainWorkWindowService.Quotes"
 									ShowAllRows="true"
 									ColumnResizeMode="GridColumnResizeMode.NextColumn"
 									TextWrapEnabled="false"
@@ -192,76 +194,104 @@
 </div>
 
 
-@code {
-	DxChart<Trade> Chart;
-
+@code 
+{
+	DxChart<TradeApi> Chart;
 	IGrid Grid;
 	//А вдруг у меня все получится
 	//Влруг я буду прав
 
-	List<Trade> Ticks { get; set; } = new List<Trade>();
+	[Parameter]
+	public Action<int,SecurityApi>? OnClosing { get; set; }
 
 	[Parameter]
-	public Action<SecurityApi>? OnClosing { get; set; }
+	public int Index { get; set; }
+
+	/*
+	private SecurityApi _securityMain;
 
 	[Parameter]
-	public SecurityApi secutityMain { get; set; }
+	public SecurityApi secutityMain
+		{
+		get => _securityMain;
+			set
+			{
+			var lastvalue = _securityMain == null ? "empty" : _securityMain.Isin;
+
+			if (secutityMain != null && _securityMain != value)
+				{
+				var ticks = Ticks;
+			}
+
+			Console.WriteLine($"new value = {value.Isin} prev value = {lastvalue}");
+			_securityMain = value;
+		}
+	}*/
+
+	private WorkWindowService _mainWorkWindowService;
+
+	[Parameter]
+	public WorkWindowService MainWorkWindowService
+	{
+		get => _mainWorkWindowService;
+		set { _mainWorkWindowService = value; }
+	}
 
 	[Parameter]
 	public ApiDataService ApiDataService { get; set; }
 
-	decimal minchart = 10000;
-	decimal maxchart = 12000;
 
-	public List<WebsocketClient> WebSockets { get; set; }
-
-	int levelsFromBest = 20;
-
-	int i = 1;
-	int orderbookcount = 0;
-	int start = 0;
-
-	public DateTime dt { get; set; }
+	//когда это не перелопачивается?
 
 	protected override async Task<Task> OnInitializedAsync()
 	{
-		if (secutityMain== null)
+		if (MainWorkWindowService== null)
 			return base.OnInitializedAsync();
 
-		WebSockets = new List<WebsocketClient>();
-
-
-
-		dt = DateTime.Now;
+		MainWorkWindowService.dt = DateTime.Now;
 		ApiDataService.NewMarketDepth += OnNewMarketDepth;
 		ApiDataService.NewTicks += OnNewTicks;
-
-		WebSockets.Add(await ApiDataService.SubscribeOrderBook(secutityMain.id));
-		WebSockets.Add(await ApiDataService.SubcribeTick(secutityMain.id));
 
 		return base.OnInitializedAsync();
 	}
 
+	protected override async Task<Task> OnAfterRenderAsync(bool firstRender)
+	{
+
+		Console.WriteLine($"OnAfterRenderAsync sec {MainWorkWindowService.securityApi.Isin} firstrender={firstRender}");
+
+		MainWorkWindowService.WebSockets.Add(await ApiDataService.SubscribeOrderBook(MainWorkWindowService.securityApi.id));
+		MainWorkWindowService.WebSockets.Add(await ApiDataService.SubcribeTick(MainWorkWindowService.securityApi.id));
+
+		return base.OnAfterRenderAsync(firstRender);
+	}
+
+	/// <summary>
+	/// Подписка на все стаканы.
+	/// </summary>
+	/// <param name="bestbid"></param>
+	/// <param name="secinstrument"></param>
+	/// <param name="md"></param>
 	private async void OnNewMarketDepth(MarketDepthLevel bestbid, string secinstrument, IEnumerable<MarketDepthLevel> md)
 	{
 
 		try
 		{
 
-			if (secinstrument != secutityMain.id) return;
+			if (MainWorkWindowService.securityApi.id != secinstrument) return;
 
 			if (md == null)
 				return;
 
-			Quotes = md;
+			MainWorkWindowService.Quotes = md;
 
 			//TODO - при масштабированини этот уровень лучше менять. 
-			maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
-			minchart = bestbid.Price - levelsFromBest * secutityMain.PriceStep;
+			MainWorkWindowService.maxchart = bestbid.Price + MainWorkWindowService.levelsFromBest * MainWorkWindowService.securityApi.PriceStep;
+			MainWorkWindowService.minchart = bestbid.Price - MainWorkWindowService.levelsFromBest * MainWorkWindowService.securityApi.PriceStep;
 
-			Console.WriteLine($"MD recevied {secutityMain.id} NAME={secutityMain.Isin}");
+			//Console.WriteLine($"MD recevied {secutityMain.id} NAME={secutityMain.Isin}");
 
-			var dictionary = Quotes.Select(t => new { t.Price, t })
+			var dictionary = MainWorkWindowService.Quotes.Select(t => new { t.Price, t })
 				.ToDictionary(t => t.Price, t => t);
 
 
@@ -273,7 +303,7 @@
 				try
 				{
 
-					orderbookcount++;
+					//orderbookcount++;
 
 
 					/*
@@ -307,28 +337,28 @@
 		}
 	}
 
+	/// <summary>
+	/// Подписка на все тики
+	/// </summary>
+	/// <param name="secinstrument"></param>
+	/// <param name="ticks"></param>
 	private async void OnNewTicks(string secinstrument, List<TradeApi> ticks)
 	{
-		if (secinstrument != secutityMain.id) return;
+		if (MainWorkWindowService.securityApi.id != secinstrument) return;
 
 		if(ticks==null)
 			return;
 
-		Console.WriteLine(ticks[0].SecurityId + " new tick !" + ticks[0].Price);
+		//Console.WriteLine(ticks[0].SecurityId + " new tick !" + ticks[0].Price);
 
 		foreach (var tick in ticks)
 		{
-			start++;
-			Ticks.Add(new Trade()
-			{
-				Price = tick.Price, //Quotes.ToArray()[new Random().Next(1, Quotes.Count())].Price,
-				Time = dt + TimeSpan.FromSeconds(start),
-				Volume = tick.Volume,
-				Side = tick.Side
-			});
-
-			if (Ticks.Count > 15) Ticks.RemoveAt(0);
+			MainWorkWindowService.start++;
+			tick.Time = MainWorkWindowService.dt + TimeSpan.FromSeconds(MainWorkWindowService.start);
+			MainWorkWindowService.Ticks.Add(tick);
+			if (MainWorkWindowService.Ticks.Count > 15) MainWorkWindowService.Ticks.RemoveAt(0);
 		}
+
 
 		await InvokeAsync(() => { Chart.RefreshData(); });
 	}
@@ -368,7 +398,7 @@
 	protected void PrepareSeriesPoint(ChartSeriesPointCustomizationSettings pointSettings)
 	{
 		//всегда 1 элемент
-		var t = (Trade)pointSettings.Point.DataItems.ToArray()[0];
+		var t = (TradeApi)pointSettings.Point.DataItems.ToArray()[0];
 
 		//показывать объём сверху
 		pointSettings.PointLabel.Texts = new string[] { t.Volume.ToString() };
@@ -388,12 +418,14 @@
 
 	}
 
-
 	async Task<Task> OnClosingMain()
 	{
-		ApiDataService.StopOrderBookProcesor(secutityMain.id);
+		ApiDataService.NewMarketDepth -= OnNewMarketDepth;
+		ApiDataService.NewTicks -= OnNewTicks;
 
-		foreach (var webSocket in WebSockets)
+		ApiDataService.StopOrderBookProcesor(MainWorkWindowService.securityApi.id);
+
+		foreach (var webSocket in MainWorkWindowService.WebSockets.ToList())
 		{
 			try
 			{
@@ -411,18 +443,15 @@
 		}
 		//TODO: Сделать отписку по инструментам и полный Dispose
 
-		OnClosing?.Invoke(secutityMain);
+		OnClosing?.Invoke(Index, MainWorkWindowService.securityApi);
 		return Task.CompletedTask;
 	}
 
-	Orientation currentOrientation;
-	IEnumerable<MarketDepthLevel> Quotes;
-
-	string messageConnection { get; set; }
 
 	void IDisposable.Dispose()
 	{
-		ApiDataService.NewMarketDepth -= OnNewMarketDepth;
-		ApiDataService.NewTicks -= OnNewTicks;
+		//не уверен, то это корректно работает.
+
+	
 	}
 }

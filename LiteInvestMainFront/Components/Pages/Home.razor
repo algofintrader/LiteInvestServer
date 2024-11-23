@@ -171,13 +171,14 @@
 <DxStackLayout CssClass="w-100 ch-480" Orientation="Orientation.Horizontal">
 	<Items>
 
-		@foreach (var instr in RegisteredInstruments)
+		@foreach (var secKey in RegisteredApis)
 		{
-			Console.WriteLine($"ReRendering {instr.Isin}");
+			Console.WriteLine($"ReRendering secID={secKey}");
 			<DxStackLayoutItem>
 				<Template>
 					<div>
-						<WorkWindow OnClosing="OnClosingWorkingWindow" secutityMain="@instr" ApiDataService="@_apidataservice" />
+						<WorkWindow OnClosing="OnClosingWorkingWindow"  MainWorkWindowService="@WorkWindowsServices[secKey.id]" 
+						            ApiDataService="@_apidataservice" />
 					</div>
 				</Template>
 			</DxStackLayoutItem>
@@ -186,7 +187,15 @@
 	</Items>
 </DxStackLayout>
 
-@code {
+@code 
+
+{
+
+	[Inject] ModalService ModalService { get; set; } = default!;
+
+	List<SecurityApi> RegisteredApis = new List<SecurityApi>();
+	ConcurrentDictionary<string, WorkWindowService> WorkWindowsServices = new();
+
 	DxComboBox<SecurityApi, SecurityApi> combobox;
 
 	string textlogin = "Войти";
@@ -207,7 +216,7 @@
 		{
 			_securitySelected = value;
 			OnAutoCompleteChanged(value);
-			
+
 		}
 	}
 
@@ -215,7 +224,7 @@
 	public IEnumerable<SecurityApi>? Instruments = new List<SecurityApi>();
 
 	//ConcurrentDictionary<string, SecurityApi> RegisteredInstruments = new();
-	List<SecurityApi> RegisteredInstruments = new();
+	//List<SecurityApi> RegisteredInstruments = new();
 
 
 	Task OnLogin()
@@ -235,7 +244,17 @@
 		};
 	}*/
 
+	private async Task ShowModal(ModalType modalType, string TitleMessage, string Message)
+	{
+		var modalOption = new ModalOption
+		{
+			Title = TitleMessage,
+			Message = Message,
+			Type = modalType,
+		};
 
+		await ModalService.ShowAsync(modalOption);
+	}
 
 	private void OnAutoCompleteChanged(SecurityApi securityApi)
 	{
@@ -243,11 +262,17 @@
 		if(securityApi==null)
 			return;
 
-		RegisteredInstruments.Add(securityApi);
-		//RegisteredInstruments.TryAdd(securityApi.Isin,securityApi);
+
+		if (WorkWindowsServices.ContainsKey(securityApi.id))
+		{
+			ShowModal(ModalType.Dark,"Ошибка","Инструмент уже открыт");
+			return;
+		}
+
+		RegisteredApis.Add(securityApi);
+		WorkWindowsServices[securityApi.id] = new WorkWindowService(){securityApi = securityApi};
 
 		Console.WriteLine($"'{securityApi.Isin}' registered.");
-
 		InvokeAsync(StateHasChanged);
 	}
 
@@ -269,10 +294,11 @@
 	}
 
 
-	private void OnClosingWorkingWindow(SecurityApi instr)
+	private void OnClosingWorkingWindow(int index,SecurityApi instr)
 	{
-		RegisteredInstruments.Remove(instr);
-		//RegisteredInstruments.TryRemove(instr.Isin, out var _);
+		RegisteredApis.RemoveAt(index);
+		WorkWindowsServices.Remove(instr.id, out var _);
+		
 		InvokeAsync(StateHasChanged);
 	}
 

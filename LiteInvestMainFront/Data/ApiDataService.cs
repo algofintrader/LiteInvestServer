@@ -116,8 +116,8 @@ namespace LiteInvestMainFront.Data
 			}
 		}
 
-
-
+		private ConcurrentDictionary<string, WebsocketClient> OrderBookSubscrtiptions = new();
+		private ConcurrentDictionary<string, WebsocketClient> TickSubscriptions = new();
 		public async Task<IEnumerable<SecurityApi>> GetInstruments()
 		{
 
@@ -145,9 +145,15 @@ namespace LiteInvestMainFront.Data
 
 		}
 
-		//TODO: отписки нет толком
+		/// <summary>
+		/// Если было зарегестрирована подписка, то возвращает подписку.
+		/// </summary>
+		/// <param name="secid"></param>
+		/// <returns></returns>
 		public async Task<WebsocketClient> SubcribeTick(string secid)
 		{
+			if (TickSubscriptions.ContainsKey(secid))
+				return TickSubscriptions[secid];
 
 			var webscoketrequest =
 				websocketurl
@@ -164,6 +170,9 @@ namespace LiteInvestMainFront.Data
 				{
 					// var ticks = JsonConvert.DeserializeObject<List<Trade>>(msg.Text);
 					var ticks = JsonConvert.DeserializeObject<List<TradeApi>>(msg.Text);
+
+
+
 					NewTicks?.Invoke(ticks[0].SecurityId, ticks);
 				}
 				catch (Exception ex)
@@ -173,6 +182,7 @@ namespace LiteInvestMainFront.Data
 
 			});
 
+			TickSubscriptions[secid] = websocketClient;
 			Console.WriteLine(webscoketrequest);
 		
 			await websocketClient.Start();
@@ -180,13 +190,19 @@ namespace LiteInvestMainFront.Data
 
 		}
 
+		
+
 		/// <summary>
-		/// Пока что сделал отписку по самому простому принципу. 
+		/// Если зарегестрирована уже, то возвращает прошлую регистрацию
 		/// </summary>
 		/// <param name="secid"></param>
 		/// <returns></returns>
 		public async Task<WebsocketClient> SubscribeOrderBook(string secid)
 		{
+			if (OrderBookSubscrtiptions.ContainsKey(secid))
+				return OrderBookSubscrtiptions[secid];
+
+
 			var webscoketrequest =
 				websocketurl
 				.AddParameter("stream", "orderbook")
@@ -210,6 +226,7 @@ namespace LiteInvestMainFront.Data
 				}
 			});
 
+			OrderBookSubscrtiptions[secid] = websocketClient;
 
 			Console.WriteLine(webscoketrequest);
 
@@ -236,7 +253,7 @@ namespace LiteInvestMainFront.Data
 			if (!OrderBookProcessors.ContainsKey(secid))
 				OrderBookProcessors[secid] = new OrderBookService(Securities[secid], NewMarketDepth);
 
-			Console.WriteLine($"Orderbook processed {secid}");
+			//Console.WriteLine($"Orderbook processed {secid}");
 
 			OrderBookProcessors[secid].Process(md);
 
