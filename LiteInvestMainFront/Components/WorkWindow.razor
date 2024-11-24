@@ -7,7 +7,7 @@
 @using Websocket.Client
 @using Orientation = DevExpress.Blazor.Orientation
 @implements IDisposable;
-
+@inject IJSRuntime JSRuntime
 
 <style>
 	.cardnew {
@@ -103,8 +103,8 @@
 		padding-inline: 0 !important;
 	}
 	/*.k-tilelayout-item-header{
-			display: none;
-		}*/
+				display: none;
+			}*/
 	.k-grid-content {
 		padding: 0px;
 	}
@@ -166,7 +166,7 @@
 		height: 100%;
 	}
 
-	.dxc .dxc-chart{
+	.dxc .dxc-chart {
 		width: 150px;
 	}
 
@@ -178,7 +178,7 @@
 		height: 100%;
 	}
 
-	.highlighted-item > td {
+	.highlighted-item {
 		background-color: var(--bs-danger-bg-subtle)
 	}
 
@@ -186,7 +186,7 @@
 		padding: 0;
 	}
 
-	.highlighted-item2 > td {
+	.highlighted-item2 {
 		background-color: var(--bs-success-bg-subtle)
 	}
 
@@ -207,7 +207,7 @@
 		<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="1">
 			<TelerikGrid Size="Small" Class="telerik-table" Data="@Quotes">
 				<GridColumns>
-					<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none"/>
+					<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none" />
 					<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
 				</GridColumns>
 			</TelerikGrid>
@@ -215,18 +215,18 @@
 		<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
 
 			<DxChart CssClass="chart"
-						CustomizeSeriesPoint="@PrepareSeriesPoint"
-						@ref="Chart"
-						Data="Ticks"
-						Width="100%"
-						LabelOverlap="ChartLabelOverlap.Hide">
+					 CustomizeSeriesPoint="@PrepareSeriesPoint"
+					 @ref="Chart"
+					 Data="Ticks"
+					 Width="100%"
+					 LabelOverlap="ChartLabelOverlap.Hide">
 				<DxChartLineSeries Name="ticksLineSeries"
-									T="Trade"
-									TArgument="DateTime"
-									TValue="decimal"
-									ArgumentField="si => si.Time"
-									ValueField="si => si.Price"
-									HoverMode="ChartContinuousSeriesHoverMode.Series">
+								   T="Trade"
+								   TArgument="DateTime"
+								   TValue="decimal"
+								   ArgumentField="si => si.Time"
+								   ValueField="si => si.Price"
+								   HoverMode="ChartContinuousSeriesHoverMode.Series">
 
 					<DxChartLegend Visible="false" />
 
@@ -253,29 +253,36 @@
 			</DxChart>
 		</Telerik.Blazor.Components.GridLayoutItem>
 		<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
-@* 			<DxGrid CssClass="dxgrid"
-					@ref=Grid
-					Data="@Quotes"
-					ShowAllRows="true"
-					ColumnResizeMode="GridColumnResizeMode.NextColumn"
-					TextWrapEnabled="false"
-					CustomizeElement="Grid_CustomizeElement"
-					ShowGroupPanel="false"
-					HighlightRowOnHover="true"
-					FocusedRowEnabled="true">
+			@* 			<DxGrid CssClass="dxgrid"
+			@ref=Grid
+			Data="@Quotes"
+			ShowAllRows="true"
+			ColumnResizeMode="GridColumnResizeMode.NextColumn"
+			TextWrapEnabled="false"
+			CustomizeElement="Grid_CustomizeElement"
+			ShowGroupPanel="false"
+			HighlightRowOnHover="true"
+			FocusedRowEnabled="true">
 
-				<Columns>
-					<DxGridDataColumn FieldName="Volume" />
-					<DxGridDataColumn FieldName="Price"/>
-					<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
-				</Columns>
+			<Columns>
+			<DxGridDataColumn FieldName="Volume" />
+			<DxGridDataColumn FieldName="Price"/>
+			<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
+			</Columns>
 			</DxGrid> *@
-			<TelerikGrid Size="Small" Class="telerik-table" Data="@Quotes">
+			<TelerikGrid Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
 				<GridColumns>
-					<Telerik.Blazor.Components.GridColumn  Field="Volume" HeaderClass="d-none" />
+					<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none" />
 					<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
 				</GridColumns>
-
+				<RowTemplate Context="Quotes">
+					<td class="@(Quotes.Type == Side.Sell ? "highlighted-item" : "highlighted-item2")">
+						@Quotes.Volume
+					</td>
+					<td class="@(Quotes.Type == Side.Sell ? "highlighted-item" : "highlighted-item2")">
+						@Quotes.Price
+					</td>
+				</RowTemplate>
 			</TelerikGrid>
 		</Telerik.Blazor.Components.GridLayoutItem>
 	</GridLayoutItems>
@@ -434,6 +441,14 @@
 		WebSockets.Add(await ApiDataService.SubcribeTick(secutityMain.id));
 
 		return base.OnInitializedAsync();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await JSRuntime.InvokeVoidAsync("getScrollEvent");
+		}
 	}
 
 	private async void OnNewMarketDepth(MarketDepthLevel bestbid, string secinstrument, IEnumerable<MarketDepthLevel> md)
@@ -620,3 +635,16 @@
 		ApiDataService.NewTicks -= OnNewTicks;
 	}
 }
+
+<script>
+	function getScrollEvent() {
+		let targetElements = document.querySelectorAll(".k-grid-content");
+
+		targetElements.forEach(function (targetElement) {
+			targetElement.addEventListener('scroll', (event) => {
+				console.log("grid scrolling");
+			});
+		});
+	}
+
+</script>
