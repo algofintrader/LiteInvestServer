@@ -11,6 +11,7 @@
     <PackageReference Include="DevExpress.Blazor" Version="24.1.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="RestSharp" Version="112.1.0" />
+    <PackageReference Include="Telerik.UI.for.Blazor.Trial" Version="7.0.0" />
     <PackageReference Include="Websocket.Client" Version="5.1.2" />
   </ItemGroup>
 

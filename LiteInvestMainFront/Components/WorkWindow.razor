@@ -1,5 +1,4 @@
-﻿
-@using System.Drawing
+﻿@using System.Drawing
 @using System.Net.WebSockets
 @using DevExpress.Data.Browsing
 @using LiteInvestMainFront.Data
@@ -13,7 +12,109 @@
 <style>
 	.cardnew {
 		height: 800px;
+	}
+	/* Общие стили для WorkWindow */
+	.workwindow-container {
+		background-color: #f5f5f5;
+		border: 1px solid #ddd;
+		border-radius: 5px;
+		min-height: 250px;
+	}
 
+	.telerik-table {
+		padding: 0px;
+	}
+
+	.k-grid-md td, .k-grid-md .k-table-td {
+		padding-block: 0px !important;
+		padding-inline: 0px !important;
+	}
+	/* Стили для контейнера с таблицей */
+	.table-container {
+		height: 90vh;
+		scrollbar-width: thin;
+		overflow-y: auto; /* Включаем вертикальный скроллинг */
+	}
+
+	/* Стили для самой таблицы */
+	.telerik-grid {
+		width: 100%;
+		height: 100%;
+	}
+
+		/* Стили для контента таблицы */
+		.telerik-grid .k-grid-content {
+			overflow-y: auto; /* Включаем вертикальный скроллинг в таблице */
+		}
+
+	/* Заголовок WorkWindow */
+	.workwindow-container h3 {
+		margin-top: 0;
+		font-size: 18px;
+		color: #333;
+		font-weight: bold;
+	}
+
+	/* Стили для TileLayout (если нужно стилизовать плитки) */
+	.telerik-tilelayout-item {
+		min-width: 285px;
+		min-height: 285px;
+		margin-bottom: 15px;
+	}
+
+	.tile-content {
+		background-color: #fff;
+		border-radius: 5px;
+	}
+
+	.k-grid-content {
+		scrollbar-width: none;
+	}
+
+	.k-grid-header {
+		padding-inline-end: 0px !important;
+	}
+	/* Дополнительные улучшения для внешнего вида */
+	.telerik-grid .k-header {
+		background-color: #f0f0f0;
+		color: #333;
+		text-align: center;
+		font-weight: bold;
+	}
+
+	.telerik-grid .k-grid-header {
+		border-bottom: 1px solid #ddd;
+	}
+
+	.telerik-grid .k-grid-table {
+		border-spacing: 0;
+		border-collapse: collapse;
+	}
+
+		.telerik-grid .k-grid-table td,
+		.telerik-grid .k-grid-table th {
+			text-align: center;
+			border: 1px solid #ddd;
+		}
+
+	.k-card-body {
+		padding: 0px;
+		padding-block: 0 !important;
+		padding-inline: 0 !important;
+	}
+	/*.k-tilelayout-item-header{
+			display: none;
+		}*/
+	.k-grid-content {
+		padding: 0px;
+	}
+
+	.k-tilelayout-item-body k-card-body {
+		padding: 0px;
+	}
+	/* Убираем паддинги для всего TileLayout */
+	.telerik-tilelayout {
+		padding: 0;
 	}
 
 	.gridlayout-item {
@@ -29,41 +130,47 @@
 		align-items: start;
 		justify-content: start;
 	}
-	.gridlayout-item:before {
-		content: " ";
-		position: absolute;
-		z-index: -1;
-		width: 100%;
-		height: 100%;
-		left: 0;
-		top: 0;
-		opacity: 0.4;
-	}
+
+		.gridlayout-item:before {
+			content: " ";
+			position: absolute;
+			z-index: -1;
+			width: 100%;
+			height: 100%;
+			left: 0;
+			top: 0;
+			opacity: 0.4;
+		}
+
 	.gridlayout-header:before {
 		background-color: var(--bs-red);
 	}
+
 	.gridlayout-content:before {
 		background-color: var(--bs-yellow);
 	}
+
 	.gridlayout-left-side-bar:before {
-		
 		background-color: var(--bs-green);
 	}
+
 	.gridlayout-right-side-bar:before {
-		
 	}
+
 	.gridlayout-footer:before {
 		background-color: var(--bs-blue);
 		opacity: 0.5;
 	}
-	
+
 	.dxgrid {
 		height: 100%;
-		
 	}
-	
-	.dxbl-grid 
-	{
+
+	.dxc .dxc-chart{
+		width: 150px;
+	}
+
+	.dxbl-grid {
 		--dxbl-grid-font-size: 10px;
 	}
 
@@ -75,7 +182,7 @@
 		background-color: var(--bs-danger-bg-subtle)
 	}
 
-	.card-body{
+	.card-body {
 		padding: 0;
 	}
 
@@ -83,11 +190,98 @@
 		background-color: var(--bs-success-bg-subtle)
 	}
 
-	
-	
 </style>
 
 
+<TelerikGridLayout>
+	<GridLayoutColumns>
+		<Telerik.Blazor.Components.GridLayoutColumn />
+		<Telerik.Blazor.Components.GridLayoutColumn />
+		<Telerik.Blazor.Components.GridLayoutColumn />
+	</GridLayoutColumns>
+
+	<GridLayoutRows>
+		<Telerik.Blazor.Components.GridLayoutRow />
+	</GridLayoutRows>
+	<GridLayoutItems>
+		<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="1">
+			<TelerikGrid Size="Small" Class="telerik-table" Data="@Quotes">
+				<GridColumns>
+					<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none"/>
+					<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
+				</GridColumns>
+			</TelerikGrid>
+		</Telerik.Blazor.Components.GridLayoutItem>
+		<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
+
+			<DxChart CssClass="chart"
+						CustomizeSeriesPoint="@PrepareSeriesPoint"
+						@ref="Chart"
+						Data="Ticks"
+						Width="100%"
+						LabelOverlap="ChartLabelOverlap.Hide">
+				<DxChartLineSeries Name="ticksLineSeries"
+									T="Trade"
+									TArgument="DateTime"
+									TValue="decimal"
+									ArgumentField="si => si.Time"
+									ValueField="si => si.Price"
+									HoverMode="ChartContinuousSeriesHoverMode.Series">
+
+					<DxChartLegend Visible="false" />
+
+					<!--<DxChartSeriesPoint Visible="true"
+									HoverMode="ChartSeriesPointHoverMode.None" />-->
+					<!--<DxChartSeriesLabel Visible="true"
+									ValueFormat="ChartElementFormat.Thousands(1)" />-->
+				</DxChartLineSeries>
+
+				<DxChartArgumentAxis Visible="false">
+					<DxChartAxisLabel Visible="false" />
+					<DxChartAxisTick Visible="false" />
+					<DxChartAxisMinorTick Visible="false" />
+					<DxChartAxisGridLines Visible="true" />
+				</DxChartArgumentAxis>
+
+				<DxChartValueAxis Visible="false">
+					<DxChartAxisLabel Visible="false" />
+					<DxChartAxisTick Visible="false" />
+					<DxChartAxisMinorTick Visible="false" />
+					<DxChartAxisGridLines Visible="true" />
+					<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart" />
+				</DxChartValueAxis>
+			</DxChart>
+		</Telerik.Blazor.Components.GridLayoutItem>
+		<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
+@* 			<DxGrid CssClass="dxgrid"
+					@ref=Grid
+					Data="@Quotes"
+					ShowAllRows="true"
+					ColumnResizeMode="GridColumnResizeMode.NextColumn"
+					TextWrapEnabled="false"
+					CustomizeElement="Grid_CustomizeElement"
+					ShowGroupPanel="false"
+					HighlightRowOnHover="true"
+					FocusedRowEnabled="true">
+
+				<Columns>
+					<DxGridDataColumn FieldName="Volume" />
+					<DxGridDataColumn FieldName="Price"/>
+					<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
+				</Columns>
+			</DxGrid> *@
+			<TelerikGrid Size="Small" Class="telerik-table" Data="@Quotes">
+				<GridColumns>
+					<Telerik.Blazor.Components.GridColumn  Field="Volume" HeaderClass="d-none" />
+					<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
+				</GridColumns>
+
+			</TelerikGrid>
+		</Telerik.Blazor.Components.GridLayoutItem>
+	</GridLayoutItems>
+</TelerikGridLayout>
+
+@*
 <div class="card cardnew">
 	<div class="card-header">
 		@secutityMain.Isin
@@ -189,7 +383,7 @@
 			</Items>
 		</DxGridLayout>
 	</div>
-</div>
+</div> *@
 
 
 @code {
@@ -225,7 +419,7 @@
 
 	protected override async Task<Task> OnInitializedAsync()
 	{
-		if (secutityMain== null)
+		if (secutityMain == null)
 			return base.OnInitializedAsync();
 
 		WebSockets = new List<WebsocketClient>();
@@ -255,7 +449,7 @@
 
 			Quotes = md;
 
-			//TODO - при масштабированини этот уровень лучше менять. 
+			//TODO - при масштабированини этот уровень лучше менять.
 			maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
 			minchart = bestbid.Price - levelsFromBest * secutityMain.PriceStep;
 
@@ -311,7 +505,7 @@
 	{
 		if (secinstrument != secutityMain.id) return;
 
-		if(ticks==null)
+		if (ticks == null)
 			return;
 
 		Console.WriteLine(ticks[0].SecurityId + " new tick !" + ticks[0].Price);
@@ -320,12 +514,12 @@
 		{
 			start++;
 			Ticks.Add(new Trade()
-			{
-				Price = tick.Price, //Quotes.ToArray()[new Random().Next(1, Quotes.Count())].Price,
-				Time = dt + TimeSpan.FromSeconds(start),
-				Volume = tick.Volume,
-				Side = tick.Side
-			});
+				{
+					Price = tick.Price, //Quotes.ToArray()[new Random().Next(1, Quotes.Count())].Price,
+					Time = dt + TimeSpan.FromSeconds(start),
+					Volume = tick.Volume,
+					Side = tick.Side
+				});
 
 			if (Ticks.Count > 15) Ticks.RemoveAt(0);
 		}
@@ -378,8 +572,8 @@
 		pointSettings.PointAppearance.Symbol = ChartPointSymbol.Circle;
 
 		//TODO: Исправить размеры - сделать адаптивными
-		//TODO: написать логику расчета адаптивных элементов 
-		pointSettings.PointAppearance.Size = (int)(t.Volume * 1.1m);
+		//TODO: написать логику расчета адаптивных элементов
+		pointSettings.PointAppearance.Size = 1;
 
 		if (t.Side == Side.Sell)
 			pointSettings.PointAppearance.Color = Color.Red;
