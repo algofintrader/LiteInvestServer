@@ -11,180 +11,180 @@
 
 <style>
 	.cardnew {
-		height: 800px;
+	height: 800px;
 	}
 	/* Общие стили для WorkWindow */
 	.workwindow-container {
-		background-color: #f5f5f5;
-		border: 1px solid #ddd;
-		border-radius: 5px;
-		min-height: 250px;
+	background-color: #f5f5f5;
+	border: 1px solid #ddd;
+	border-radius: 5px;
+	min-height: 250px;
 	}
 
 	.telerik-table {
-		padding: 0px;
+	padding: 0px;
 	}
 
 	.k-grid-md td, .k-grid-md .k-table-td {
-		padding-block: 0px !important;
-		padding-inline: 0px !important;
+	padding-block: 0px !important;
+	padding-inline: 0px !important;
 	}
 	/* Стили для контейнера с таблицей */
 	.table-container {
-		height: 90vh;
-		scrollbar-width: thin;
-		overflow-y: auto; /* Включаем вертикальный скроллинг */
+	height: 90vh;
+	scrollbar-width: thin;
+	overflow-y: auto; /* Включаем вертикальный скроллинг */
 	}
 
 	/* Стили для самой таблицы */
 	.telerik-grid {
-		width: 100%;
-		height: 100%;
+	width: 100%;
+	height: 100%;
 	}
 
-		/* Стили для контента таблицы */
-		.telerik-grid .k-grid-content {
-			overflow-y: auto; /* Включаем вертикальный скроллинг в таблице */
-		}
+	/* Стили для контента таблицы */
+	.telerik-grid .k-grid-content {
+	overflow-y: auto; /* Включаем вертикальный скроллинг в таблице */
+	}
 
 	/* Заголовок WorkWindow */
 	.workwindow-container h3 {
-		margin-top: 0;
-		font-size: 18px;
-		color: #333;
-		font-weight: bold;
+	margin-top: 0;
+	font-size: 18px;
+	color: #333;
+	font-weight: bold;
 	}
 
 	/* Стили для TileLayout (если нужно стилизовать плитки) */
 	.telerik-tilelayout-item {
-		min-width: 285px;
-		min-height: 285px;
-		margin-bottom: 15px;
+	min-width: 285px;
+	min-height: 285px;
+	margin-bottom: 15px;
 	}
 
 	.tile-content {
-		background-color: #fff;
-		border-radius: 5px;
+	background-color: #fff;
+	border-radius: 5px;
 	}
 
 	.k-grid-content {
-		scrollbar-width: none;
+	scrollbar-width: none;
 	}
 
 	.k-grid-header {
-		padding-inline-end: 0px !important;
+	padding-inline-end: 0px !important;
 	}
 	/* Дополнительные улучшения для внешнего вида */
 	.telerik-grid .k-header {
-		background-color: #f0f0f0;
-		color: #333;
-		text-align: center;
-		font-weight: bold;
+	background-color: #f0f0f0;
+	color: #333;
+	text-align: center;
+	font-weight: bold;
 	}
 
 	.telerik-grid .k-grid-header {
-		border-bottom: 1px solid #ddd;
+	border-bottom: 1px solid #ddd;
 	}
 
 	.telerik-grid .k-grid-table {
-		border-spacing: 0;
-		border-collapse: collapse;
+	border-spacing: 0;
+	border-collapse: collapse;
 	}
 
-		.telerik-grid .k-grid-table td,
-		.telerik-grid .k-grid-table th {
-			text-align: center;
-			border: 1px solid #ddd;
-		}
+	.telerik-grid .k-grid-table td,
+	.telerik-grid .k-grid-table th {
+	text-align: center;
+	border: 1px solid #ddd;
+	}
 
 	.k-card-body {
-		padding: 0px;
-		padding-block: 0 !important;
-		padding-inline: 0 !important;
+	padding: 0px;
+	padding-block: 0 !important;
+	padding-inline: 0 !important;
 	}
 	/*.k-tilelayout-item-header{
-				display: none;
-			}*/
+	display: none;
+	}*/
 	.k-grid-content {
-		padding: 0px;
+	padding: 0px;
 	}
 
 	.k-tilelayout-item-body k-card-body {
-		padding: 0px;
+	padding: 0px;
 	}
 	/* Убираем паддинги для всего TileLayout */
 	.telerik-tilelayout {
-		padding: 0;
+	padding: 0;
 	}
 
 	.gridlayout-item {
-		font-size: 1.2em;
-		font-weight: 500;
-		text-align: center;
-		width: 100%;
-		height: 800px;
-		text-align: center;
-		position: relative;
-		z-index: 0;
-		display: flex;
-		align-items: start;
-		justify-content: start;
+	font-size: 1.2em;
+	font-weight: 500;
+	text-align: center;
+	width: 100%;
+	height: 800px;
+	text-align: center;
+	position: relative;
+	z-index: 0;
+	display: flex;
+	align-items: start;
+	justify-content: start;
 	}
 
-		.gridlayout-item:before {
-			content: " ";
-			position: absolute;
-			z-index: -1;
-			width: 100%;
-			height: 100%;
-			left: 0;
-			top: 0;
-			opacity: 0.4;
-		}
+	.gridlayout-item:before {
+	content: " ";
+	position: absolute;
+	z-index: -1;
+	width: 100%;
+	height: 100%;
+	left: 0;
+	top: 0;
+	opacity: 0.4;
+	}
 
 	.gridlayout-header:before {
-		background-color: var(--bs-red);
+	background-color: var(--bs-red);
 	}
 
 	.gridlayout-content:before {
-		background-color: var(--bs-yellow);
+	background-color: var(--bs-yellow);
 	}
 
 	.gridlayout-left-side-bar:before {
-		background-color: var(--bs-green);
+	background-color: var(--bs-green);
 	}
 
 	.gridlayout-right-side-bar:before {
 	}
 
 	.gridlayout-footer:before {
-		background-color: var(--bs-blue);
-		opacity: 0.5;
+	background-color: var(--bs-blue);
+	opacity: 0.5;
 	}
 
 	.dxgrid {
-		height: 100%;
+	height: 100%;
 	}
 
 
 	.dxbl-grid {
-		--dxbl-grid-font-size: 10px;
+	--dxbl-grid-font-size: 10px;
 	}
 
 	.chart {
-		height: 80vh;
+	height: 80vh;
 	}
 
 	.highlighted-item {
-		background-color: var(--bs-danger-bg-subtle)
+	background-color: var(--bs-danger-bg-subtle)
 	}
 
 	.card-body {
-		padding: 0;
+	padding: 0;
 	}
 
 	.highlighted-item2 {
-		background-color: var(--bs-success-bg-subtle)
+	background-color: var(--bs-success-bg-subtle)
 	}
 
 </style>
@@ -212,25 +212,25 @@
 		<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
 
 			<DxChart CssClass="chart"
-					 CustomizeSeriesPoint="@PrepareSeriesPoint"
-					 @ref="Chart"
-					 Data="Ticks"
-					 Width="100%"
-					 LabelOverlap="ChartLabelOverlap.Hide">
+			CustomizeSeriesPoint="@PrepareSeriesPoint"
+			@ref="Chart"
+			Data="Ticks"
+			Width="100%"
+			LabelOverlap="ChartLabelOverlap.Hide">
 				<DxChartLineSeries Name="ticksLineSeries"
-								   T="Trade"
-								   TArgument="DateTime"
-								   TValue="decimal"
-								   ArgumentField="si => si.Time"
-								   ValueField="si => si.Price"
-								   HoverMode="ChartContinuousSeriesHoverMode.Series">
+				T="Trade"
+				TArgument="DateTime"
+				TValue="decimal"
+				ArgumentField="si => si.Time"
+				ValueField="si => si.Price"
+				HoverMode="ChartContinuousSeriesHoverMode.Series">
 
 					<DxChartLegend Visible="false" />
 
 					<!--<DxChartSeriesPoint Visible="true"
-									HoverMode="ChartSeriesPointHoverMode.None" />-->
+					HoverMode="ChartSeriesPointHoverMode.None" />-->
 					<!--<DxChartSeriesLabel Visible="true"
-									ValueFormat="ChartElementFormat.Thousands(1)" />-->
+					ValueFormat="ChartElementFormat.Thousands(1)" />-->
 				</DxChartLineSeries>
 
 				<DxChartArgumentAxis Visible="false">
@@ -396,8 +396,9 @@
 	IGrid Grid;
 	//А вдруг у меня все получится
 	//Влруг я буду прав
-
-	List<Trade> Ticks { get; set; } = new List<Trade>();
+	
+	[Parameter]
+	public List<Trade> Ticks { get; set; } 
 
 	[Parameter]
 	public Action<SecurityApi>? OnClosing { get; set; }
@@ -407,6 +408,9 @@
 
 	[Parameter]
 	public ApiDataService ApiDataService { get; set; }
+
+	[Parameter]
+	public int Index{ get; set; }
 
 	decimal minchart = 10000;
 	decimal maxchart = 12000;
@@ -428,7 +432,8 @@
 
 		WebSockets = new List<WebsocketClient>();
 
-
+		if (Ticks==null)
+		Ticks = new List<Trade>();
 
 		dt = DateTime.Now;
 		ApiDataService.NewMarketDepth += OnNewMarketDepth;

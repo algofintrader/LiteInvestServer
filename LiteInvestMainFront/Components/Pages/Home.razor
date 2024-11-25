@@ -4,69 +4,70 @@
 @using LiteInvestMainFront.Data
 @using LiteInvestServer.Json
 @using Orientation = DevExpress.Blazor.Orientation
+@using PlazaEngine.Entity
 @rendermode InteractiveServer
 
 @inject ApiDataService _apidataservice
 
 <style>
 	.internalSearch {
-		margin: 10px
+	margin: 10px
 	}
 
 	.stacklayout-item {
-		font-size: 1.2em;
-		font-weight: 500;
-		text-align: center;
-		height: 100%;
-		padding: 0.5rem;
-		text-align: center;
-		position: relative;
-		z-index: 0;
-		display: flex;
-		align-items: flex-start;
-		justify-content: flex-start;
+	font-size: 1.2em;
+	font-weight: 500;
+	text-align: center;
+	height: 100%;
+	padding: 0.5rem;
+	text-align: center;
+	position: relative;
+	z-index: 0;
+	display: flex;
+	align-items: flex-start;
+	justify-content: flex-start;
 	}
 	.stacklayout-item:before {
-		content: " ";
-		position: absolute;
-		z-index: -1;
-		width: 100%;
-			height: 100%;
-		left: 0;
-		top: 0;
-		opacity: 0.4;
+	content: " ";
+	position: absolute;
+	z-index: -1;
+	width: 100%;
+	height: 100%;
+	left: 0;
+	top: 0;
+	opacity: 0.4;
 	}
 	.stacklayout-header:before {
-		background-color: var(--bs-red);
+	background-color: var(--bs-red);
 	}
 	.stacklayout-content:before {
-		background-color: var(--bs-yellow);
+	background-color: var(--bs-yellow);
 	}
 	.stacklayout-left-side-bar:before {
-		background-color: var(--bs-green);
+	background-color: var(--bs-green);
 	}
 	.stacklayout-right-side-bar:before {
-		background-color: var(--bs-info);
+	background-color: var(--bs-info);
 	}
 	.stacklayout-footer:before {
-		background-color: var(--bs-blue);
-		opacity: 0.5;
+	background-color: var(--bs-blue);
+	opacity: 0.5;
 	}
 
 	.k-tilelayout-item-header.k-card-header{
-		padding-block: 4px !important;
-		padding-inline: 4px !important;
+	padding-block: 4px !important;
+	padding-inline: 4px !important;
 	}
 
 	.buttonclose {
-		cursor: pointer;
-		float: right;
+	cursor: pointer;
+	float: right;
 
 	}
 
 	@@media (max-width: 575.98px) {
 	.stacklayout-item {
-		font-size: 0.9em;
+	font-size: 0.9em;
 	}
 	}
 
@@ -74,11 +75,11 @@
 </style>
 
 <!--<AutoComplete @bind-Value="customerName"
-			  TItem="Customer"
-			  DataProvider="CustomersDataProvider"
-			  PropertyName="CustomerName"
-			  Placeholder="Выберите инструмент"
-			  OnChanged="(Customer customer) => OnAutoCompleteChanged(customer)" />-->
+TItem="Customer"
+DataProvider="CustomersDataProvider"
+PropertyName="CustomerName"
+Placeholder="Выберите инструмент"
+OnChanged="(Customer customer) => OnAutoCompleteChanged(customer)" />-->
 
 
 <nav class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
@@ -88,21 +89,21 @@
 		<form class="d-flex internalSearch" role="search">
 
 			<DxComboBox @ref=combobox
-				Data="@Instruments"
-						@bind-Value="@securitySelected"
-			            TextFieldName="@nameof(securitySelected.Isin)"
-			            SearchMode="@ListSearchMode.AutoSearch"
-			            SearchFilterCondition="@ListSearchFilterCondition.Contains"
-			            ListRenderMode="ListRenderMode.Entire"
-			            CssClass="cw-480"
-			            InputId="cbVirtualScrolling" />
+			Data="@Instruments"
+			@bind-Value="@securitySelected"
+			TextFieldName="@nameof(securitySelected.Isin)"
+			SearchMode="@ListSearchMode.AutoSearch"
+			SearchFilterCondition="@ListSearchFilterCondition.Contains"
+			ListRenderMode="ListRenderMode.Entire"
+			CssClass="cw-480"
+			InputId="cbVirtualScrolling" />
 
 			<!--<AutoComplete @bind-Value="securitySelected"
-			              TItem="SecurityApi"
-			              DataProvider="InstrumentsDataProvider"
-			              PropertyName="Isin"
-			              Placeholder="Выберите инструмент"
-			              OnChanged="(SecurityApi customer) => OnAutoCompleteChanged(customer)" />-->
+			TItem="SecurityApi"
+			DataProvider="InstrumentsDataProvider"
+			PropertyName="Isin"
+			Placeholder="Выберите инструмент"
+			OnChanged="(SecurityApi customer) => OnAutoCompleteChanged(customer)" />-->
 			<!--<input class="form-control me-2" type="search" placeholder="Инструменты"  aria-label="Search">
 			<button class="btn btn-outline-success" type="submit">Search</button>-->
 		</form>
@@ -128,7 +129,7 @@
 
 			<ul class="nav navbar-nav ml-auto">
 				<!--<li class="nav-item">
-					<a class="nav-link" href="#"><span class="fas fa-user"></span> Sign Up</a>
+				<a class="nav-link" href="#"><span class="fas fa-user"></span> Sign Up</a>
 				</li>-->
 				<li class="nav-item">
 					<a class="nav-link" href="#" onclick="@OnLogin"><span class="fas fa-sign-in-alt"></span>@textlogin</a>
@@ -142,24 +143,24 @@
 
 
 <DxLoadingPanel @bind-Visible="loadingLogIn"
-                IsContentBlocked="true"
-                ApplyBackgroundShading="true"
-                IndicatorAreaVisible="false"
-                Text="Входим..." />
+IsContentBlocked="true"
+ApplyBackgroundShading="true"
+IndicatorAreaVisible="false"
+Text="Входим..." />
 
 <DxWindow @ref=windowRef
-		  AllowResize="true"
-		  ShowCloseButton="true"
-		  CloseOnEscape="true"
-		  HeaderText="Авторизация"
-		  FooterText="Footer"
-		  ShowFooter="true"
-		  Width="max(25vw, 250px)"
-		  MinWidth="300"
-		  MinHeight="200"
-		  MaxWidth="800"
-		  MaxHeight="500"
-		  @bind-Visible=windowVisible>
+AllowResize="true"
+ShowCloseButton="true"
+CloseOnEscape="true"
+HeaderText="Авторизация"
+FooterText="Footer"
+ShowFooter="true"
+Width="max(25vw, 250px)"
+MinWidth="300"
+MinHeight="200"
+MaxWidth="800"
+MaxHeight="500"
+@bind-Visible=windowVisible>
 	<BodyContentTemplate>
 		<LogInForm @ref="logform" />
 	</BodyContentTemplate>
@@ -167,36 +168,38 @@
 	<FooterContentTemplate>
 		<DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Primary" Text="OK" Click="@OnLoginClick" />
 	</FooterContentTemplate>
-	</DxWindow>
+</DxWindow>
 
 
 <TelerikTileLayout Columns="RegisteredInstruments.Count"
-				   ColumnWidth="auto"
-				   RowHeight="90vh"
-				   Reorderable="true"
-				   ColumnSpacing="0px"
-				   RowSpacing="0px"
-				   Resizable="true">
-		<TileLayoutItems>
-		@foreach (var instr in RegisteredInstruments)
+ColumnWidth="auto"
+RowHeight="90vh"
+Reorderable="true"
+ColumnSpacing="0px"
+RowSpacing="0px"
+Resizable="true">
+	<TileLayoutItems>
+
+
+		@foreach (var security in RegisteredInstruments)
 		{
 			<TileLayoutItem>
 				<HeaderTemplate>
-					@instr.Isin
-					<svg class="buttonclose" @onclick="() => OnClosingMain(instr)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
+					@security.Isin
+					<svg @key="security.SpecialHash" class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
 						<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2" />
 						<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2" />
 					</svg>
 				</HeaderTemplate>
 				<Content>
 					<div class="tile-content">
-						<WorkWindow OnClosing="OnClosingWorkingWindow" secutityMain="@instr" ApiDataService="@_apidataservice" />
+						<WorkWindow @key="security.SpecialHash" Ticks="@GetTicks(security.id)" OnClosing="OnClosingWorkingWindow" secutityMain="@security" ApiDataService="@_apidataservice" />
 					</div>
 				</Content>
 			</TileLayoutItem>
 		}
-		</TileLayoutItems>
-	</TelerikTileLayout>
+	</TileLayoutItems>
+</TelerikTileLayout>
 
 @* <DxStackLayout CssClass="w-100 ch-480" Orientation="Orientation.Horizontal">
 	<Items>
@@ -237,19 +240,31 @@
 		{
 			_securitySelected = value;
 			OnAutoCompleteChanged(value);
-			
+
 		}
 	}
 
-	public void OnClosingMain(SecurityApi instrument)
+	public void OnClosingMain(SecurityApi sec)
 	{
+		try
+		{
+
+			var index = RegisteredInstruments.FindIndex(s => s.SpecialHash == sec.SpecialHash);
+			RegisteredInstruments.RemoveAt(index);
+		}
+		catch (Exception ex)
+		{
+
+		}
+
+
+
 		// Remove tile with the given ID
-		RegisteredInstruments.Remove(instrument);
+		//RegisteredInstruments.Remove(instrument);
 	}
 
 	public IEnumerable<SecurityApi>? Instruments = new List<SecurityApi>();
 
-	//ConcurrentDictionary<string, SecurityApi> RegisteredInstruments = new();
 	List<SecurityApi> RegisteredInstruments = new();
 
 
@@ -270,21 +285,36 @@
 		};
 	}*/
 
+	ConcurrentDictionary<string,List<Trade>> Ticks = new ();
 
+	public List<Trade> GetTicks(string secid)
+	{
+		if (!Ticks.ContainsKey(secid))
+			Ticks.TryAdd(secid, new List<Trade>());
+
+		return Ticks[secid];
+	}
 
 	private void OnAutoCompleteChanged(SecurityApi securityApi)
 	{
 
-		if(securityApi==null)
+		if (securityApi == null)
 			return;
 
-		RegisteredInstruments.Add(securityApi);
+
+		var clone = (SecurityApi) securityApi.Clone();
+		clone.SpecialHash = DateTime.Now.GetHashCode().ToString();
+
+
+		Ticks.TryAdd(securityApi.id, new List<Trade>());
+		RegisteredInstruments.Add(clone);
 		//RegisteredInstruments.TryAdd(securityApi.Isin,securityApi);
 
 		Console.WriteLine($"'{securityApi.Isin}' registered.");
 
 		InvokeAsync(StateHasChanged);
 	}
+
 
 	private async void OnLoginClick(MouseEventArgs obj)
 	{
@@ -306,6 +336,10 @@
 
 	private void OnClosingWorkingWindow(SecurityApi instr)
 	{
+
+		int index = RegisteredInstruments.FindIndex(instrument => instrument.SpecialHash == instr.SpecialHash);
+
+		//RegisteredInstruments.RemoveAt(index);
 		RegisteredInstruments.Remove(instr);
 		//RegisteredInstruments.TryRemove(instr.Isin, out var _);
 		InvokeAsync(StateHasChanged);

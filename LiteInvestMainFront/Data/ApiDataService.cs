@@ -202,6 +202,7 @@ namespace LiteInvestMainFront.Data
 					//почему то не хочет десериализовывать стакан нормальнь
 					var md = JsonConvert.DeserializeObject<MarketDepth>(msg.Text,
 						new JsonSerializerSettings() { CheckAdditionalContent = true, });
+
 					ProcessOrderBook(md);
 				}
 				catch (Exception ex)
@@ -229,18 +230,61 @@ namespace LiteInvestMainFront.Data
 		/// <param name="md"></param>
 		void ProcessOrderBook(MarketDepth md)
 		{
-
-			
 			var secid = md.SecurityId;
 
-			if (!OrderBookProcessors.ContainsKey(secid))
-				OrderBookProcessors[secid] = new OrderBookService(Securities[secid], NewMarketDepth);
+			// обычный вариант
+			var asklevels = md.Asks;
+			var bidlevels = md.Bids;
 
-			Console.WriteLine($"Orderbook processed {secid}");
+			var bestbid = bidlevels[0];
 
-			OrderBookProcessors[secid].Process(md);
+			//проще кинуть скорее всего просто Dictionary c типом
+
+			var count = asklevels.Count; // - это середина получается
+
+			decimal maxlevel = asklevels[count - 1].Price + 20 * Securities[secid].PriceStep;
+			decimal minlevel = bidlevels[0].Price - 20 * Securities[secid].PriceStep;
 
 
+			Console.WriteLine($"Макс {maxlevel} BestAsk= {asklevels[count - 1].Price} BestBID = {bidlevels[0].Price} Мин {minlevel}");
+			ConcurrentDictionary<decimal, MarketDepthLevel> AllLevels = new();
+
+			for (decimal i = maxlevel; i > minlevel; i -= 20 * Securities[secid].PriceStep)
+			{
+
+				// Console.WriteLine("Уровень =" + i);
+				AllLevels[i] = new MarketDepthLevel()
+				{
+					Price = i
+				};
+			}
+
+			List<MarketDepthLevel> sorted2 = new List<MarketDepthLevel>();
+
+			foreach (var asklevel in asklevels)
+			{
+				sorted2.Add(asklevel);
+
+				if (asklevel.Price < maxlevel)
+					AllLevels[asklevel.Price] = asklevel;
+			}
+
+
+			foreach (var bidlevel in bidlevels)
+			{
+				sorted2.Add(bidlevel);
+
+				if (bidlevel.Price > minlevel)
+					AllLevels[bidlevel.Price] = bidlevel;
+			}
+
+
+
+			//TODO: возможно стоит взять другой вариант, поработать со стринг, тогда может он не перемешает это все в кашу. 
+			var sorted = AllLevels.Values.OrderByDescending(s => s.Price);
+
+
+			NewMarketDepth?.Invoke(bestbid, secid, sorted);
 
 		}
 

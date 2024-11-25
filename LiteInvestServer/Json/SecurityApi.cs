@@ -3,7 +3,7 @@
 namespace LiteInvestServer.Json
 {
     [DataContract]
-    public class SecurityApi
+    public class SecurityApi:ICloneable
     {
         [DataMember]
         public string id { get; set; }
@@ -28,5 +28,26 @@ namespace LiteInvestServer.Json
         public decimal PriceLimitLow { get; set; }
         [DataMember]
         public decimal PriceLimitHigh { get; set; }
-    }
+
+		public string SpecialHash { get; set; }
+
+		public object Clone()
+		{
+            return new SecurityApi()
+            {
+                id = id,
+                Isin = Isin,
+                ShortName = ShortName,
+                ClassCode = ClassCode,
+                FullName = FullName,
+                Type = Type,
+                Lot = Lot,
+                PriceStep = PriceStep,
+                Decimals = Decimals,
+                PriceLimitLow = PriceLimitLow,
+                PriceLimitHigh = PriceLimitHigh,
+             
+            };
+		}
+	}
 }
