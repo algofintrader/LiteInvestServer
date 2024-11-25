@@ -222,7 +222,7 @@
 			Width="100%"
 			LabelOverlap="ChartLabelOverlap.Hide">
 				<DxChartLineSeries Name="ticksLineSeries"
-				T="Trade"
+				T="TradeApi"
 				TArgument="DateTime"
 				TValue="decimal"
 				ArgumentField="si => si.Time"
@@ -277,10 +277,10 @@
 					<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
 				</GridColumns>
 				<RowTemplate Context="Quotes">
-					<td class="@(GetClassForQuote(Quotes))">
+					<td class="@GetClassForQuote(Quotes)">
 						@Quotes.Volume
 					</td>
-					<td class="@(Quotes.Type == Side.Sell ? "highlighted-item": "highlighted-item2")">
+					<td class="@GetClassForQuote(Quotes)">
 						@Quotes.Price
 					</td>
 				</RowTemplate>
@@ -395,14 +395,16 @@
 
 
 @code {
-	DxChart<Trade> Chart;
+
+
+	DxChart<TradeApi> Chart;
 
 	IGrid Grid;
 	//А вдруг у меня все получится
 	//Влруг я буду прав
 
 	[Parameter]
-	public List<Trade> Ticks { get; set; } 
+	public BufferData Data { get; set; }
 
 	[Parameter]
 	public Action<SecurityApi>? OnClosing { get; set; }
@@ -416,18 +418,7 @@
 	[Parameter]
 	public int Index{ get; set; }
 
-	decimal minchart = 10000;
-	decimal maxchart = 12000;
-
 	public List<WebsocketClient> WebSockets { get; set; }
-
-	int levelsFromBest = 20;
-
-	int i = 1;
-	int orderbookcount = 0;
-	int start = 0;
-
-	public DateTime dt { get; set; }
 
 	public string GetClassForQuote(MarketDepthLevel quote)
 	{
@@ -448,10 +439,6 @@
 
 		WebSockets = new List<WebsocketClient>();
 
-		if (Ticks==null)
-		Ticks = new List<Trade>();
-
-		dt = DateTime.Now;
 		ApiDataService.NewMarketDepth += OnNewMarketDepth;
 		ApiDataService.NewTicks += OnNewTicks;
 
@@ -486,7 +473,7 @@
 			maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
 			minchart = bestbid.Price - levelsFromBest * secutityMain.PriceStep;
 
-			Console.WriteLine($"MD recevied {secutityMain.id} NAME={secutityMain.Isin}");
+			//Console.WriteLine($"MD recevied {secutityMain.id} NAME={secutityMain.Isin}");
 
 			var dictionary = Quotes.Select(t => new { t.Price, t })
 				.ToDictionary(t => t.Price, t => t);
@@ -499,11 +486,11 @@
 			{
 				try
 				{
-
+					/*
 					orderbookcount++;
 
 
-					/*
+
 					if (orderbookcount < 3)
 						{
 						//Console.WriteLine($"{DateTime.Now} New Quotes!");
@@ -534,32 +521,86 @@
 		}
 	}
 
+
+
+	/*------ временно -------------- */
+
+	[Parameter]
+	public int start { get; set; }
+	[Parameter]
+	public DateTime dt { get; set; }
+
+	[Parameter]
+	public int orderbookcount { get; set; }
+
+	[Parameter]
+	public decimal levelsFromBest { get; set; } = 20;
+
+	[Parameter]
+	public decimal minchart { get; set; }
+
+	[Parameter]
+	public decimal maxchart { get; set; }
+
+
+	//---------------------------------//
+
+
 	private async void OnNewTicks(string secinstrument, List<TradeApi> ticks)
 	{
 		if (secinstrument != secutityMain.id) return;
 
-		if (ticks == null)
-			return;
-
 		Console.WriteLine(ticks[0].SecurityId + " new tick !" + ticks[0].Price);
 
+		//Data.ProcessTick(ticks);
+
+		DateTime lasttime = DateTime.Now;
+
+		try
+		{
+			if (Ticks.Count != 0)
+			{
+				lasttime = Ticks[Ticks.Count - 1].Time;
+			}
+			else
+			{
+				lasttime = DateTime.Now;
+			}
+		}
+		catch (Exception ex)
+		{
+			lasttime = DateTime.Now;
+		}
+
+		int counter = 0;
 		foreach (var tick in ticks)
 		{
 			start++;
-			Ticks.Add(new Trade()
-				{
-					Price = tick.Price, //Quotes.ToArray()[new Random().Next(1, Quotes.Count())].Price,
-					Time = dt + TimeSpan.FromSeconds(start),
-					Volume = tick.Volume,
-					Side = tick.Side
-				});
+			counter++;
 
-			if (Ticks.Count > 15) Ticks.RemoveAt(0);
+
+			//tick.Time = dt + TimeSpan.FromSeconds(start);
+			tick.Time = lasttime + TimeSpan.FromSeconds(counter);
+
+			Ticks.Add(tick);
+
+			try
+			{
+				if (Ticks.Count > 15) Ticks.RemoveAt(0);
+			}
+			catch (Exception ex)
+			{
+
+			}
 		}
 
 		await InvokeAsync(() => { Chart.RefreshData(); });
 	}
 
+
+
+	[Parameter]
+	public List<TradeApi> Ticks { get; set; }
 
 	//TODO: Тут надо подумать конечно.
 	void ScrollToLastRow1(MarketDepthLevel level)
@@ -595,7 +636,7 @@
 	protected void PrepareSeriesPoint(ChartSeriesPointCustomizationSettings pointSettings)
 	{
 		//всегда 1 элемент
-		var t = (Trade)pointSettings.Point.DataItems.ToArray()[0];
+		var t = (TradeApi)pointSettings.Point.DataItems.ToArray()[0];
 
 		//показывать объём сверху
 		pointSettings.PointLabel.Texts = new string[] { t.Volume.ToString() };
@@ -647,6 +688,8 @@
 
 	string messageConnection { get; set; }
 	public object GetColor { get; set; }
+
+
 
 	void IDisposable.Dispose()
 	{

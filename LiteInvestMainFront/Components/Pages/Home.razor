@@ -194,7 +194,14 @@ Resizable="true">
 				</HeaderTemplate>
 				<Content>
 					<div class="tile-content">
-						<WorkWindow @key="security.SpecialHash" Ticks="@GetTicks(security.id)" OnClosing="OnClosingWorkingWindow" secutityMain="@security" ApiDataService="@_apidataservice" />
+						<WorkWindow @key="security.SpecialHash" 
+									Data="GetBuffersData(security.id)"
+						            Ticks="GetBuffersData(security.id).Ticks" start="GetBuffersData(security.id).start" dt="GetBuffersData(security.id).dt" 
+						            levelsFromBest="GetBuffersData(security.id).levelsFromBest" 
+						            minchart="GetBuffersData(security.id).minchart"
+									maxchart="GetBuffersData(security.id).maxchart"
+						            OnClosing="OnClosingWorkingWindow" secutityMain="@security" 
+						            ApiDataService="@_apidataservice" />
 					</div>
 				</Content>
 			</TileLayoutItem>
@@ -286,14 +293,24 @@ Resizable="true">
 		};
 	}*/
 
-	ConcurrentDictionary<string,List<Trade>> Ticks = new ();
+	ConcurrentDictionary<string,BufferData> bufferDatas = new ();
 
-	public List<Trade> GetTicks(string secid)
+	ConcurrentDictionary<string, List<TradeApi>> TicksDictionary = new();
+
+	public BufferData GetBuffersData(string secid)
 	{
-		if (!Ticks.ContainsKey(secid))
-			Ticks.TryAdd(secid, new List<Trade>());
+		if (!bufferDatas.ContainsKey(secid))
+			bufferDatas.TryAdd(secid, new BufferData());
 
-		return Ticks[secid];
+		return bufferDatas[secid];
+	}
+
+	public List<TradeApi> GetTicks(string secid)
+	{
+		if (!TicksDictionary.ContainsKey(secid))
+			TicksDictionary.TryAdd(secid, new List<TradeApi>());
+
+		return TicksDictionary[secid];
 	}
 
 	private void OnAutoCompleteChanged(SecurityApi securityApi)
@@ -307,7 +324,9 @@ Resizable="true">
 		clone.SpecialHash = DateTime.Now.GetHashCode().ToString();
 
 
-		Ticks.TryAdd(securityApi.id, new List<Trade>());
+		TicksDictionary.TryAdd(securityApi.id, new List<TradeApi>());
+		//bufferDatas.TryAdd(securityApi.id, new BufferData());
+		
 		RegisteredInstruments.Add(clone);
 		//RegisteredInstruments.TryAdd(securityApi.Isin,securityApi);
 
