@@ -222,6 +222,8 @@ public record MarketDepthLevel
 
     public decimal Volume { get => Ask == 0 ? Bid : Ask; }
 
+    private Side _side;
+
     /// <summary>
     /// BID =0
     /// ASK =1
@@ -230,6 +232,9 @@ public record MarketDepthLevel
     {
 	    get
 	    {
+		    if (_side!=null)
+                return _side;
+
 		    if (Volume == 0)
 			    return Side.Empty;
 
@@ -237,7 +242,12 @@ public record MarketDepthLevel
 
 		    return Side.Sell;
 	    }
-}
+	    set
+	    {
+		    _side = value;
+
+	    }
+    }
 
     
 

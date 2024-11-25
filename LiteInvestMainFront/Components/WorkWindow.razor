@@ -179,6 +179,10 @@
 	background-color: var(--bs-danger-bg-subtle)
 	}
 
+	.transparent-item {
+	background-color:transparent
+	}
+
 	.card-body {
 	padding: 0;
 	}
@@ -202,7 +206,7 @@
 	</GridLayoutRows>
 	<GridLayoutItems>
 		<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="1">
-			<TelerikGrid Size="Small" Class="telerik-table" Data="@Quotes">
+			<TelerikGrid  Size="Small" Class="telerik-table" Data="@Quotes">
 				<GridColumns>
 					<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none" />
 					<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
@@ -267,16 +271,16 @@
 			<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
 			</Columns>
 			</DxGrid> *@
-			<TelerikGrid Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
+			<TelerikGrid Height="90vh" Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
 				<GridColumns>
 					<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none" />
 					<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
 				</GridColumns>
 				<RowTemplate Context="Quotes">
-					<td class="@(Quotes.Type == Side.Sell ? "highlighted-item" : "highlighted-item2")">
+					<td class="@(GetClassForQuote(Quotes))">
 						@Quotes.Volume
 					</td>
-					<td class="@(Quotes.Type == Side.Sell ? "highlighted-item" : "highlighted-item2")">
+					<td class="@(Quotes.Type == Side.Sell ? "highlighted-item": "highlighted-item2")">
 						@Quotes.Price
 					</td>
 				</RowTemplate>
@@ -396,7 +400,7 @@
 	IGrid Grid;
 	//А вдруг у меня все получится
 	//Влруг я буду прав
-	
+
 	[Parameter]
 	public List<Trade> Ticks { get; set; } 
 
@@ -424,6 +428,18 @@
 	int start = 0;
 
 	public DateTime dt { get; set; }
+
+	public string GetClassForQuote(MarketDepthLevel quote)
+	{
+
+		if (quote.Volume ==0)
+		{
+			return "transparent-item";
+		}
+
+		return quote.Type == Side.Sell ? "highlighted-item" : "highlighted-item2";
+
+	}
 
 	protected override async Task<Task> OnInitializedAsync()
 	{
@@ -630,6 +646,7 @@
 	IEnumerable<MarketDepthLevel> Quotes;
 
 	string messageConnection { get; set; }
+	public object GetColor { get; set; }
 
 	void IDisposable.Dispose()
 	{

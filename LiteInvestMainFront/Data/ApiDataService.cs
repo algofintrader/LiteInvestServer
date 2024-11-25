@@ -195,7 +195,7 @@ namespace LiteInvestMainFront.Data
 
 			websocketClient = new WebsocketClient(webscoketrequest);
 
-			websocketClient.MessageReceived.Subscribe(msg =>
+			websocketClient.MessageReceived.Subscribe(async msg =>
 			{
 				try
 				{
@@ -242,20 +242,22 @@ namespace LiteInvestMainFront.Data
 
 			var count = asklevels.Count; // - это середина получается
 
-			decimal maxlevel = asklevels[count - 1].Price + 20 * Securities[secid].PriceStep;
-			decimal minlevel = bidlevels[0].Price - 20 * Securities[secid].PriceStep;
+			decimal maxlevel = asklevels[0].Price + 20 * Securities[secid].PriceStep;
+			decimal minlevel = bidlevels[bidlevels.Count-1].Price - 20 * Securities[secid].PriceStep;
 
 
-			Console.WriteLine($"Макс {maxlevel} BestAsk= {asklevels[count - 1].Price} BestBID = {bidlevels[0].Price} Мин {minlevel}");
+			//Console.WriteLine($"Макс {maxlevel} BestAsk= {asklevels[count - 1].Price} BestBID = {bidlevels[0].Price} Мин {minlevel}");
 			ConcurrentDictionary<decimal, MarketDepthLevel> AllLevels = new();
 
-			for (decimal i = maxlevel; i > minlevel; i -= 20 * Securities[secid].PriceStep)
+			for (decimal i = maxlevel; i > minlevel; i -=  Securities[secid].PriceStep)
 			{
+				bool red = i > bestbid.Price;
 
 				// Console.WriteLine("Уровень =" + i);
 				AllLevels[i] = new MarketDepthLevel()
 				{
-					Price = i
+					Price = i,
+					Type = red? Side.Sell: Side.Buy,
 				};
 			}
 
@@ -265,7 +267,7 @@ namespace LiteInvestMainFront.Data
 			{
 				sorted2.Add(asklevel);
 
-				if (asklevel.Price < maxlevel)
+				//if (asklevel.Price < maxlevel)
 					AllLevels[asklevel.Price] = asklevel;
 			}
 
@@ -274,7 +276,7 @@ namespace LiteInvestMainFront.Data
 			{
 				sorted2.Add(bidlevel);
 
-				if (bidlevel.Price > minlevel)
+				//if (bidlevel.Price > minlevel)
 					AllLevels[bidlevel.Price] = bidlevel;
 			}
 
@@ -282,8 +284,6 @@ namespace LiteInvestMainFront.Data
 
 			//TODO: возможно стоит взять другой вариант, поработать со стринг, тогда может он не перемешает это все в кашу. 
 			var sorted = AllLevels.Values.OrderByDescending(s => s.Price);
-
-
 			NewMarketDepth?.Invoke(bestbid, secid, sorted);
 
 		}
