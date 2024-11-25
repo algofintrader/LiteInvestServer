@@ -1,5 +1,6 @@
 using LiteInvestMainFront.Components;
 using LiteInvestMainFront.Data;
+using LiteInvestMainFront.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,7 @@ builder.Services.AddBlazorBootstrap();
 builder.Services.AddMvc();
 
 builder.Services.AddSingleton<ApiDataService>();
+builder.Services.AddScoped<JsInteropService>();
 
 var app = builder.Build();
 
