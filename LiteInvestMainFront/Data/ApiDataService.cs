@@ -86,7 +86,7 @@ namespace LiteInvestMainFront.Data
 
 		string token = "";
 
-		public Action<MarketDepthLevel, string, IEnumerable<MarketDepthLevel>> NewMarketDepth;
+		public Action<MarketDepthLevel, MarketDepthLevel, string, Dictionary<decimal, MarketDepthLevel>> NewMarketDepth;
 		public Action<string, List<TradeApi>> NewTicks;
 
 		public ApiDataService()
@@ -238,6 +238,7 @@ namespace LiteInvestMainFront.Data
 			var asklevels = md.Asks;
 			var bidlevels = md.Bids;
 
+			var bestask = asklevels[asklevels.Count - 1];
 			var bestbid = bidlevels[0];
 
 			//проще кинуть скорее всего просто Dictionary c типом
@@ -285,8 +286,10 @@ namespace LiteInvestMainFront.Data
 
 
 			//TODO: возможно стоит взять другой вариант, поработать со стринг, тогда может он не перемешает это все в кашу. 
-			var sorted = AllLevels.Values.OrderByDescending(s => s.Price);
-			NewMarketDepth?.Invoke(bestbid, secid, sorted);
+			var sorted =
+				AllLevels.OrderByDescending(s => s.Value.Price)
+				.ToDictionary(x => x.Key, x => x.Value);
+			NewMarketDepth?.Invoke(bestbid,bestask, secid, sorted);
 
 		}
 

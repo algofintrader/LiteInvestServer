@@ -66,6 +66,10 @@
 
 	}
 
+	.smallcombo{
+		width:30px,
+	}
+
 	@@media (max-width: 575.98px) {
 	.stacklayout-item {
 	font-size: 0.9em;
@@ -171,7 +175,6 @@ MaxHeight="500"
 	</FooterContentTemplate>
 </DxWindow>
 
-
 <TelerikTileLayout Columns="RegisteredInstruments.Count"
 ColumnWidth="auto"
 RowHeight="90vh"
@@ -180,28 +183,26 @@ ColumnSpacing="0px"
 RowSpacing="0px"
 Resizable="true">
 	<TileLayoutItems>
-
-
 		@foreach (var security in RegisteredInstruments)
 		{
 			<TileLayoutItem>
 				<HeaderTemplate>
 					@security.Isin
 					<svg @key="security.SpecialHash" class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
-						<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2" />
-						<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2" />
+						<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"/>
+						<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"/>
 					</svg>
 				</HeaderTemplate>
 				<Content>
 					<div class="tile-content">
 						<WorkWindow @key="security.SpecialHash" 
-									Data="GetBuffersData(security.id)"
-						            Ticks="GetBuffersData(security.id).Ticks" start="GetBuffersData(security.id).start" dt="GetBuffersData(security.id).dt" 
-						            levelsFromBest="GetBuffersData(security.id).levelsFromBest" 
-						            minchart="GetBuffersData(security.id).minchart"
-									maxchart="GetBuffersData(security.id).maxchart"
-						            OnClosing="OnClosingWorkingWindow" secutityMain="@security" 
-						            ApiDataService="@_apidataservice" />
+						Data="GetBuffersData(security.id)"
+						Ticks="GetBuffersData(security.id).Ticks" start="GetBuffersData(security.id).start" dt="GetBuffersData(security.id).dt" 
+						levelsFromBest="GetBuffersData(security.id).levelsFromBest" 
+						minchart="GetBuffersData(security.id).minchart"
+						maxchart="GetBuffersData(security.id).maxchart"
+						OnClosing="OnClosingWorkingWindow" secutityMain="@security" 
+						ApiDataService="@_apidataservice" />
 					</div>
 				</Content>
 			</TileLayoutItem>
@@ -227,8 +228,20 @@ Resizable="true">
 	</Items>
 </DxStackLayout> *@
 
+
+
+
 @code {
+
+	public class Scale
+	{
+		public string Value { get; set; }
+	}
+
 	DxComboBox<SecurityApi, SecurityApi> combobox;
+
+	public List<Scale> Scales = new();
+	public Scale selectedvalue;
 
 	string textlogin = "Войти";
 	bool loadingLogIn;
@@ -250,6 +263,13 @@ Resizable="true">
 			OnAutoCompleteChanged(value);
 
 		}
+	}
+
+	protected override void OnInitialized()
+	{
+		Scales.Add(new Scale() { Value = "X1" });
+		Scales.Add(new Scale() { Value = "X5" });
+		Scales.Add(new Scale() { Value = "X10" });
 	}
 
 	public void OnClosingMain(SecurityApi sec)
@@ -305,13 +325,14 @@ Resizable="true">
 		return bufferDatas[secid];
 	}
 
+	/*
 	public List<TradeApi> GetTicks(string secid)
 	{
 		if (!TicksDictionary.ContainsKey(secid))
 			TicksDictionary.TryAdd(secid, new List<TradeApi>());
 
 		return TicksDictionary[secid];
-	}
+	}*/
 
 	private void OnAutoCompleteChanged(SecurityApi securityApi)
 	{

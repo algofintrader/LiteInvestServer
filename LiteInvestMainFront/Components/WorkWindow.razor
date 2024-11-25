@@ -1,4 +1,5 @@
-﻿@using System.Drawing
+﻿@using System.Collections.Concurrent
+@using System.Drawing
 @using System.Net.WebSockets
 @using DevExpress.Data.Browsing
 @using LiteInvestMainFront.Data
@@ -397,26 +398,26 @@
 @code {
 
 
-	DxChart<TradeApi> Chart;
+		DxChart<TradeApi> Chart;
 
-	IGrid Grid;
-	//А вдруг у меня все получится
-	//Влруг я буду прав
+		IGrid Grid;
+		//А вдруг у меня все получится
+		//Влруг я буду прав
 
-	[Parameter]
-	public BufferData Data { get; set; }
+		[Parameter]
+		public BufferData Data { get; set; }
 
-	[Parameter]
-	public Action<SecurityApi>? OnClosing { get; set; }
+		[Parameter]
+		public Action<SecurityApi>? OnClosing { get; set; }
 
-	[Parameter]
-	public SecurityApi secutityMain { get; set; }
+		[Parameter]
+		public SecurityApi secutityMain { get; set; }
 
-	[Parameter]
-	public ApiDataService ApiDataService { get; set; }
+		[Parameter]
+		public ApiDataService ApiDataService { get; set; }
 
-	[Parameter]
-	public int Index{ get; set; }
+		[Parameter]
+		public int Index{ get; set; }
 
 	public List<WebsocketClient> WebSockets { get; set; }
 
@@ -448,6 +449,8 @@
 		return base.OnInitializedAsync();
 	}
 
+
+
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
 		if (firstRender)
@@ -456,7 +459,10 @@
 		}
 	}
 
-	private async void OnNewMarketDepth(MarketDepthLevel bestbid, string secinstrument, IEnumerable<MarketDepthLevel> md)
+	bool agreagate = true;
+	int agregation = 5;
+
+	private async void OnNewMarketDepth(MarketDepthLevel bestbid,MarketDepthLevel bestask, string secinstrument, Dictionary<decimal, MarketDepthLevel> md)
 	{
 
 		try
@@ -467,7 +473,61 @@
 			if (md == null)
 				return;
 
-			Quotes = md;
+
+			var maxlevel = md.Values.ToArray()[0].Price;
+			var minlevel = md.Values.ToArray()[md.Count - 1].Price;
+
+			ConcurrentDictionary<decimal, MarketDepthLevel> AgregatedLevels = new();
+			if (agreagate)
+			{
+
+				
+				for (decimal i = bestask.Price; i < maxlevel; i += agregation*secutityMain.PriceStep)
+				{
+					decimal summ = 0;
+					decimal level = i;
+					for (decimal j = i; j <= i + agregation * secutityMain.PriceStep; j += secutityMain.PriceStep)
+					{
+						if (!md.ContainsKey(j))
+							md[j] = new MarketDepthLevel() { Price = j, Ask = 0, Bid = 0, Type = Side.Empty };
+
+						summ += md[j].Volume;
+					}
+
+					AgregatedLevels.TryAdd(level, new MarketDepthLevel() { Price = level ,Ask = summ,Bid=0});
+				}
+
+				for (decimal i =bestbid.Price; i> minlevel; i -= agregation * secutityMain.PriceStep)
+				{
+					decimal summ = 0;
+					decimal level = i;
+					for (decimal j = i; j >= i - agregation * secutityMain.PriceStep; j -= secutityMain.PriceStep)
+					{
+						if (!md.ContainsKey(j))
+							md[j] = new MarketDepthLevel() { Price = j, Ask = 0, Bid = 0, Type = Side.Empty };
+
+						summ += md[j].Volume;
+					}
+
+					AgregatedLevels.TryAdd(level, new MarketDepthLevel() { Price = level, Ask = 0, Bid = summ,});
+				}
+
+
+
+			 }
+
+			if (!agreagate)
+			{
+				
+
+				Quotes = md.Values;
+			}
+			else
+			{
+
+
+				Quotes = AgregatedLevels.Values.OrderByDescending(s => s.Price);
+			}
 
 			//TODO - при масштабированини этот уровень лучше менять.
 			maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;

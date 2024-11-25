@@ -232,9 +232,7 @@ public record MarketDepthLevel
     {
 	    get
 	    {
-		    if (_side!=null)
-                return _side;
-
+		    
 		    if (Volume == 0)
 			    return Side.Empty;
 
