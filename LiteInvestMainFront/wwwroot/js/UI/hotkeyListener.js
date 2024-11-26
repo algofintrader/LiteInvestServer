@@ -30,3 +30,25 @@ window.addHotkeyListener = (windowId) => {
         keyDownHandler(e, windowId);
     });
 };
+
+function getScrollEvent(gridTableId) {
+    setTimeout(() => {
+        let parent = document.getElementById(gridTableId);
+        if (parent) {
+            let targetElement = parent.querySelector(".k-grid-content");
+            if (targetElement) {
+                targetElement.addEventListener('scroll', (event) => {
+
+                    if (parent) {
+                        console.log(parent);
+                        DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("OnScroll", gridTableId);
+                    } else {
+                        console.log("Элемент с ID " + gridTableId + " не найден");
+                    }
+                });
+            }
+        } else {
+            console.log("Родительский элемент с ID " + gridTableId + " не найден");
+        }
+    }, 2000);
+}

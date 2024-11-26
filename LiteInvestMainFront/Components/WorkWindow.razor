@@ -275,7 +275,7 @@
 			<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
 			</Columns>
 			</DxGrid> *@
-				<TelerikGrid  OnRowClick="@OnRowClickHandler" Height="90vh" Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
+				<TelerikGrid Id="@GridTableId" OnRowClick="@OnRowClickHandler" Height="90vh" Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
 					<GridColumns>
 						<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none" />
 						<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
@@ -454,6 +454,7 @@
 		WebSockets = new List<WebsocketClient>();
 
 		jsInteropService.OnKeyDown += OnKeyDown;
+		jsInteropService.OnScroll += OnScroll;
 
 		ApiDataService.NewMarketDepth += OnNewMarketDepth;
 		ApiDataService.NewTicks += OnNewTicks;
@@ -465,18 +466,23 @@
 	}
 
 	private string WindowId { get; set; } = Guid.NewGuid().ToString();
+	private string GridTableId { get; set; } = Guid.NewGuid().ToString();
 
 	private void OnKeyDown(string windowId, string keyCode, bool isCtrl, bool isShift)
 	{
 		Console.WriteLine($"{keyCode} {windowId}");
 	}
 
+	private void OnScroll(string windowId)
+	{
+		Console.WriteLine($"{windowId}");
+	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
 		if (firstRender)
 		{
-			await JSRuntime.InvokeVoidAsync("getScrollEvent");
+			await JSRuntime.InvokeVoidAsync("getScrollEvent", GridTableId);
 			await JSRuntime.InvokeVoidAsync("addHotkeyListener", WindowId);
 		}
 	}
@@ -790,6 +796,7 @@
 		ApiDataService.NewTicks -= OnNewTicks;
 
 		jsInteropService.OnKeyDown -= OnKeyDown;
+		jsInteropService.OnScroll -= OnScroll;
 	}
 
 	private int volume = 1;
@@ -804,15 +811,3 @@
 
 }
 
-<script>
-	function getScrollEvent() {
-		let targetElements = document.querySelectorAll(".k-grid-content");
-
-		targetElements.forEach(function (targetElement) {
-			targetElement.addEventListener('scroll', (event) => {
-				console.log("grid scrolling");
-			});
-		});
-	}
-
-</script>

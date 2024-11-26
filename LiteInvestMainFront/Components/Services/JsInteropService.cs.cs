@@ -6,6 +6,7 @@ namespace LiteInvestMainFront.Services
 		public DotNetObjectReference<JsInteropService> ServiceObjectDotNetReference { get; set; } = null;
 		public event Action<string, bool, bool> OnKeyUp;
 		public event Action<string, string, bool, bool> OnKeyDown;
+		public event Action<string> OnScroll;
 		public JsInteropService()
 		{
 			ServiceObjectDotNetReference = DotNetObjectReference.Create(this);
@@ -19,6 +20,11 @@ namespace LiteInvestMainFront.Services
 		public void OnKeyUpJS(string keyCode, bool isCtrl, bool isShift)
 		{
 			OnKeyUp?.Invoke(keyCode, isCtrl, isShift);
+		}
+		[JSInvokable("OnScroll")]
+		public void OnScrollJs(string windowId)
+		{
+			OnScroll?.Invoke(windowId);
 		}
 		public void Dispose()
 		{
