@@ -1,4 +1,5 @@
-﻿using DevExpress.Blazor;
+﻿using System.Collections.Concurrent;
+using DevExpress.Blazor;
 using PlazaEngine.Entity;
 
 namespace LiteInvestMainFront.Data
@@ -21,28 +22,10 @@ namespace LiteInvestMainFront.Data
 		public int orderbookcount = 0;
 		public int start = 0;
 
-		
 
+		public ConcurrentDictionary<decimal, decimal> Orders { get; set; } = new();
 		public List<TradeApi> Ticks { get; set; } = new List<TradeApi>();
 
-		public void ProcessTick(List<TradeApi> ticks)
-		{
-			foreach (var tick in ticks)
-			{
-				start++;
-				tick.Time = dt + TimeSpan.FromSeconds(start);
-				Ticks.Add(tick);
-
-				try
-				{
-					if (Ticks.Count > 15) Ticks.RemoveAt(0);
-				}
-				catch (Exception ex)
-				{
-
-				}
-			}
-		}
 
 
 	}

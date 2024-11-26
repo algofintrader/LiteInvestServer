@@ -7,6 +7,7 @@
 @using LiteInvestServer.Json
 @using PlazaEngine.Entity
 @using Websocket.Client
+@using GridRowClickEventArgs = Telerik.Blazor.Components.GridRowClickEventArgs
 @using Orientation = DevExpress.Blazor.Orientation
 @implements IDisposable;
 @inject IJSRuntime JSRuntime
@@ -274,7 +275,7 @@
 			<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
 			</Columns>
 			</DxGrid> *@
-				<TelerikGrid Height="90vh" Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
+				<TelerikGrid  OnRowClick="@OnRowClickHandler" Height="90vh" Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
 					<GridColumns>
 						<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none" />
 						<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
@@ -286,6 +287,10 @@
 						<td class="@GetClassForQuote(Quotes)">
 							@Quotes.Price
 						</td>
+						<td class="@GetClassForQuote(Quotes)">
+							@Quotes.MyVolume
+						</td>
+
 					</RowTemplate>
 				</TelerikGrid>
 			</Telerik.Blazor.Components.GridLayoutItem>
@@ -426,6 +431,9 @@
 
 	public List<WebsocketClient> WebSockets { get; set; }
 
+	[Parameter]
+	public ConcurrentDictionary<decimal,decimal> Orders { get; set; }
+
 	public string GetClassForQuote(MarketDepthLevel quote)
 	{
 
@@ -476,6 +484,18 @@
 	bool agreagate = true;
 	int agregation = 5;
 
+	private void CheckDictionaryForOrders(Dictionary<decimal,MarketDepthLevel> Levels)
+	{
+		foreach (var order in Orders)
+		{
+			//if(!Levels.ContainsKey(order.Key))
+			//	Levels.TryAdd()
+
+
+		}
+
+	}
+
 	private async void OnNewMarketDepth(MarketDepthLevel bestbid,MarketDepthLevel bestask, string secinstrument, Dictionary<decimal, MarketDepthLevel> md)
 	{
 
@@ -495,7 +515,7 @@
 			if (agreagate)
 			{
 
-				
+
 				for (decimal i = bestask.Price; i < maxlevel; i += agregation*secutityMain.PriceStep)
 				{
 					decimal summ = 0;
@@ -528,20 +548,19 @@
 
 
 
-			 }
+			}
 
 			if (!agreagate)
 			{
-				
 
 				Quotes = md.Values;
 			}
 			else
 			{
-
-
 				Quotes = AgregatedLevels.Values.OrderByDescending(s => s.Price);
 			}
+
+		
 
 			//TODO - при масштабированини этот уровень лучше менять.
 			maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
@@ -770,6 +789,17 @@
 		ApiDataService.NewMarketDepth -= OnNewMarketDepth;
 		ApiDataService.NewTicks -= OnNewTicks;
 	}
+
+	private int volume = 1;
+	private Task OnRowClickHandler(GridRowClickEventArgs arg)
+	{
+		var item = (MarketDepthLevel)arg.Item;
+
+		Orders.TryAdd(item.Price, volume);
+
+		return Task.CompletedTask;
+	}
+
 }
 
 <script>

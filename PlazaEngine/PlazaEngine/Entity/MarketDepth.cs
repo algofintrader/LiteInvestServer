@@ -261,4 +261,10 @@ public record MarketDepthLevel
     /// уникальный номер ценового уровня, необходим для работы с BitMex
     /// </summary>
     public long Id { get; set; }
+
+
+    /// <summary>
+    /// Выставленный объем на этом уровне... 
+    /// </summary>
+    public decimal MyVolume { get; set; }
 }
