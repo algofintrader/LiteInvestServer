@@ -194,7 +194,7 @@
 
 </style>
 
-
+<div id="@WindowId" tabindex="0">
 <TelerikGridLayout>
 	<GridLayoutColumns>
 		<Telerik.Blazor.Components.GridLayoutColumn Width="33.33%"/>
@@ -289,6 +289,7 @@
 		</Telerik.Blazor.Components.GridLayoutItem>
 	</GridLayoutItems>
 </TelerikGridLayout>
+</div>
 
 @*
 <div class="card cardnew">
@@ -449,6 +450,7 @@
 		return base.OnInitializedAsync();
 	}
 
+	private string WindowId { get; set; } = Guid.NewGuid().ToString();
 
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -456,6 +458,7 @@
 		if (firstRender)
 		{
 			await JSRuntime.InvokeVoidAsync("getScrollEvent");
+			await JSRuntime.InvokeVoidAsync("addHotkeyListener", WindowId);
 		}
 	}
 
