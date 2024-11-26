@@ -445,6 +445,8 @@
 
 		WebSockets = new List<WebsocketClient>();
 
+		jsInteropService.OnKeyDown += OnKeyDown;
+
 		ApiDataService.NewMarketDepth += OnNewMarketDepth;
 		ApiDataService.NewTicks += OnNewTicks;
 
@@ -456,6 +458,11 @@
 
 	private string WindowId { get; set; } = Guid.NewGuid().ToString();
 
+	private void OnKeyDown(string windowId, string keyCode, bool isCtrl, bool isShift)
+	{
+		Console.WriteLine($"{keyCode} {windowId}");
+	}
+
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
@@ -463,12 +470,6 @@
 		{
 			await JSRuntime.InvokeVoidAsync("getScrollEvent");
 			await JSRuntime.InvokeVoidAsync("addHotkeyListener", WindowId);
-
-			jsInteropService.OnKeyDown += (keyCode, windowId, isCtrl, isShift) =>
-			{
-
-			};
-
 		}
 	}
 
