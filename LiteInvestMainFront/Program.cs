@@ -13,8 +13,9 @@ builder.Services.AddBlazorBootstrap();
 
 builder.Services.AddMvc();
 
-builder.Services.AddSingleton<ApiDataService>();
+builder.Services.AddScoped<ApiDataService>();
 builder.Services.AddScoped<JsInteropService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

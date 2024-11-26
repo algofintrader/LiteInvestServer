@@ -17,7 +17,8 @@ function keyDownHandler(e, windowId) {
         }
     }
 }
-function keyUpHandler(e) {
+function keyUpHandler(e)
+{
     //if (e.target && (e.target.nodeName != "INPUT")) {
     //    DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("KeyUp", e.code, e.ctrlKey, e.shiftKey);
     //}

@@ -86,7 +86,7 @@
 	.selected {
 		border: 2px solid #FFFFFF !important; /* Пример выделения границей */
 	}
-	
+
 </style>
 
 <!--<AutoComplete @bind-Value="customerName"
@@ -236,6 +236,9 @@ Resizable="true">
 
 @code {
 
+
+
+
 	public class Scale
 	{
 		public string Value { get; set; }
@@ -273,7 +276,10 @@ Resizable="true">
 		if (jsInteropService.ServiceObjectDotNetReference != null)
 		{
 			js.InvokeVoidAsync("setDonNetObjectReference", jsInteropService.ServiceObjectDotNetReference);
+			
 		}
+
+
 	}
 
 	public void OnClosingMain(SecurityApi sec)
