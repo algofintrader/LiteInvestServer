@@ -271,11 +271,17 @@ Resizable="true">
 		}
 	}
 
+
+
+
+
 	protected async override Task OnInitializedAsync()
 	{
 		if (jsInteropService.ServiceObjectDotNetReference != null)
 		{
 			js.InvokeVoidAsync("setDonNetObjectReference", jsInteropService.ServiceObjectDotNetReference);
+
+		
 		}
 
 

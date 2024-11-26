@@ -9,11 +9,11 @@ function keyDownHandler(e, windowId) {
         if (e.code !== "F5") {
             e.preventDefault();
         }
-        DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("KeyDown", e.code, e.ctrlKey, e.shiftKey);
+        DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("KeyDown", windowId, e.code, e.ctrlKey, e.shiftKey);
     }
     else if (e.target && e.target.nodeName == "INPUT") {
         if (e.code == "Enter" || e.code == "Escape" || e.code == "NumpadEnter") {
-            DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("KeyDown", windowid, e.code, e.ctrlKey, e.shiftKey);
+            DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("KeyDown", e.code, e.ctrlKey, e.shiftKey);
         }
     }
 }
