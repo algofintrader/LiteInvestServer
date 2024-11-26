@@ -463,20 +463,14 @@
 		{
 			await JSRuntime.InvokeVoidAsync("getScrollEvent");
 			await JSRuntime.InvokeVoidAsync("addHotkeyListener", WindowId);
-			jsInteropService.OnKeyDown += (keyCode, isCtrl, isShift) =>
-	    {
-		if (keyCode == plusHotKey)
-		{
+
+			jsInteropService.OnKeyDown += (keyCode, windowId, isCtrl, isShift) =>
+			{
+
+			};
+
 
 		}
-		if (keyCode == minusHotKey)
-		{
-
-		}
-	     };
-
-
-      }
 	}
 
 	bool agreagate = true;
