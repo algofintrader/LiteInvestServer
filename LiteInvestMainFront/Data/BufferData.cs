@@ -22,6 +22,7 @@ namespace LiteInvestMainFront.Data
 		public int orderbookcount = 0;
 		public int start = 0;
 
+		public int AgregationStep { get; set; } = 0;
 
 		public ConcurrentDictionary<decimal, Order> Orders { get; set; } = new();
 		public List<TradeApi> Ticks { get; set; } = new List<TradeApi>();

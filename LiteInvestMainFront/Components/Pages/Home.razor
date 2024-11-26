@@ -12,7 +12,8 @@
 
 @using LiteInvestMainFront.Components.Layout
 @rendermode InteractiveServer
-@attribute [StreamRendering(true)]
+
+@* @attribute [StreamRendering(true)] *@
 
 @inject ApiDataService _apidataservice
 
@@ -184,13 +185,15 @@ RowHeight="90vh"
 Reorderable="true"
 ColumnSpacing="0px"
 RowSpacing="0px"
-Resizable="true">
-	<TileLayoutItems>
+Resizable="true"
+OnReorder="@OnReorderHandler"
+>
+	<TileLayoutItems >
 		@foreach (var security in RegisteredInstruments)
 		{
-			<TileLayoutItem>
+				<TileLayoutItem >
 				<HeaderTemplate>
-					@security.Isin
+					@security.Isin 
 					<svg @key="security.SpecialHash" class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
 						<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"/>
 						<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"/>
@@ -205,7 +208,7 @@ Resizable="true">
 						minchart="GetBuffersData(security.id).minchart"
 						maxchart="GetBuffersData(security.id).maxchart"
 						Orders="GetBuffersData(security.id).Orders"
-
+						AgregationStep = "GetBuffersData(security.id).AgregationStep"
 						OnClosing="OnClosingWorkingWindow" secutityMain="@security" 
 
 						ApiDataService="@_apidataservice" />
@@ -284,19 +287,20 @@ Resizable="true">
 		{
 			js.InvokeVoidAsync("setDonNetObjectReference", jsInteropService.ServiceObjectDotNetReference);
 
-		
+
 		}
 
 
 	}
 
-	public void OnClosingMain(SecurityApi sec)
+	public async Task OnClosingMain(SecurityApi sec)
 	{
 		try
 		{
-
+			await _apidataservice.CloseInstrument(sec);
 			var index = RegisteredInstruments.FindIndex(s => s.SpecialHash == sec.SpecialHash);
 			RegisteredInstruments.RemoveAt(index);
+
 		}
 		catch (Exception ex)
 		{
@@ -345,7 +349,7 @@ Resizable="true">
 
 	/*
 	public List<TradeApi> GetTicks(string secid)
-	{
+		{
 		if (!TicksDictionary.ContainsKey(secid))
 			TicksDictionary.TryAdd(secid, new List<TradeApi>());
 
@@ -358,18 +362,18 @@ Resizable="true">
 		if (securityApi == null)
 			return;
 
-
 		var clone = (SecurityApi) securityApi.Clone();
 		clone.SpecialHash = DateTime.Now.GetHashCode().ToString();
 
-		_apidataservice.OpenInstrument(clone.id);
-
-		//bufferDatas.TryAdd(securityApi.id, new BufferData());
+		_apidataservice.OpenInstrument(clone);
+		OpenInstrument(clone);
 		
-		RegisteredInstruments.Add(clone);
+	}
 
-		Console.WriteLine($"'{securityApi.Isin}' registered.");
-
+	private void OpenInstrument(SecurityApi sec)
+	{
+		RegisteredInstruments.Add(sec);
+		Console.WriteLine($"'{sec.Isin} hash = {sec.SpecialHash}' registered.");
 		InvokeAsync(StateHasChanged);
 	}
 
@@ -381,6 +385,16 @@ Resizable="true">
 			loadingLogIn =true;
 			var res = await _apidataservice.LogIn(logform.Email, logform.pass);
 			Instruments = await _apidataservice.GetInstruments();
+
+			 var myinstruments = await _apidataservice.GetUserInstruments();
+
+			 if (myinstruments != null)
+			 {
+			 	foreach (var instrument in myinstruments)
+				{
+			 		OpenInstrument(instrument);
+			 	}
+			 }
 
 			Console.WriteLine($"Loaded instruments {Instruments.Count()}");
 
@@ -403,6 +417,11 @@ Resizable="true">
 		InvokeAsync(StateHasChanged);
 	}
 
+
+	private void OnReorderHandler(TileLayoutReorderEventArgs obj)
+	{
+		
+	}
 
 }
 

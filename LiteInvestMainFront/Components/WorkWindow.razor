@@ -184,7 +184,7 @@
 	}
 
 	.highlighted-item2 {
-		background-color: var(--bs-success-bg-subtle)
+	background-color: var(--bs-success-bg-subtle)
 	}
 
 	.transparent-item {
@@ -196,8 +196,8 @@
 	}
 
 	.removeOrder {
-		cursor: pointer;
-		float: right;
+	cursor: pointer;
+	float: right;
 	}
 
 </style>
@@ -296,7 +296,7 @@
 						<td class="@GetClassForQuote(Quotes)">
 							@Quotes.MyVolume
 							@if(Quotes.MyVolume.ToString() != string.Empty){
-								<svg class="removeOrder" @onclick="() => MyVolumeCrossClick()" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="-2 -5 15 15">
+									<svg class="removeOrder" @onclick="() => RemoveOrderClick(Quotes)" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="-2 -5 15 15">
 									<line x1="0" y1="0" x2="10" y2="10" stroke="red" stroke-width="2" />
 									<line x1="0" y1="10" x2="10" y2="0" stroke="red" stroke-width="2" />
 								</svg>
@@ -446,6 +446,9 @@
 	[Parameter]
 	public ConcurrentDictionary<decimal,Order> Orders { get; set; }
 
+	[Parameter]
+	public int AgregationStep { get; set; }= 0;
+
 	public string GetClassForQuote(MarketDepthLevel quote)
 	{
 
@@ -487,12 +490,40 @@
 
 	private void OnKeyDown(string windowId, string keyCode, bool isCtrl, bool isShift)
 	{
-		Console.WriteLine($"{keyCode} {windowId}");
+		if(windowId!=WindowId)
+			return;
+
+		if (keyCode == plusHotKey)
+		{
+			if (AgregationStep > 0)
+			{
+				AgregationStep -= 5;
+				Console.WriteLine($"{secutityMain.Isin} New Agregation Step {AgregationStep}");
+
+				AggregateQuotes(bestbidsaved, bestasksaved, LastMdsaved);
+				InvokeAsync(StateHasChanged);
+			}
+		}
+
+		if (keyCode == minusHotKey)
+		{
+			AgregationStep += 5;
+
+			AggregateQuotes(bestbidsaved, bestasksaved, LastMdsaved);
+			InvokeAsync(StateHasChanged);
+
+			Console.WriteLine($"{secutityMain.Isin} New Agregation Step {AgregationStep}");
+		}
+
+		//Console.WriteLine($"{keyCode} {windowId}");
 	}
 
 	private void OnScroll(string windowId)
 	{
-		Console.WriteLine($"{windowId}");
+		if (windowId != WindowId)
+			return;
+
+		//Console.WriteLine($"{windowId}");
 	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -504,8 +535,8 @@
 		}
 	}
 
-	bool agreagate = true;
-	int agregation = 5;
+	//bool agreagate = true;
+
 
 	private void CheckDictionaryForOrders(Dictionary<decimal,MarketDepthLevel> Levels)
 	{ 
@@ -526,10 +557,12 @@
 
 
 			Levels[order.Key].MyVolume = order.Value.Volume;
-			Console.WriteLine($"Order price added {order.Key} volume={order.Value.Volume}");
+			//Console.WriteLine($"Order price added {order.Key} volume={order.Value.Volume}");
 
 		}
 	}
+
+	private Dictionary<decimal, MarketDepthLevel> LastMdsaved;
 
 	private async void OnNewMarketDepth(MarketDepthLevel bestbid,MarketDepthLevel bestask, string secinstrument, Dictionary<decimal, MarketDepthLevel> md)
 	{
@@ -542,105 +575,13 @@
 			if (md == null)
 				return;
 
+			bestbidsaved = bestbid;
+			bestasksaved = bestask;
+			LastMdsaved = md;
 
-			var maxlevel = md.Values.ToArray()[0].Price;
-			var minlevel = md.Values.ToArray()[md.Count - 1].Price;
+			AggregateQuotes(bestbid, bestask, md);
+			InvokeAsync(StateHasChanged);
 
-			Dictionary<decimal, MarketDepthLevel> AgregatedLevels = new();
-			if (agreagate)
-			{
-
-
-				for (decimal i = bestask.Price; i < maxlevel; i += agregation*secutityMain.PriceStep)
-				{
-					decimal summ = 0;
-					decimal level = i;
-					for (decimal j = i; j <= i + agregation * secutityMain.PriceStep; j += secutityMain.PriceStep)
-					{
-						if (!md.ContainsKey(j))
-							md[j] = new MarketDepthLevel() { Price = j, Ask = 0, Bid = 0, Type = Side.Empty };
-
-						summ +=md[j].Volume;
-					}
-
-					AgregatedLevels.TryAdd(level, new MarketDepthLevel() { Price = level ,Ask = summ,Bid=0});
-				}
-
-				for (decimal i =bestbid.Price; i> minlevel; i -= agregation * secutityMain.PriceStep)
-				{
-					decimal summ = 0;
-					decimal level = i;
-					for (decimal j = i; j >= i - agregation * secutityMain.PriceStep; j -= secutityMain.PriceStep)
-					{
-						if (!md.ContainsKey(j))
-							md[j] = new MarketDepthLevel() { Price = j, Ask = 0, Bid = 0, Type = Side.Empty };
-
-						summ += (decimal)md[j].Volume;
-					}
-
-					AgregatedLevels.TryAdd(level, new MarketDepthLevel() { Price = level, Ask = 0, Bid = summ,});
-				}
-
-			}
-
-			if (!agreagate)
-			{
-				CheckDictionaryForOrders(md);
-				Quotes = md.Values;
-			}
-			else
-			{
-				CheckDictionaryForOrders(AgregatedLevels);
-				Quotes = AgregatedLevels.Values.OrderByDescending(s => s.Price);
-			}
-
-
-
-			//TODO - при масштабированини этот уровень лучше менять.
-			maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
-			minchart = bestbid.Price - levelsFromBest * secutityMain.PriceStep;
-
-			//Console.WriteLine($"MD recevied {secutityMain.id} NAME={secutityMain.Isin}");
-
-			var dictionary = Quotes.Select(t => new { t.Price, t })
-				.ToDictionary(t => t.Price, t => t);
-
-
-			//int visibleitem = Grid.GetStartRowVisibleIndex();
-			//Console.WriteLine("видимая строка " + Quotes.ToArray()[visibleitem].Price + $@"к1={Grid.GetVisibleRowCount()} к2={Quotes.Count()}");
-
-			await InvokeAsync(() =>
-			{
-				try
-				{
-					/*
-					orderbookcount++;
-
-
-
-					if (orderbookcount < 3)
-						{
-						//Console.WriteLine($"{DateTime.Now} New Quotes!");
-						if (dictionary.ContainsKey(maxchart))
-							{
-							Console.WriteLine($"Scroll to {maxchart}!");
-							ScrollToLastRow1(dictionary[maxchart].t);
-						}
-
-						if (dictionary.ContainsKey(minchart))
-							{
-							Console.WriteLine($"Scroll to {minchart}!");
-							ScrollToLastRow1(dictionary[minchart].t);
-						}
-					}*/
-
-					StateHasChanged();
-				}
-				catch (Exception ex)
-				{
-
-				}
-			});
 		}
 		catch (Exception ex)
 		{
@@ -648,8 +589,86 @@
 		}
 	}
 
+	public MarketDepthLevel bestasksaved { get; set; }
+
+	public MarketDepthLevel bestbidsaved { get; set; }
+
+	//
+
+	private void AggregateQuotes(MarketDepthLevel bestbid,MarketDepthLevel bestask,Dictionary<decimal, MarketDepthLevel> md)
+	{
+
+		var maxlevel = md.Values.ToArray()[0].Price;
+		var minlevel = md.Values.ToArray()[md.Count - 1].Price;
+
+		Dictionary<decimal, MarketDepthLevel> AgregatedLevels = new();
+		if (AgregationStep!=0)
+		{
 
 
+			for (decimal i = bestask.Price; i < maxlevel; i += AgregationStep*secutityMain.PriceStep)
+			{
+				decimal summ = 0;
+				decimal level = i;
+				for (decimal j = i; j <= i + AgregationStep * secutityMain.PriceStep; j += secutityMain.PriceStep)
+				{
+					if (!md.ContainsKey(j))
+						md[j] = new MarketDepthLevel() { Price = j, Ask = 0, Bid = 0, Type = Side.Empty };
+
+					summ +=md[j].Volume;
+				}
+
+				AgregatedLevels.TryAdd(level, new MarketDepthLevel() { Price = level ,Ask = summ,Bid=0});
+			}
+
+			for (decimal i =bestbid.Price; i> minlevel; i -= AgregationStep * secutityMain.PriceStep)
+			{
+				decimal summ = 0;
+				decimal level = i;
+				for (decimal j = i; j >= i - AgregationStep * secutityMain.PriceStep; j -= secutityMain.PriceStep)
+				{
+					if (!md.ContainsKey(j))
+						md[j] = new MarketDepthLevel() { Price = j, Ask = 0, Bid = 0, Type = Side.Empty };
+
+					summ += (decimal)md[j].Volume;
+				}
+
+				AgregatedLevels.TryAdd(level, new MarketDepthLevel() { Price = level, Ask = 0, Bid = summ,});
+			}
+
+		}
+
+		if (AgregationStep == 0)
+		{
+			CheckDictionaryForOrders(md);
+			LastCalculatedQuotesDictionary = md;
+
+			Quotes = md.Values;
+		}
+		else
+		{
+			CheckDictionaryForOrders(AgregatedLevels);
+			LastCalculatedQuotesDictionary = AgregatedLevels;
+
+			Quotes = AgregatedLevels.Values.OrderByDescending(s => s.Price);
+		}
+
+		maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
+		minchart = bestbid.Price - levelsFromBest * secutityMain.PriceStep;
+	}
+
+	public Dictionary<decimal, MarketDepthLevel> LastCalculatedQuotesDictionary { get; set; }
+
+	private void UpdateOrders()
+	{
+		if (LastCalculatedQuotesDictionary == null)
+			return;
+
+		CheckDictionaryForOrders(LastCalculatedQuotesDictionary);
+		Quotes = LastCalculatedQuotesDictionary.Values.OrderByDescending(s => s.Price);
+
+		InvokeAsync(StateHasChanged);
+	}
 	/*------ временно -------------- */
 
 	[Parameter]
@@ -684,7 +703,7 @@
 
 		try
 		{
-			if (Ticks.Count != 0)
+			if (Ticks.Count != 0 && Ticks[Ticks.Count - 1].Time!=null)
 			{
 				lasttime = Ticks[Ticks.Count - 1].Time;
 			}
@@ -723,9 +742,14 @@
 		await InvokeAsync(() => { Chart.RefreshData(); });
 	}
 
-	private void MyVolumeCrossClick()
+	private void RemoveOrderClick(MarketDepthLevel level)
 	{
-		Console.WriteLine("addvolume");
+
+		Orders.TryRemove(level.Price, out var _);
+		LastCalculatedQuotesDictionary[level.Price].MyVolume = 0;
+
+		UpdateOrders();
+
 		InvokeAsync(StateHasChanged);
 	}
 
@@ -834,6 +858,7 @@
 
 	private int volume = 1;
 
+
 	private Task OnRowClickHandler(GridRowClickEventArgs arg)
 	{
 		var item = (MarketDepthLevel)arg.Item;
@@ -843,6 +868,8 @@
 			Side = item.Type,
 			Volume = volume,
 		});
+
+		UpdateOrders();
 
 		return Task.CompletedTask;
 	}

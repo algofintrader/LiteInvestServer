@@ -28,7 +28,7 @@ namespace LiteInvestServer.Json
         public decimal PriceLimitLow { get; set; }
         [DataMember]
         public decimal PriceLimitHigh { get; set; }
-
+		[DataMember]
 		public string SpecialHash { get; set; }
 
 		public object Clone()

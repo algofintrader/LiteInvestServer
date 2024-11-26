@@ -779,18 +779,18 @@ Trading.MapPost("/GetOpenPositions", async (HttpContext httpContext, string sec_
 }).RequireAuthorization().WithDescription("Выдача всех позиций. Если sec_id = 0, то выдаст просто все открытые позиции юзера.");
 
 
-Trading.MapPost("/OpenInstrument", async (HttpContext httpContext, string sec_id = "") =>
+Trading.MapPost("/OpenInstrument", async (HttpContext httpContext, SecurityApi sec) =>
 {
 	try
 	{
 		string userName = httpContext.GetUserName();
 
-		if (!OpenedPositions.ContainsKey(userName))
-			return Results.Problem("No Data Found");
+		if (UsersContext[userName].OpenedInstruments == null)
+			UsersContext[userName].OpenedInstruments = new List<SecurityApi>();
 
-        UsersContext[userName].OpenedInstruments.Add(sec_id);
+        UsersContext[userName].OpenedInstruments.Add(sec);
 
-		return Results.Ok($"Added {sec_id}");
+		return Results.Ok($"Added {sec.id}");
 	}
 	catch (Exception ex)
 	{
@@ -799,6 +799,52 @@ Trading.MapPost("/OpenInstrument", async (HttpContext httpContext, string sec_id
 
 	
 }).RequireAuthorization().WithDescription("Открытие инструмента. Сохранение на стороне сервера открытого инструмента у юзера");
+
+Trading.MapGet("/GetUserInstruments", async (HttpContext httpContext) =>
+{
+	try
+	{
+		string userName = httpContext.GetUserName();
+
+		//if (UsersContext[userName].OpenedInstruments == null || UsersContext[userName].OpenedInstruments.Count == 0)
+		//	return Results.Ok();
+
+		return Results.Json(UsersContext[userName].OpenedInstruments);
+
+	}
+	catch (Exception ex)
+	{
+		return Results.Problem(ex.Message);
+	}
+
+
+}).RequireAuthorization().WithDescription("Список инструментов");
+
+Trading.MapPost("/CloseInstrument", async (HttpContext httpContext, SecurityApi sec) =>
+{
+	try
+	{
+		string userName = httpContext.GetUserName();
+
+
+		if (UsersContext[userName].OpenedInstruments == null || UsersContext[userName].OpenedInstruments.Count == 0)
+			return Results.Ok();
+
+		var secFound = UsersContext[userName].OpenedInstruments.FirstOrDefault(s => s.SpecialHash== sec.SpecialHash);
+
+		if (secFound != null)
+			UsersContext[userName].OpenedInstruments.Remove(sec);
+
+		return Results.Ok();
+	}
+	catch (Exception ex)
+	{
+		return Results.Problem(ex.Message);
+	}
+
+
+}).RequireAuthorization().WithDescription("Закрытие инструмента");
+
 
 
 Trading.MapGet("/GetOrders", async (HttpContext httpContext) =>

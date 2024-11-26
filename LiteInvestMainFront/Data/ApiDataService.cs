@@ -82,6 +82,8 @@ namespace LiteInvestMainFront.Data
 		static string getinstruments = "Trading/GetAllSecurities";
 		static string openInstrument = "Trading/OpenInstrument";
 		static string closeInstrument = "Trading/CloseInstrument";
+		static string userInstuments = "Trading/GetUserInstruments";
+		//GetUserInstruments
 
 		private ConcurrentDictionary<string, SecurityApi> Securities { get; set; }
 		ConcurrentDictionary<string, OrderBookService> OrderBookProcessors = new();
@@ -119,16 +121,18 @@ namespace LiteInvestMainFront.Data
 			}
 		}
 
-		public async void OpenInstrument(string secid)
+		public async void OpenInstrument(SecurityApi sec)
 		{
 
 			var request = new RestRequest(openInstrument);
 
 			//request.AddCookie("liteinvest", token,"/", "188.72.77.60:3000");
-			request.AddHeader("liteinvest", token);
-			request.AddParameter("sec_id", secid);
 
-			var response = await client.GetAsync(request);
+			
+			request.AddHeader("liteinvest", token);
+			request.AddBody(sec);
+
+			var response = await client.PostAsync(request);
 
 			if (!response.IsSuccessful)
 			{
@@ -137,7 +141,52 @@ namespace LiteInvestMainFront.Data
 
 			// var r = await JsonSerializer.DeserializeAsync<SecurityApi>(response.st);
 
-			var answer = JsonConvert.DeserializeObject(response.Content);
+			//TODO: Сделать десериализацию нормальную 
+			//var answer = JsonConvert.DeserializeObject(response.Content);
+		}
+
+		public async Task CloseInstrument(SecurityApi sec)
+		{
+
+			var request = new RestRequest(closeInstrument);
+
+			//request.AddCookie("liteinvest", token,"/", "188.72.77.60:3000");
+			request.AddHeader("liteinvest", token);
+			request.AddBody(sec);
+
+			var response = await client.PostAsync(request);
+
+			if (!response.IsSuccessful)
+			{
+				Console.WriteLine(response.ErrorMessage);
+			}
+
+			// var r = await JsonSerializer.DeserializeAsync<SecurityApi>(response.st);
+			//var answer = JsonConvert.DeserializeObject(response.Content);
+		}
+
+		public async Task<IEnumerable<SecurityApi>> GetUserInstruments()
+		{
+
+			var request = new RestRequest(userInstuments);
+
+			//request.AddCookie("liteinvest", token,"/", "188.72.77.60:3000");
+			request.AddHeader("liteinvest", token);
+
+			var response = await client.GetAsync(request);
+
+			if (!response.IsSuccessful)
+			{
+				Console.WriteLine(response.ErrorMessage);
+				return null;
+			}
+
+			// var r = await JsonSerializer.DeserializeAsync<SecurityApi>(response.st);
+
+			var instruments = JsonConvert.DeserializeObject<IEnumerable<SecurityApi>>(response.Content);
+
+			return instruments;
+
 		}
 
 		public async Task<IEnumerable<SecurityApi>> GetInstruments()
@@ -217,6 +266,38 @@ namespace LiteInvestMainFront.Data
 				.AddParameter("stream", "orderbook")
 				.AddParameter("sec_id", secid)
 				.AddParameter("liteinvest", token);
+
+			websocketClient = new WebsocketClient(webscoketrequest);
+
+			websocketClient.MessageReceived.Subscribe(async msg =>
+			{
+				try
+				{
+					//почему то не хочет десериализовывать стакан нормальнь
+					var md = JsonConvert.DeserializeObject<MarketDepth>(msg.Text,
+						new JsonSerializerSettings() { CheckAdditionalContent = true, });
+
+					ProcessOrderBook(md);
+				}
+				catch (Exception ex)
+				{
+
+				}
+			});
+
+
+			Console.WriteLine(webscoketrequest);
+
+			await websocketClient.Start();
+			return websocketClient;
+		}
+
+		public async Task<WebsocketClient> SubscribePrivateOrders()
+		{
+			var webscoketrequest =
+				websocketurl
+					.AddParameter("stream", "orderbook")
+					.AddParameter("liteinvest", token);
 
 			websocketClient = new WebsocketClient(webscoketrequest);
 

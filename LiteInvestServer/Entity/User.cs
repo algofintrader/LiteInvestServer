@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
+using LiteInvestServer.Json;
 
 namespace LiteInvestServer.Entity
 {
@@ -60,7 +61,7 @@ namespace LiteInvestServer.Entity
         /// </summary>
         public decimal Limit { get; set; }
 
-        [DataMember] public List<string> OpenedInstruments { get; set; } = new ();
+        [DataMember] public List<SecurityApi> OpenedInstruments { get; set; } = new ();
 
         /// <summary>
         /// Плечо на фондовый
