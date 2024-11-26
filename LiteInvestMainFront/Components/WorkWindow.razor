@@ -193,102 +193,102 @@
 
 </style>
 
-<div id="@WindowId" tabindex="0">
-	<TelerikGridLayout>
-		<GridLayoutColumns>
-			<Telerik.Blazor.Components.GridLayoutColumn Width="33.33%"/>
-			<Telerik.Blazor.Components.GridLayoutColumn Width="33.33%"/>
-			<Telerik.Blazor.Components.GridLayoutColumn Width="33.33%"/>
-		</GridLayoutColumns>
 
-		<GridLayoutRows>
-			<Telerik.Blazor.Components.GridLayoutRow />
-		</GridLayoutRows>
-		<GridLayoutItems>
-			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="1">
-				<TelerikGrid  Size="Small" Class="telerik-table" Data="@Quotes">
-					<GridColumns>
-						<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none" />
-						<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
-					</GridColumns>
-				</TelerikGrid>
-			</Telerik.Blazor.Components.GridLayoutItem>
-			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
+<TelerikGridLayout>
+	<GridLayoutColumns>
+		<Telerik.Blazor.Components.GridLayoutColumn Width="33.33%"/>
+		<Telerik.Blazor.Components.GridLayoutColumn Width="33.33%"/>
+		<Telerik.Blazor.Components.GridLayoutColumn Width="33.33%"/>
+	</GridLayoutColumns>
 
-				<DxChart CssClass="chart"
-				CustomizeSeriesPoint="@PrepareSeriesPoint"
-				@ref="Chart"
-				Data="Ticks"
-				Width="100%"
-				LabelOverlap="ChartLabelOverlap.Hide">
-					<DxChartLineSeries Name="ticksLineSeries"
-					T="TradeApi"
-					TArgument="DateTime"
-					TValue="decimal"
-					ArgumentField="si => si.Time"
-					ValueField="si => si.Price"
-					HoverMode="ChartContinuousSeriesHoverMode.Series">
+	<GridLayoutRows>
+		<Telerik.Blazor.Components.GridLayoutRow />
+	</GridLayoutRows>
+	<GridLayoutItems>
+		<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="1">
+			<TelerikGrid  Size="Small" Class="telerik-table" Data="@Quotes">
+				<GridColumns>
+					<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none" />
+					<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
+				</GridColumns>
+			</TelerikGrid>
+		</Telerik.Blazor.Components.GridLayoutItem>
+		<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
 
-						<DxChartLegend Visible="false" />
+			<DxChart CssClass="chart"
+			CustomizeSeriesPoint="@PrepareSeriesPoint"
+			@ref="Chart"
+			Data="Ticks"
+			Width="100%"
+			LabelOverlap="ChartLabelOverlap.Hide">
+				<DxChartLineSeries Name="ticksLineSeries"
+				T="TradeApi"
+				TArgument="DateTime"
+				TValue="decimal"
+				ArgumentField="si => si.Time"
+				ValueField="si => si.Price"
+				HoverMode="ChartContinuousSeriesHoverMode.Series">
 
-						<!--<DxChartSeriesPoint Visible="true"
-						HoverMode="ChartSeriesPointHoverMode.None" />-->
-						<!--<DxChartSeriesLabel Visible="true"
-						ValueFormat="ChartElementFormat.Thousands(1)" />-->
-					</DxChartLineSeries>
+					<DxChartLegend Visible="false" />
 
-					<DxChartArgumentAxis Visible="false">
-						<DxChartAxisLabel Visible="false" />
-						<DxChartAxisTick Visible="false" />
-						<DxChartAxisMinorTick Visible="false" />
-						<DxChartAxisGridLines Visible="true" />
-					</DxChartArgumentAxis>
+					<!--<DxChartSeriesPoint Visible="true"
+					HoverMode="ChartSeriesPointHoverMode.None" />-->
+					<!--<DxChartSeriesLabel Visible="true"
+					ValueFormat="ChartElementFormat.Thousands(1)" />-->
+				</DxChartLineSeries>
 
-					<DxChartValueAxis Visible="false">
-						<DxChartAxisLabel Visible="false" />
-						<DxChartAxisTick Visible="false" />
-						<DxChartAxisMinorTick Visible="false" />
-						<DxChartAxisGridLines Visible="true" />
-						<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart" />
-					</DxChartValueAxis>
-				</DxChart>
-			</Telerik.Blazor.Components.GridLayoutItem>
-			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
-				@* 			<DxGrid CssClass="dxgrid"
-				@ref=Grid
-				Data="@Quotes"
-				ShowAllRows="true"
-				ColumnResizeMode="GridColumnResizeMode.NextColumn"
-				TextWrapEnabled="false"
-				CustomizeElement="Grid_CustomizeElement"
-				ShowGroupPanel="false"
-				HighlightRowOnHover="true"
-				FocusedRowEnabled="true">
+				<DxChartArgumentAxis Visible="false">
+					<DxChartAxisLabel Visible="false" />
+					<DxChartAxisTick Visible="false" />
+					<DxChartAxisMinorTick Visible="false" />
+					<DxChartAxisGridLines Visible="true" />
+				</DxChartArgumentAxis>
 
-				<Columns>
-				<DxGridDataColumn FieldName="Volume" />
-				<DxGridDataColumn FieldName="Price"/>
-				<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
-				</Columns>
-				</DxGrid> *@
-				<TelerikGrid Height="90vh" Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
-					<GridColumns>
-						<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none" />
-						<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
-					</GridColumns>
-					<RowTemplate Context="Quotes">
-						<td class="@GetClassForQuote(Quotes)">
-							@Quotes.Volume
-						</td>
-						<td class="@GetClassForQuote(Quotes)">
-							@Quotes.Price
-						</td>
-					</RowTemplate>
-				</TelerikGrid>
-			</Telerik.Blazor.Components.GridLayoutItem>
-		</GridLayoutItems>
-	</TelerikGridLayout>
-</div>
+				<DxChartValueAxis Visible="false">
+					<DxChartAxisLabel Visible="false" />
+					<DxChartAxisTick Visible="false" />
+					<DxChartAxisMinorTick Visible="false" />
+					<DxChartAxisGridLines Visible="true" />
+					<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart" />
+				</DxChartValueAxis>
+			</DxChart>
+		</Telerik.Blazor.Components.GridLayoutItem>
+		<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
+			@* 			<DxGrid CssClass="dxgrid"
+			@ref=Grid
+			Data="@Quotes"
+			ShowAllRows="true"
+			ColumnResizeMode="GridColumnResizeMode.NextColumn"
+			TextWrapEnabled="false"
+			CustomizeElement="Grid_CustomizeElement"
+			ShowGroupPanel="false"
+			HighlightRowOnHover="true"
+			FocusedRowEnabled="true">
+
+			<Columns>
+			<DxGridDataColumn FieldName="Volume" />
+			<DxGridDataColumn FieldName="Price"/>
+			<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
+			</Columns>
+			</DxGrid> *@
+			<TelerikGrid Height="90vh" Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
+				<GridColumns>
+					<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none" />
+					<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
+				</GridColumns>
+				<RowTemplate Context="Quotes">
+					<td class="@GetClassForQuote(Quotes)">
+						@Quotes.Volume
+					</td>
+					<td class="@GetClassForQuote(Quotes)">
+						@Quotes.Price
+					</td>
+				</RowTemplate>
+			</TelerikGrid>
+		</Telerik.Blazor.Components.GridLayoutItem>
+	</GridLayoutItems>
+</TelerikGridLayout>
+
 @*
 <div class="card cardnew">
 	<div class="card-header">
@@ -453,7 +453,6 @@
 		if (firstRender)
 		{
 			await JSRuntime.InvokeVoidAsync("getScrollEvent");
-			await JSRuntime.InvokeVoidAsync("addHotkeyListener", WindowId);
 		}
 	}
 
@@ -689,8 +688,6 @@
 
 	string messageConnection { get; set; }
 	public object GetColor { get; set; }
-
-	private string WindowId { get; set; } = Guid.NewGuid().ToString();
 
 
 
