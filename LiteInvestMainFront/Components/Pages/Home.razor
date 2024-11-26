@@ -333,7 +333,7 @@ Resizable="true">
 
 	ConcurrentDictionary<string,BufferData> bufferDatas = new ();
 
-	ConcurrentDictionary<string, List<TradeApi>> TicksDictionary = new();
+	//ConcurrentDictionary<string, List<TradeApi>> TicksDictionary = new();
 
 	public BufferData GetBuffersData(string secid)
 	{
@@ -362,12 +362,11 @@ Resizable="true">
 		var clone = (SecurityApi) securityApi.Clone();
 		clone.SpecialHash = DateTime.Now.GetHashCode().ToString();
 
+		_apidataservice.OpenInstrument(clone.id);
 
-		TicksDictionary.TryAdd(securityApi.id, new List<TradeApi>());
 		//bufferDatas.TryAdd(securityApi.id, new BufferData());
 		
 		RegisteredInstruments.Add(clone);
-		//RegisteredInstruments.TryAdd(securityApi.Isin,securityApi);
 
 		Console.WriteLine($"'{securityApi.Isin}' registered.");
 
