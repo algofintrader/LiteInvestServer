@@ -195,7 +195,10 @@
 	padding: 0;
 	}
 
-	
+	.removeOrder {
+		cursor: pointer;
+		float: right;
+	}
 
 </style>
 
@@ -279,8 +282,9 @@
 			</DxGrid> *@
 				<TelerikGrid Id="@GridTableId" OnRowClick="@OnRowClickHandler" Height="90vh" Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
 					<GridColumns>
-						<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none" />
-						<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
+						<Telerik.Blazor.Components.GridColumn Width="45%" Field="Volume" HeaderClass="d-none" />
+						<Telerik.Blazor.Components.GridColumn Width="45%" Field="Price" HeaderClass="d-none" />
+						<Telerik.Blazor.Components.GridColumn Width="10%" Field="MyVolume" HeaderClass="d-none" />
 					</GridColumns>
 					<RowTemplate Context="Quotes">
 						<td class="@GetClassForQuote(Quotes)">
@@ -291,6 +295,12 @@
 						</td>
 						<td class="@GetClassForQuote(Quotes)">
 							@Quotes.MyVolume
+							@if(Quotes.MyVolume.ToString() != string.Empty){
+								<svg class="removeOrder" @onclick="() => MyVolumeCrossClick()" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="-2 -5 15 15">
+									<line x1="0" y1="0" x2="10" y2="10" stroke="red" stroke-width="2" />
+									<line x1="0" y1="10" x2="10" y2="0" stroke="red" stroke-width="2" />
+								</svg>
+							}
 						</td>
 
 					</RowTemplate>
@@ -514,10 +524,10 @@
 				Levels.TryAdd(order.Key, md);
 			}
 
-			
+
 			Levels[order.Key].MyVolume = order.Value.Volume;
 			Console.WriteLine($"Order price added {order.Key} volume={order.Value.Volume}");
-		
+
 		}
 	}
 
@@ -711,6 +721,12 @@
 		}
 
 		await InvokeAsync(() => { Chart.RefreshData(); });
+	}
+
+	private void MyVolumeCrossClick()
+	{
+		Console.WriteLine("addvolume");
+		InvokeAsync(StateHasChanged);
 	}
 
 
