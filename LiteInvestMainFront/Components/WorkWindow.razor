@@ -560,7 +560,7 @@
 				Quotes = AgregatedLevels.Values.OrderByDescending(s => s.Price);
 			}
 
-		
+
 
 			//TODO - при масштабированини этот уровень лучше менять.
 			maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
@@ -788,6 +788,8 @@
 	{
 		ApiDataService.NewMarketDepth -= OnNewMarketDepth;
 		ApiDataService.NewTicks -= OnNewTicks;
+
+		jsInteropService.OnKeyDown -= OnKeyDown;
 	}
 
 	private int volume = 1;
