@@ -183,6 +183,10 @@
 	background-color: var(--bs-danger-bg-subtle)
 	}
 
+	.highlighted-item2 {
+		background-color: var(--bs-success-bg-subtle)
+	}
+
 	.transparent-item {
 	background-color:transparent
 	}
@@ -191,9 +195,7 @@
 	padding: 0;
 	}
 
-	.highlighted-item2 {
-	background-color: var(--bs-success-bg-subtle)
-	}
+	
 
 </style>
 
@@ -432,12 +434,17 @@
 	public List<WebsocketClient> WebSockets { get; set; }
 
 	[Parameter]
-	public ConcurrentDictionary<decimal,decimal> Orders { get; set; }
+	public ConcurrentDictionary<decimal,Order> Orders { get; set; }
 
 	public string GetClassForQuote(MarketDepthLevel quote)
 	{
 
-		if (quote.Volume ==0)
+		// if (quote.MyVolume != 0)
+		// {
+		// 	return quote.Type == Side.Sell ? "highlighted-item" : "highlighted-item2";
+		// }
+
+		if (quote.Volume == 0 || quote.Volume==null)
 		{
 			return "transparent-item";
 		}
@@ -491,15 +498,27 @@
 	int agregation = 5;
 
 	private void CheckDictionaryForOrders(Dictionary<decimal,MarketDepthLevel> Levels)
-	{
+	{ 
 		foreach (var order in Orders)
 		{
-			//if(!Levels.ContainsKey(order.Key))
-			//	Levels.TryAdd()
+			//если есть заявка, но ее не видимо
+			if (!Levels.ContainsKey(order.Key))
+			{
+				var md = new MarketDepthLevel()
+				{
+					Price = order.Key,
+					Bid = 0,
+					Ask = 0,
+					MyVolume = order.Value.Volume,
+				};
+				Levels.TryAdd(order.Key, md);
+			}
 
-
+			
+			Levels[order.Key].MyVolume = order.Value.Volume;
+			Console.WriteLine($"Order price added {order.Key} volume={order.Value.Volume}");
+		
 		}
-
 	}
 
 	private async void OnNewMarketDepth(MarketDepthLevel bestbid,MarketDepthLevel bestask, string secinstrument, Dictionary<decimal, MarketDepthLevel> md)
@@ -517,7 +536,7 @@
 			var maxlevel = md.Values.ToArray()[0].Price;
 			var minlevel = md.Values.ToArray()[md.Count - 1].Price;
 
-			ConcurrentDictionary<decimal, MarketDepthLevel> AgregatedLevels = new();
+			Dictionary<decimal, MarketDepthLevel> AgregatedLevels = new();
 			if (agreagate)
 			{
 
@@ -531,7 +550,7 @@
 						if (!md.ContainsKey(j))
 							md[j] = new MarketDepthLevel() { Price = j, Ask = 0, Bid = 0, Type = Side.Empty };
 
-						summ += md[j].Volume;
+						summ +=md[j].Volume;
 					}
 
 					AgregatedLevels.TryAdd(level, new MarketDepthLevel() { Price = level ,Ask = summ,Bid=0});
@@ -546,23 +565,22 @@
 						if (!md.ContainsKey(j))
 							md[j] = new MarketDepthLevel() { Price = j, Ask = 0, Bid = 0, Type = Side.Empty };
 
-						summ += md[j].Volume;
+						summ += (decimal)md[j].Volume;
 					}
 
 					AgregatedLevels.TryAdd(level, new MarketDepthLevel() { Price = level, Ask = 0, Bid = summ,});
 				}
 
-
-
 			}
 
 			if (!agreagate)
 			{
-
+				CheckDictionaryForOrders(md);
 				Quotes = md.Values;
 			}
 			else
 			{
+				CheckDictionaryForOrders(AgregatedLevels);
 				Quotes = AgregatedLevels.Values.OrderByDescending(s => s.Price);
 			}
 
@@ -649,9 +667,8 @@
 	{
 		if (secinstrument != secutityMain.id) return;
 
-		Console.WriteLine(ticks[0].SecurityId + " new tick !" + ticks[0].Price);
+		//Console.WriteLine(ticks[0].SecurityId + " new tick !" + ticks[0].Price);
 
-		//Data.ProcessTick(ticks);
 
 		DateTime lasttime = DateTime.Now;
 
@@ -800,11 +817,16 @@
 	}
 
 	private int volume = 1;
+
 	private Task OnRowClickHandler(GridRowClickEventArgs arg)
 	{
 		var item = (MarketDepthLevel)arg.Item;
 
-		Orders.TryAdd(item.Price, volume);
+		Orders.TryAdd(item.Price, new Order()
+		{
+			Side = item.Type,
+			Volume = volume,
+		});
 
 		return Task.CompletedTask;
 	}
