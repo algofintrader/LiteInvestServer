@@ -60,6 +60,8 @@ namespace LiteInvestServer.Entity
         /// </summary>
         public decimal Limit { get; set; }
 
+        [DataMember] public List<string> OpenedInstruments { get; set; } = new ();
+
         /// <summary>
         /// Плечо на фондовый
         /// </summary>

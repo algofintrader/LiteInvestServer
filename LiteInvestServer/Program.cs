@@ -119,7 +119,7 @@ if (!Directory.Exists(data))
     if (!UsersContext.ContainsKey(admin))
         UsersContext.TryAdd(admin, new User(admin, "adminPass#1R") { Admin = true, CanTrade = false });
 
-    plaza = new PlazaConnector("02mMLX144T2yxnfzEUrCjUKzXKciQKJ",true, testTrading: false, appname: "osaApplication")
+    plaza = new PlazaConnector("02mMLX144T2yxnfzEUrCjUKzXKciQKJ",false, testTrading: false, appname: "osaApplication")
     {
         Limit = 30,
         LoadTicksFromStart = false,
@@ -777,6 +777,29 @@ Trading.MapPost("/GetOpenPositions", async (HttpContext httpContext, string sec_
     }
 
 }).RequireAuthorization().WithDescription("Выдача всех позиций. Если sec_id = 0, то выдаст просто все открытые позиции юзера.");
+
+
+Trading.MapPost("/OpenInstrument", async (HttpContext httpContext, string sec_id = "") =>
+{
+	try
+	{
+		string userName = httpContext.GetUserName();
+
+		if (!OpenedPositions.ContainsKey(userName))
+			return Results.Problem("No Data Found");
+
+        UsersContext[userName].OpenedInstruments.Add(sec_id);
+
+		return Results.Ok($"Added {sec_id}");
+	}
+	catch (Exception ex)
+	{
+		return Results.Problem(ex.Message);
+	}
+
+	
+}).RequireAuthorization().WithDescription("Открытие инструмента. Сохранение на стороне сервера открытого инструмента у юзера");
+
 
 Trading.MapGet("/GetOrders", async (HttpContext httpContext) =>
 {

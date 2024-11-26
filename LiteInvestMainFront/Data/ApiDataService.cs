@@ -80,6 +80,8 @@ namespace LiteInvestMainFront.Data
 		//TODO: Можно тоже соединить напрямую с проектом сервера
 		static string loginrequest = "Common/Login";
 		static string getinstruments = "Trading/GetAllSecurities";
+		static string openInstrument = "Trading/OpenInstrument";
+		static string closeInstrument = "Trading/CloseInstrument";
 
 		private ConcurrentDictionary<string, SecurityApi> Securities { get; set; }
 		ConcurrentDictionary<string, OrderBookService> OrderBookProcessors = new();
@@ -117,7 +119,26 @@ namespace LiteInvestMainFront.Data
 			}
 		}
 
+		public async void OpenInstrument(string secid)
+		{
 
+			var request = new RestRequest(openInstrument);
+
+			//request.AddCookie("liteinvest", token,"/", "188.72.77.60:3000");
+			request.AddHeader("liteinvest", token);
+			request.AddParameter("sec_id", secid);
+
+			var response = await client.GetAsync(request);
+
+			if (!response.IsSuccessful)
+			{
+				Console.WriteLine(response.ErrorMessage);
+			}
+
+			// var r = await JsonSerializer.DeserializeAsync<SecurityApi>(response.st);
+
+			var answer = JsonConvert.DeserializeObject(response.Content);
+		}
 
 		public async Task<IEnumerable<SecurityApi>> GetInstruments()
 		{
@@ -181,6 +202,8 @@ namespace LiteInvestMainFront.Data
 			return websocketClient;
 
 		}
+
+	
 
 		/// <summary>
 		/// Пока что сделал отписку по самому простому принципу. 
