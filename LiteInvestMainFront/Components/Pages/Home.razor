@@ -202,16 +202,14 @@ OnReorder="@OnReorderHandler"
 				<Content>
 					<div @onclick="@((e) => {@js.InvokeVoidAsync(" toggleSelected", e);})" class="tile-content">
 						<WorkWindow @key="security.SpecialHash" 
-									
-                        Data="GetBuffersData(security.id)"
-						Ticks="GetBuffersData(security.id).Ticks" start="GetBuffersData(security.id).start" dt="GetBuffersData(security.id).dt" 
+
+						Data="GetBuffersData(security.id)"
+						start="GetBuffersData(security.id).start"
+						dt="GetBuffersData(security.id).dt" 
 						levelsFromBest="GetBuffersData(security.id).levelsFromBest" 
 						minchart="GetBuffersData(security.id).minchart"
 						maxchart="GetBuffersData(security.id).maxchart"
-						Orders="GetBuffersData(security.id).Orders"
-						
 						OnClosing="OnClosingWorkingWindow" secutityMain="@security" 
-
 						ApiDataService="@_apidataservice" />
 					</div>
 				</Content>
@@ -410,6 +408,8 @@ OnReorder="@OnReorderHandler"
 				foreach (var order in _apidataservice.AllActiveOrders)
 				{
 					Console.WriteLine($"sec ={order.SecurityId} price={order.PriceOrder} side= {order.State} ");
+					Console.WriteLine($"Cancelling order {order.NumberUserOrderId} ");
+					_apidataservice.CancelOrder(order);
 				}
 			}
 			else

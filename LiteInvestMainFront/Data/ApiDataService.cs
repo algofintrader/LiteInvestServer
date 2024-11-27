@@ -383,10 +383,17 @@ namespace LiteInvestMainFront.Data
 			return websocketClient;
 		}
 
-	
+		bool ordersubscribed = false;
 
-	public async Task<WebsocketClient> SubscribePrivateOrders()
+		public async Task<WebsocketClient> SubscribePrivateOrders()
 		{
+
+			if (ordersubscribed)
+				return null;
+
+
+			ordersubscribed = true;
+
 			var webscoketrequest =
 				websocketurl
 					.AddParameter("stream", "my_orders")
