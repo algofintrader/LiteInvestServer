@@ -437,15 +437,32 @@
 
 	[Parameter] public int Index { get; set; }
 
+
+	public List<TradeApi> Ticks
+	{
+		get => Data.Ticks;
+		set
+		{
+			Data.Ticks = value;
+		}
+	}
+
 	public List<WebsocketClient> WebSockets { get; set; }
 
-	[Parameter] public ConcurrentDictionary<decimal, Order> Orders { get; set; }
+	public ConcurrentDictionary<decimal, Order> Orders
+	{
+		get => Data.Orders;
+		set
+		{
+			Data.Orders = value;
+		}
+	}
 
 	public int AgregationStep
 	{
 		get => Data.AgregationStep;
 		set{
-		Data.AgregationStep = value;
+			Data.AgregationStep = value;
 		}
 	}
 
@@ -494,13 +511,14 @@
 	{
 		if (myorder.SecurityId != secutityMain.id)
 			return;
-			
+
 		Console.WriteLine($"New Order {myorder.SecurityId} side = {myorder.Side} price {myorder.PriceOrder} state {myorder.State}");
 
 		if (myorder.State == Order.OrderStateType.Activ || myorder.State == Order.OrderStateType.Partial)
 		{
 			Orders[myorder.PriceOrder] = myorder;
-			//UpdateOrdersAndGrid();
+
+			UpdateOrdersAndGrid();
 		}
 		else if (myorder.State == Order.OrderStateType.Done
 					|| myorder.State == Order.OrderStateType.Fail
@@ -511,9 +529,10 @@
 
 			Orders.Remove(myorder.PriceOrder, out var _);
 
-			LastCalculatedQuotesDictionary[myorder.PriceOrder].RestVolume = null;
+			if (LastCalculatedQuotesDictionary.ContainsKey(myorder.PriceOrder))
+				LastCalculatedQuotesDictionary[myorder.PriceOrder].RestVolume = null;
 
-			//UpdateOrdersAndGrid();
+			UpdateOrdersAndGrid();
 
 		}
 	}
@@ -794,7 +813,7 @@
 
 
 		// Orders.TryRemove(level.Price, out var _);
-		
+
 
 		// UpdateOrdersAndGrid();
 
@@ -803,8 +822,6 @@
 
 
 
-	[Parameter]
-	public List<TradeApi> Ticks { get; set; }
 
 	//TODO: Тут надо подумать конечно.
 	void ScrollToLastRow1(MarketDepthLevel level)
@@ -917,10 +934,15 @@
 
 	private Task OnRowClickHandler(GridRowClickEventArgs arg)
 	{
-		return Task.CompletedTask;
-
 		var item = (MarketDepthLevel)arg.Item;
 
+		if(Orders.ContainsKey(item.Price))
+		{
+			RemoveOrderClick(item);
+			return Task.CompletedTask;
+		}
+
+		
 		var order = new ClientOrder()
 		{
 			SecID = secutityMain.id,

@@ -16,6 +16,7 @@ using Websocket.Client;
 using PlazaEngine.Entity;
 using System.Web;
 using LiteInvestServer.Records;
+using LiteInvestServer.Entity;
 
 namespace LiteInvestMainFront.Data
 {
@@ -88,7 +89,11 @@ namespace LiteInvestMainFront.Data
 
 		static string sendOrder = "Trading/SendOrder";
 		static string cancelOrder = "Trading/CancelOrder";
+
 		static string getMyOrders = "Trading/GetOrders";
+		static string getOpenPositions = "Trading/GetOpenPositions";
+
+		//GetOpenPositions
 		//GetUserInstruments
 
 		private ConcurrentDictionary<string, SecurityApi> Securities { get; set; }
@@ -198,6 +203,35 @@ namespace LiteInvestMainFront.Data
 				}
 
 				var r = JsonConvert.DeserializeObject<List<Order>>(response.Content);
+
+				return r;
+			}
+			catch (Exception ex)
+			{
+				return null;
+			}
+
+			//TODO: Сделать десериализацию нормальную 
+			//var answer = JsonConvert.DeserializeObject(response.Content);
+		}
+
+		public async Task<List<Pos>> GetPositions()
+		{
+
+			try
+			{
+				var request = new RestRequest(getOpenPositions);
+
+				request.AddHeader("liteinvest", token);
+
+				var response = await client.GetAsync(request);
+
+				if (!response.IsSuccessful)
+				{
+					Console.WriteLine(response.ErrorMessage);
+				}
+
+				var r = JsonConvert.DeserializeObject<List<Pos>>(response.Content);
 
 				return r;
 			}
@@ -383,10 +417,17 @@ namespace LiteInvestMainFront.Data
 			return websocketClient;
 		}
 
-	
+		bool ordersubscribed = false;
 
-	public async Task<WebsocketClient> SubscribePrivateOrders()
+		public async Task<WebsocketClient> SubscribePrivateOrders()
 		{
+
+			if (ordersubscribed)
+				return null;
+
+
+			ordersubscribed = true;
+
 			var webscoketrequest =
 				websocketurl
 					.AddParameter("stream", "my_orders")

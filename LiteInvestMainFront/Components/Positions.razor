@@ -1,4 +1,6 @@
-﻿@* <DxGrid CssClass="dxgrid"
+﻿@using LiteInvestMainFront.Data
+@using LiteInvestServer.Entity
+@* <DxGrid CssClass="dxgrid"
         @ref=Positions
         Data="@Positions"
         ShowAllRows="true"
@@ -17,5 +19,20 @@
 </DxGrid> *@
 
 @code {
+
+
+    List<Pos> OpenedPositions { get; set; }
+
+    [Parameter]
+    public ApiDataService apiDataService{ get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+
+
+        apiDataService.getPositons();
+
+        return base.OnInitializedAsync();
+    }
 
 }
