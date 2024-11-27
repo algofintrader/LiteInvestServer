@@ -404,6 +404,15 @@ OnReorder="@OnReorderHandler"
 
 			var orders = await _apidataservice.GetOrders();
 
+			if (orders != null && orders.Count!=0)
+			{
+
+			}
+			else
+			{
+				Console.WriteLine("No orders found!");
+			}
+
 			loadingLogIn = false;
 			textlogin = "ON";
 		}

@@ -110,7 +110,8 @@ namespace LiteInvestMainFront.Data
 			// websocketClient = new WebsocketClient(websocketurl);
 		}
 
-
+		//Хранилище Ордеров по инструментам? 
+		//ConcurrentDictionary<string,>>
 
 		public async Task<LoginInfo> LogIn(string login, string pass)
 		{
@@ -156,7 +157,7 @@ namespace LiteInvestMainFront.Data
 			//var answer = JsonConvert.DeserializeObject(response.Content);
 		}
 
-		public async Task<ClientOrder?> CancelOrder(ClientOrder order)
+		public async Task<ClientOrder?> CancelOrder(Order order)
 		{
 
 			var request = new RestRequest(cancelOrder);
@@ -187,7 +188,7 @@ namespace LiteInvestMainFront.Data
 
 				request.AddHeader("liteinvest", token);
 
-				var response = await client.PostAsync(request);
+				var response = await client.GetAsync(request);
 
 				if (!response.IsSuccessful)
 				{
@@ -390,6 +391,8 @@ namespace LiteInvestMainFront.Data
 					.AddParameter("liteinvest", token);
 
 			websocketClient = new WebsocketClient(webscoketrequest);
+
+			Console.WriteLine("Order socket "+ webscoketrequest);
 
 			websocketClient.MessageReceived.Subscribe(async msg =>
 			{

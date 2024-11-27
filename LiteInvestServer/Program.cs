@@ -730,7 +730,7 @@ Trading.MapPost("/SendOrder", async (ClientOrder clientOrder, HttpContext httpCo
 
 }).RequireAuthorization().WithDescription("NumberOrderId если отправлять Null или 0 в итоге не будет использован и будет сгенерирован системой.");
 
-Trading.MapPost("/GetClosedPositions", async (HttpContext httpContext,string sec_id ="") =>
+Trading.MapPost("/GetClosedPositions", async (HttpContext httpContext, SecurityApi sec = null) =>
 {
     try
     {
@@ -739,11 +739,11 @@ Trading.MapPost("/GetClosedPositions", async (HttpContext httpContext,string sec
         if(!ClosedPositions.ContainsKey(userName))
             return Results.Problem("No Data Found");
 
-        if (sec_id.IsNullOrEmpty())
+        if (sec==null)
             return Results.Json(ClosedPositions[userName].Values.ToList());
 
-        if (ClosedPositions.ContainsKey(userName) && ClosedPositions[userName].ContainsKey(sec_id))
-            return Results.Json(ClosedPositions[userName][sec_id]);
+        if (ClosedPositions.ContainsKey(userName) && ClosedPositions[userName].ContainsKey(sec.id))
+            return Results.Json(ClosedPositions[userName][sec.id]);
 
         return Results.Problem("No Data Found");
     }
@@ -754,7 +754,7 @@ Trading.MapPost("/GetClosedPositions", async (HttpContext httpContext,string sec
 
 }).RequireAuthorization().WithDescription("");
 
-Trading.MapPost("/GetOpenPositions", async (HttpContext httpContext, string sec_id ="") =>
+Trading.MapPost("/GetOpenPositions", async (HttpContext httpContext, SecurityApi sec =null) =>
 {
     try
     {
@@ -763,13 +763,13 @@ Trading.MapPost("/GetOpenPositions", async (HttpContext httpContext, string sec_
         if(!OpenedPositions.ContainsKey(userName))
             return Results.Problem("No Data Found");
 
-        if (sec_id.IsNullOrEmpty())
+        if (sec==null)
             return Results.Json(OpenedPositions[userName].Values.ToList());
 
-    if (OpenedPositions.ContainsKey(userName) && OpenedPositions[userName].ContainsKey(sec_id) && OpenedPositions[userName][sec_id] != null)
-            return Results.Json(new List<Pos>() { OpenedPositions[userName][sec_id] });
+    if (OpenedPositions.ContainsKey(userName) && OpenedPositions[userName].ContainsKey(sec.id) && OpenedPositions[userName][sec.id] != null)
+            return Results.Json(new List<Pos>() { OpenedPositions[userName][sec.id] });
 
-        return Results.Problem("No Data Found");
+        return Results.Empty;
     }
     catch (Exception ex)
     {
@@ -854,7 +854,7 @@ Trading.MapGet("/GetOrders", async (HttpContext httpContext) =>
         string userName = httpContext.GetUserName();
 
         if (!Orders.ContainsKey(userName))
-            return Results.Problem("User not found in Orders");
+	        return Results.Empty;
         //проверка, а есть ли такой юзер и может ли он торговать
 
         return Results.Json(Orders[userName].Values);
@@ -865,7 +865,7 @@ Trading.MapGet("/GetOrders", async (HttpContext httpContext) =>
     }
 }).RequireAuthorization().WithDescription("Выдача ордеров - пока что полный срок. TypeOrder = 0 (limit) 1 (market)");
 
-Trading.MapPost("/CancelOrder", async (HttpContext httpContext, ClientOrder order) =>
+Trading.MapPost("/CancelOrder", async (HttpContext httpContext, Order order) =>
 {
     try
     {
@@ -880,17 +880,9 @@ Trading.MapPost("/CancelOrder", async (HttpContext httpContext, ClientOrder orde
 
         var user = UsersContext[userName];
 
-        if (!user.CanTrade)
-            return Results.Problem("User Can not trade!");
+        plaza.CancelOrder(order.NumberUserOrderId);
 
-        //TODO: ПРОВЕРКА ЛИМИТА ТОРГОВЛИ, чтобы он мог торговать.
-
-        //по мне так ужасный код, лучше бы свойства оставили, вместо дублирующего конструктора. 
-        //В итоге еще и в самом Ордере кошмар 
-
-        plaza.CancelOrder((int)order.NumberOrderId);
-
-        return Results.Accepted<ClientOrder>();
+        return Results.Accepted<Order>();
     }
     catch (Exception ex)
     {

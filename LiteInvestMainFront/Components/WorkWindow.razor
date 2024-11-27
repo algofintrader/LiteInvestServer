@@ -285,7 +285,7 @@
 					<GridColumns>
 						<Telerik.Blazor.Components.GridColumn Width="45%" Field="Volume" HeaderClass="d-none" />
 						<Telerik.Blazor.Components.GridColumn Width="45%" Field="Price" HeaderClass="d-none" />
-						<Telerik.Blazor.Components.GridColumn Width="10%" Field="MyVolume" HeaderClass="d-none" />
+						<Telerik.Blazor.Components.GridColumn Width="10%" Field="RestVolume" HeaderClass="d-none" />
 					</GridColumns>
 					<RowTemplate Context="Quotes">
 						<td class="@GetClassForQuote(Quotes)">
@@ -295,8 +295,8 @@
 							@Quotes.Price
 						</td>
 						<td class="@GetClassForQuote(Quotes)">
-							@Quotes.MyVolume
-							@if(Quotes.MyVolume.ToString() != string.Empty){
+							@Quotes.RestVolume
+							@if(Quotes.RestVolume.ToString() != string.Empty){
 								<svg class="removeOrder" @onclick="() => RemoveOrderClick(Quotes)" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="-2 -5 15 15">
 									<line x1="0" y1="0" x2="10" y2="10" stroke="red" stroke-width="2" />
 									<line x1="0" y1="10" x2="10" y2="0" stroke="red" stroke-width="2" />
@@ -446,7 +446,7 @@
 	public string GetClassForQuote(MarketDepthLevel quote)
 	{
 
-		// if (quote.MyVolume != 0)
+		// if (quote.RestVolume != 0)
 		// {
 		// 	return quote.Type == Side.Sell ? "highlighted-item" : "highlighted-item2";
 		// }
@@ -484,13 +484,13 @@
 	{
 		if (myorder.SecurityId != secutityMain.id)
 			return;
-
-		Console.WriteLine($"New Order {myorder.SecurityId} price {myorder.PriceOrder} state {myorder.State}");
+			
+		Console.WriteLine($"New Order {myorder.SecurityId} side = {myorder.Side} price {myorder.PriceOrder} state {myorder.State}");
 
 		if (myorder.State == Order.OrderStateType.Activ || myorder.State == Order.OrderStateType.Partial)
 		{
 			Orders[myorder.PriceOrder] = myorder;
-			UpdateOrders();
+			UpdateOrdersAndGrid();
 		}
 		else if (myorder.State == Order.OrderStateType.Done
 					|| myorder.State == Order.OrderStateType.Fail
@@ -500,7 +500,11 @@
 			Console.WriteLine($"Removing Order {myorder.SecurityId} price {myorder.PriceOrder} state {myorder.State}");
 
 			Orders.Remove(myorder.PriceOrder, out var _);
-			UpdateOrders();
+
+			LastCalculatedQuotesDictionary[myorder.PriceOrder].RestVolume = 0;
+
+			UpdateOrdersAndGrid();
+			
 		}
 	}
 
@@ -570,13 +574,13 @@
 					Bid = 0,
 					Ask = 0,
 					//TODO надо проверить правильный ли это объем
-					MyVolume = order.Value.VolumeExecuted,
+					RestVolume = order.Value.VolumeExecuted,
 				};
 				Levels.TryAdd(order.Key, md);
 			}
 
 
-			Levels[order.Key].MyVolume = order.Value.Volume;
+			Levels[order.Key].RestVolume = order.Value.Volume;
 			//Console.WriteLine($"Order price added {order.Key} volume={order.Value.Volume}");
 
 		}
@@ -679,7 +683,7 @@
 
 	public Dictionary<decimal, MarketDepthLevel> LastCalculatedQuotesDictionary { get; set; }
 
-	private void UpdateOrders()
+	private void UpdateOrdersAndGrid()
 	{
 		if (LastCalculatedQuotesDictionary == null)
 			return;
@@ -765,12 +769,20 @@
 	private void RemoveOrderClick(MarketDepthLevel level)
 	{
 
-		Orders.TryRemove(level.Price, out var _);
-		LastCalculatedQuotesDictionary[level.Price].MyVolume = 0;
+		Orders.TryGetValue(level.Price, out var _order);
 
-		UpdateOrders();
+		if(_order==null)
+			Console.WriteLine("No Order Found in Row");
 
-		InvokeAsync(StateHasChanged);
+		ApiDataService.CancelOrder(_order);
+
+
+		// Orders.TryRemove(level.Price, out var _);
+		
+
+		// UpdateOrdersAndGrid();
+
+		// InvokeAsync(StateHasChanged);
 	}
 
 
@@ -876,7 +888,7 @@
 		jsInteropService.OnScroll -= OnScroll;
 	}
 
-	private int myVolume = 1;
+	private int orderVolume = 1;
 
 
 	private Task OnRowClickHandler(GridRowClickEventArgs arg)
@@ -887,12 +899,14 @@
 		{
 			SecID = secutityMain.id,
 			Side = item.Type,
-			Volume = myVolume,
+			Volume = orderVolume,
 			Price = item.Price,
 			Market = false,
 		};
 
-	
+		Console.WriteLine($"Sending order price = {order.Price} side = {order.Side}");
+
+		ApiDataService.SendOrder(order);
 
 		return Task.CompletedTask;
 	}

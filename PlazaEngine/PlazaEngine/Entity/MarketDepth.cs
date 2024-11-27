@@ -266,5 +266,5 @@ public record MarketDepthLevel
     /// <summary>
     /// Выставленный объем на этом уровне... 
     /// </summary>
-    public decimal? MyVolume { get; set; } = null;
+    public decimal? RestVolume { get; set; } = null;
 }
