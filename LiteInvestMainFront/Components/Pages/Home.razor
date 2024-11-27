@@ -130,8 +130,7 @@ OnChanged="(Customer customer) => OnAutoCompleteChanged(customer)" />-->
 						Торговля
 					</a>
 					<ul class="dropdown-menu">
-						<li><a class="dropdown-item" href="#">Позиции</a></li>
-						<li><a class="dropdown-item" href="#">Счета</a></li>
+						<li><a class="dropdown-item" href="#" onclick="@PosClick">Открытые Позиции</a></li>
 						<li><hr class="dropdown-divider"></li>
 						<li><a class="dropdown-item" href="#">Ордера</a></li>
 					</ul>
@@ -177,6 +176,25 @@ MaxHeight="500"
 	<FooterContentTemplate>
 		<DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Primary" Text="OK" Click="@OnLoginClick" />
 	</FooterContentTemplate>
+</DxWindow>
+
+
+<DxWindow 
+AllowResize="true"
+ShowCloseButton="true"
+CloseOnEscape="true"
+HeaderText="Авторизация"
+FooterText="Footer"
+ShowFooter="true"
+Width="max(25vw, 250px)"
+MinWidth="300"
+MinHeight="200"
+MaxWidth="800"
+MaxHeight="500"
+@bind-Visible=poswindowVisible>
+	<BodyContentTemplate>
+		<Positions apiDataService="_apidataservice" />
+	</BodyContentTemplate>
 </DxWindow>
 
 <TelerikTileLayout Columns="RegisteredInstruments.Count"
@@ -259,6 +277,10 @@ OnReorder="@OnReorderHandler"
 
 	DxWindow windowRef;
 	bool windowVisible;
+
+	bool poswindowVisible;
+
+
 	LogInForm logform;
 
 	private SecurityApi _securitySelected;
@@ -323,6 +345,11 @@ OnReorder="@OnReorderHandler"
 		return Task.CompletedTask;
 	}
 
+	Task PosClick()
+	{
+		poswindowVisible = true;
+		return Task.CompletedTask;
+	}
 
 	/*
 	private IEnumerable<Customer> GetCustomers()
@@ -417,7 +444,7 @@ OnReorder="@OnReorderHandler"
 				Console.WriteLine("No orders found!");
 			}
 
-			var positions = 
+			//var positions = await _apidataservice.GetPositions();
 
 			loadingLogIn = false;
 			textlogin = "ON";

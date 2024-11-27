@@ -730,50 +730,51 @@ Trading.MapPost("/SendOrder", async (ClientOrder clientOrder, HttpContext httpCo
 
 }).RequireAuthorization().WithDescription("NumberOrderId если отправлять Null или 0 в итоге не будет использован и будет сгенерирован системой.");
 
-Trading.MapPost("/GetClosedPositions", async (HttpContext httpContext, SecurityApi sec = null) =>
+//TODO:В режиме Get кидает ошибку
+//Trading.MapGet("/GetClosedPositions", async (HttpContext httpContext, SecurityApi sec = null) =>
+//{
+//    try
+//    {
+//        string userName = httpContext.GetUserName();
+
+//        if(!ClosedPositions.ContainsKey(userName))
+//            return Results.Problem("No Data Found");
+
+//        if (sec==null)
+//            return Results.Json(ClosedPositions[userName].Values.ToList());
+
+//        if (ClosedPositions.ContainsKey(userName) && ClosedPositions[userName].ContainsKey(sec.id))
+//            return Results.Json(ClosedPositions[userName][sec.id]);
+
+//        return Results.Problem("No Data Found");
+//    }
+//    catch (Exception ex)
+//    {
+//        return Results.Problem(ex.Message);
+//    }
+
+//}).RequireAuthorization().WithDescription("");
+
+Trading.MapGet("/GetOpenPositions", async (HttpContext httpContext) =>
 {
     try
     {
         string userName = httpContext.GetUserName();
 
-        if(!ClosedPositions.ContainsKey(userName))
-            return Results.Problem("No Data Found");
+        if (!OpenedPositions.ContainsKey(userName))
+            return Results.Empty;
 
-        if (sec==null)
-            return Results.Json(ClosedPositions[userName].Values.ToList());
-
-        if (ClosedPositions.ContainsKey(userName) && ClosedPositions[userName].ContainsKey(sec.id))
-            return Results.Json(ClosedPositions[userName][sec.id]);
-
-        return Results.Problem("No Data Found");
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem(ex.Message);
-    }
-
-}).RequireAuthorization().WithDescription("");
-
-Trading.MapPost("/GetOpenPositions", async (HttpContext httpContext, SecurityApi sec =null) =>
-{
-    try
-    {
-        string userName = httpContext.GetUserName();
-
-        if(!OpenedPositions.ContainsKey(userName))
-            return Results.Problem("No Data Found");
-
-        if (sec==null)
+        if (OpenedPositions.ContainsKey(userName))
             return Results.Json(OpenedPositions[userName].Values.ToList());
 
-    if (OpenedPositions.ContainsKey(userName) && OpenedPositions[userName].ContainsKey(sec.id) && OpenedPositions[userName][sec.id] != null)
-            return Results.Json(new List<Pos>() { OpenedPositions[userName][sec.id] });
+        //if (OpenedPositions.ContainsKey(userName) && OpenedPositions[userName].ContainsKey(sec.id) && OpenedPositions[userName][sec.id] != null)
+        //        return Results.Json(new List<Pos>() { OpenedPositions[userName][sec.id] });
 
         return Results.Empty;
     }
     catch (Exception ex)
     {
-        return Results.Problem(ex.Message);
+        return Results.Empty;
     }
 
 }).RequireAuthorization().WithDescription("Выдача всех позиций. Если sec_id = 0, то выдаст просто все открытые позиции юзера.");
@@ -921,13 +922,20 @@ void SaveDb()
 {
     lock (savelocker)
     {
-        Helper.SaveXml(Securities, securitiesBdName);
-        Helper.SaveXml(Trades, tradesBdName);
-        Helper.SaveXml(Orders, ordersBdName);
-        Helper.SaveXml(UsersContext, userdBdName);
+        try
+        {
+            Helper.SaveXml(Securities, securitiesBdName);
+            Helper.SaveXml(Trades, tradesBdName);
+            Helper.SaveXml(Orders, ordersBdName);
+            Helper.SaveXml(UsersContext, userdBdName);
 
-        Helper.SaveXml(OpenedPositions, $"{data}\\{nameof(OpenedPositions)}.xml");
-        Helper.SaveXml(ClosedPositions, $"{data}\\{nameof(ClosedPositions)}.xml");
+            Helper.SaveXml(OpenedPositions, $"{data}\\{nameof(OpenedPositions)}.xml");
+            Helper.SaveXml(ClosedPositions, $"{data}\\{nameof(ClosedPositions)}.xml");
+        }
+        catch (Exception ex)
+        {
+            LogMessageAsync(ex.Message);
+        }
     }
 }
 

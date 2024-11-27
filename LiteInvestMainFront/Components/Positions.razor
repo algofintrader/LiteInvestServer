@@ -1,25 +1,18 @@
 ﻿@using LiteInvestMainFront.Data
 @using LiteInvestServer.Entity
-@* <DxGrid CssClass="dxgrid"
-        @ref=Positions
-        Data="@Positions"
-        ShowAllRows="true"
-        ColumnResizeMode="GridColumnResizeMode.NextColumn"
-        TextWrapEnabled="false"
-        CustomizeElement="Grid_CustomizeElement"
-        ShowGroupPanel="false"
-        HighlightRowOnHover="true"
-        FocusedRowEnabled="true">
 
-	<Columns>
-		<DxGridDataColumn FieldName="Volume" Width="30px" />
-		<DxGridDataColumn FieldName="Price" Width="30px" />
-		<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
-	</Columns>
-</DxGrid> *@
+<DxGrid CssClass="dxgrid"
+Data="@OpenedPositions"
+ShowAllRows="true"
+ColumnResizeMode="GridColumnResizeMode.NextColumn"
+TextWrapEnabled="false"
+ShowGroupPanel="false"
+HighlightRowOnHover="true"
+FocusedRowEnabled="true">
+
+</DxGrid> 
 
 @code {
-
 
     List<Pos> OpenedPositions { get; set; }
 
@@ -28,11 +21,17 @@
 
     protected override Task OnInitializedAsync()
     {
-
-
-        apiDataService.getPositons();
-
+        LoadPoses();
         return base.OnInitializedAsync();
+    }
+
+    public async void LoadPoses()
+    {
+        var positions = await apiDataService.GetPositions();
+        if(positions!=null)
+        {
+            
+        }
     }
 
 }
