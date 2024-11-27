@@ -22,7 +22,7 @@ namespace LiteInvestMainFront.Data
 		public int orderbookcount = 0;
 		public int start = 0;
 
-		public int AgregationStep { get; set; } = 0;
+		public int AgregationStep { get; set; }
 
 		/// <summary>
 		/// Хранилище ордеров по инструментам получается

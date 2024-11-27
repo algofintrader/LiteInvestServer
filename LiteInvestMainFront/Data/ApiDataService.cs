@@ -103,6 +103,8 @@ namespace LiteInvestMainFront.Data
 		/// </summary>
 		public Action<Order> NewMyOrder { get; set; }
 
+		public List<Order> AllActiveOrders { get; set; }
+
 		public ApiDataService()
 		{
 			client = new RestClient(mainadress);

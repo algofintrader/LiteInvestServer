@@ -202,13 +202,14 @@ OnReorder="@OnReorderHandler"
 				<Content>
 					<div @onclick="@((e) => {@js.InvokeVoidAsync(" toggleSelected", e);})" class="tile-content">
 						<WorkWindow @key="security.SpecialHash" 
-						Data="GetBuffersData(security.id)"
+									
+                        Data="GetBuffersData(security.id)"
 						Ticks="GetBuffersData(security.id).Ticks" start="GetBuffersData(security.id).start" dt="GetBuffersData(security.id).dt" 
 						levelsFromBest="GetBuffersData(security.id).levelsFromBest" 
 						minchart="GetBuffersData(security.id).minchart"
 						maxchart="GetBuffersData(security.id).maxchart"
 						Orders="GetBuffersData(security.id).Orders"
-						AgregationStep = "GetBuffersData(security.id).AgregationStep"
+						
 						OnClosing="OnClosingWorkingWindow" secutityMain="@security" 
 
 						ApiDataService="@_apidataservice" />
@@ -389,24 +390,27 @@ OnReorder="@OnReorderHandler"
 
 			var myinstruments = await _apidataservice.GetUserInstruments();
 
-			if (myinstruments != null)
-			{
-				foreach (var instrument in myinstruments)
-				{
-					OpenInstrument(instrument);
-				}
-			}
+			// if (myinstruments != null)
+			// {
+			// 	foreach (var instrument in myinstruments)
+			// 	{
+			// 		OpenInstrument(instrument);
+			// 	}
+			// }
 
 			Console.WriteLine($"Loaded instruments {Instruments.Count()}");
-
-			//сначала подпишемся на ордера
-			await _apidataservice.SubscribePrivateOrders();
 
 			var orders = await _apidataservice.GetOrders();
 
 			if (orders != null && orders.Count!=0)
 			{
+				_apidataservice.AllActiveOrders = orders.Where(o => o.State== Order.OrderStateType.Activ).ToList();
 
+				Console.WriteLine($"Loaded Active Orders {_apidataservice.AllActiveOrders}");
+				foreach (var order in _apidataservice.AllActiveOrders)
+				{
+					Console.WriteLine($"sec ={order.SecurityId} price={order.PriceOrder} side= {order.State} ");
+				}
 			}
 			else
 			{

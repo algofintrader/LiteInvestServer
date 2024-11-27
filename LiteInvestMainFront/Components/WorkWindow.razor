@@ -441,7 +441,13 @@
 
 	[Parameter] public ConcurrentDictionary<decimal, Order> Orders { get; set; }
 
-	[Parameter] public int AgregationStep { get; set; } = 0;
+	public int AgregationStep
+	{
+		get => Data.AgregationStep;
+		set{
+		Data.AgregationStep = value;
+		}
+	}
 
 	public string GetClassForQuote(MarketDepthLevel quote)
 	{
@@ -474,6 +480,10 @@
 		ApiDataService.NewMarketDepth += OnNewMarketDepth;
 		ApiDataService.NewTicks += OnNewTicks;
 
+
+		//сначала подпишемся на ордера
+		await ApiDataService.SubscribePrivateOrders();
+
 		WebSockets.Add(await ApiDataService.SubscribeOrderBook(secutityMain.id));
 		WebSockets.Add(await ApiDataService.SubcribeTick(secutityMain.id));
 
@@ -490,7 +500,7 @@
 		if (myorder.State == Order.OrderStateType.Activ || myorder.State == Order.OrderStateType.Partial)
 		{
 			Orders[myorder.PriceOrder] = myorder;
-			UpdateOrdersAndGrid();
+			//UpdateOrdersAndGrid();
 		}
 		else if (myorder.State == Order.OrderStateType.Done
 					|| myorder.State == Order.OrderStateType.Fail
@@ -501,10 +511,10 @@
 
 			Orders.Remove(myorder.PriceOrder, out var _);
 
-			LastCalculatedQuotesDictionary[myorder.PriceOrder].RestVolume = 0;
+			LastCalculatedQuotesDictionary[myorder.PriceOrder].RestVolume = null;
 
-			UpdateOrdersAndGrid();
-			
+			//UpdateOrdersAndGrid();
+
 		}
 	}
 
@@ -637,7 +647,7 @@
 				for (decimal j = i; j <= i + AgregationStep * secutityMain.PriceStep; j += secutityMain.PriceStep)
 				{
 					if (!md.ContainsKey(j))
-						md[j] = new MarketDepthLevel() { Price = j, Ask = 0, Bid = 0, Type = Side.Empty };
+						md[j] = new MarketDepthLevel() { Price = j, Ask = 0, Bid = 0, Type = Side.Sell };
 
 					summ +=md[j].Volume;
 				}
@@ -652,7 +662,7 @@
 				for (decimal j = i; j >= i - AgregationStep * secutityMain.PriceStep; j -= secutityMain.PriceStep)
 				{
 					if (!md.ContainsKey(j))
-						md[j] = new MarketDepthLevel() { Price = j, Ask = 0, Bid = 0, Type = Side.Empty };
+						md[j] = new MarketDepthLevel() { Price = j, Ask = 0, Bid = 0, Type = Side.Buy };
 
 					summ += (decimal)md[j].Volume;
 				}
@@ -722,45 +732,51 @@
 
 		//Console.WriteLine(ticks[0].SecurityId + " new tick !" + ticks[0].Price);
 
-
-		DateTime lasttime = DateTime.Now;
-
 		try
 		{
-			if (Ticks.Count != 0 && Ticks[Ticks.Count - 1].Time!=null)
+			DateTime lasttime = DateTime.Now;
+
+			try
 			{
-				lasttime = Ticks[Ticks.Count - 1].Time;
+				if (Ticks.Count != 0 && Ticks[Ticks.Count - 1].Time != null)
+				{
+					lasttime = Ticks[Ticks.Count - 1].Time;
+				}
+				else
+				{
+					lasttime = DateTime.Now;
+				}
 			}
-			else
+			catch (Exception ex)
 			{
 				lasttime = DateTime.Now;
+			}
+
+			int counter = 0;
+			foreach (var tick in ticks)
+			{
+				start++;
+				counter++;
+
+
+				//tick.Time = dt + TimeSpan.FromSeconds(start);
+				tick.Time = lasttime + TimeSpan.FromSeconds(counter);
+
+				Ticks.Add(tick);
+
+				try
+				{
+					if (Ticks.Count > 15) Ticks.RemoveAt(0);
+				}
+				catch (Exception ex)
+				{
+
+				}
 			}
 		}
 		catch (Exception ex)
 		{
-			lasttime = DateTime.Now;
-		}
 
-		int counter = 0;
-		foreach (var tick in ticks)
-		{
-			start++;
-			counter++;
-
-
-			//tick.Time = dt + TimeSpan.FromSeconds(start);
-			tick.Time = lasttime + TimeSpan.FromSeconds(counter);
-
-			Ticks.Add(tick);
-
-			try
-			{
-				if (Ticks.Count > 15) Ticks.RemoveAt(0);
-			}
-			catch (Exception ex)
-			{
-
-			}
 		}
 
 		await InvokeAsync(() => { Chart.RefreshData(); });
@@ -823,24 +839,32 @@
 
 	protected void PrepareSeriesPoint(ChartSeriesPointCustomizationSettings pointSettings)
 	{
-		//всегда 1 элемент
-		var t = (TradeApi)pointSettings.Point.DataItems.ToArray()[0];
 
-		//показывать объём сверху
-		pointSettings.PointLabel.Texts = new string[] { t.Volume.ToString() };
-		pointSettings.PointLabel.Visible = true;
+		try
+		{
+			//всегда 1 элемент
+			var t = (TradeApi)pointSettings.Point.DataItems.ToArray()[0];
 
-		//кружок
-		pointSettings.PointAppearance.Symbol = ChartPointSymbol.Circle;
+			//показывать объём сверху
+			pointSettings.PointLabel.Texts = new string[] { t.Volume.ToString() };
+			pointSettings.PointLabel.Visible = true;
 
-		//TODO: Исправить размеры - сделать адаптивными
-		//TODO: написать логику расчета адаптивных элементов
-		pointSettings.PointAppearance.Size = 1;
+			//кружок
+			pointSettings.PointAppearance.Symbol = ChartPointSymbol.Circle;
 
-		if (t.Side == Side.Sell)
-			pointSettings.PointAppearance.Color = Color.Red;
-		else if (t.Side == Side.Buy)
-			pointSettings.PointAppearance.Color = Color.Green;
+			//TODO: Исправить размеры - сделать адаптивными
+			//TODO: написать логику расчета адаптивных элементов
+			pointSettings.PointAppearance.Size = 1;
+
+			if (t.Side == Side.Sell)
+				pointSettings.PointAppearance.Color = Color.Red;
+			else if (t.Side == Side.Buy)
+				pointSettings.PointAppearance.Color = Color.Green;
+		}
+		catch (Exception ex)
+		{
+
+		}
 
 	}
 
@@ -893,6 +917,8 @@
 
 	private Task OnRowClickHandler(GridRowClickEventArgs arg)
 	{
+		return Task.CompletedTask;
+
 		var item = (MarketDepthLevel)arg.Item;
 
 		var order = new ClientOrder()
