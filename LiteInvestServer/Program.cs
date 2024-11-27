@@ -865,7 +865,7 @@ Trading.MapGet("/GetOrders", async (HttpContext httpContext) =>
     }
 }).RequireAuthorization().WithDescription("Выдача ордеров - пока что полный срок. TypeOrder = 0 (limit) 1 (market)");
 
-Trading.MapPost("/CancelOrder", async (HttpContext httpContext, int numberId) =>
+Trading.MapPost("/CancelOrder", async (HttpContext httpContext, ClientOrder order) =>
 {
     try
     {
@@ -888,7 +888,7 @@ Trading.MapPost("/CancelOrder", async (HttpContext httpContext, int numberId) =>
         //по мне так ужасный код, лучше бы свойства оставили, вместо дублирующего конструктора. 
         //В итоге еще и в самом Ордере кошмар 
 
-        plaza.CancelOrder(numberId);
+        plaza.CancelOrder((int)order.NumberOrderId);
 
         return Results.Accepted<ClientOrder>();
     }

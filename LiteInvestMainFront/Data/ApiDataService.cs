@@ -15,6 +15,7 @@ using Websocket.Client;
 
 using PlazaEngine.Entity;
 using System.Web;
+using LiteInvestServer.Records;
 
 namespace LiteInvestMainFront.Data
 {
@@ -69,6 +70,7 @@ namespace LiteInvestMainFront.Data
 		public string token { get; set; }
 		public DateTime expirationTime { get; set; }
 	}
+
 	public class ApiDataService
 	{
 		string mainadress = "http://188.72.77.60:3000/";
@@ -83,6 +85,10 @@ namespace LiteInvestMainFront.Data
 		static string openInstrument = "Trading/OpenInstrument";
 		static string closeInstrument = "Trading/CloseInstrument";
 		static string userInstuments = "Trading/GetUserInstruments";
+
+		static string sendOrder = "Trading/SendOrder";
+		static string cancelOrder = "Trading/CancelOrder";
+		static string getMyOrders = "Trading/GetOrders";
 		//GetUserInstruments
 
 		private ConcurrentDictionary<string, SecurityApi> Securities { get; set; }
@@ -92,6 +98,10 @@ namespace LiteInvestMainFront.Data
 
 		public Action<MarketDepthLevel, MarketDepthLevel, string, Dictionary<decimal, MarketDepthLevel>> NewMarketDepth;
 		public Action<string, List<TradeApi>> NewTicks;
+		/// <summary>
+		/// Мой новый ордер
+		/// </summary>
+		public Action<Order> NewMyOrder { get; set; }
 
 		public ApiDataService()
 		{
@@ -121,6 +131,84 @@ namespace LiteInvestMainFront.Data
 			}
 		}
 
+		//TODO: Бардак с КЛИЕНТ ОРДЕРОМ и обычным ОРДЕРОМ
+
+		public async Task<Order?> SendOrder(ClientOrder order)
+		{
+
+			var request = new RestRequest(sendOrder);
+
+			request.AddHeader("liteinvest", token);
+			request.AddBody(order);
+
+			var response = await client.PostAsync(request);
+
+			if (!response.IsSuccessful)
+			{
+				Console.WriteLine(response.ErrorMessage);
+			}
+
+			var r = JsonConvert.DeserializeObject<Order>(response.Content);
+
+			return r;
+
+			//TODO: Сделать десериализацию нормальную 
+			//var answer = JsonConvert.DeserializeObject(response.Content);
+		}
+
+		public async Task<ClientOrder?> CancelOrder(ClientOrder order)
+		{
+
+			var request = new RestRequest(cancelOrder);
+
+			request.AddHeader("liteinvest", token);
+			request.AddBody(order);
+
+			var response = await client.PostAsync(request);
+
+			if (!response.IsSuccessful)
+			{
+				Console.WriteLine(response.ErrorMessage);
+			}
+
+			var r = JsonConvert.DeserializeObject<ClientOrder>(response.Content);
+
+			return r;
+
+			//TODO: Сделать десериализацию нормальную 
+			//var answer = JsonConvert.DeserializeObject(response.Content);
+		}
+		public async Task<List<Order>> GetOrders()
+		{
+
+			try
+			{
+				var request = new RestRequest(getMyOrders);
+
+				request.AddHeader("liteinvest", token);
+
+				var response = await client.PostAsync(request);
+
+				if (!response.IsSuccessful)
+				{
+					Console.WriteLine(response.ErrorMessage);
+				}
+
+				var r = JsonConvert.DeserializeObject<List<Order>>(response.Content);
+
+				return r;
+			}
+			catch (Exception ex)
+			{
+				return null;
+			}
+
+			//TODO: Сделать десериализацию нормальную 
+			//var answer = JsonConvert.DeserializeObject(response.Content);
+		}
+
+
+
 		public async void OpenInstrument(SecurityApi sec)
 		{
 
@@ -128,7 +216,7 @@ namespace LiteInvestMainFront.Data
 
 			//request.AddCookie("liteinvest", token,"/", "188.72.77.60:3000");
 
-			
+
 			request.AddHeader("liteinvest", token);
 			request.AddBody(sec);
 
@@ -246,13 +334,13 @@ namespace LiteInvestMainFront.Data
 			});
 
 			Console.WriteLine(webscoketrequest);
-		
+
 			await websocketClient.Start();
 			return websocketClient;
 
 		}
 
-	
+
 
 		/// <summary>
 		/// Пока что сделал отписку по самому простому принципу. 
@@ -263,9 +351,9 @@ namespace LiteInvestMainFront.Data
 		{
 			var webscoketrequest =
 				websocketurl
-				.AddParameter("stream", "orderbook")
-				.AddParameter("sec_id", secid)
-				.AddParameter("liteinvest", token);
+					.AddParameter("stream", "orderbook")
+					.AddParameter("sec_id", secid)
+					.AddParameter("liteinvest", token);
 
 			websocketClient = new WebsocketClient(webscoketrequest);
 
@@ -292,11 +380,13 @@ namespace LiteInvestMainFront.Data
 			return websocketClient;
 		}
 
-		public async Task<WebsocketClient> SubscribePrivateOrders()
+	
+
+	public async Task<WebsocketClient> SubscribePrivateOrders()
 		{
 			var webscoketrequest =
 				websocketurl
-					.AddParameter("stream", "orderbook")
+					.AddParameter("stream", "my_orders")
 					.AddParameter("liteinvest", token);
 
 			websocketClient = new WebsocketClient(webscoketrequest);
@@ -306,14 +396,13 @@ namespace LiteInvestMainFront.Data
 				try
 				{
 					//почему то не хочет десериализовывать стакан нормальнь
-					var md = JsonConvert.DeserializeObject<MarketDepth>(msg.Text,
-						new JsonSerializerSettings() { CheckAdditionalContent = true, });
+					var order = JsonConvert.DeserializeObject<Order>(msg.Text, new JsonSerializerSettings() { CheckAdditionalContent = true, });
+					NewMyOrder?.Invoke(order);
 
-					ProcessOrderBook(md);
 				}
 				catch (Exception ex)
 				{
-
+					Console.WriteLine(ex.Message);
 				}
 			});
 

@@ -19,73 +19,73 @@
 
 <style>
 	.internalSearch {
-		margin: 10px
+	margin: 10px
 	}
 
 	.stacklayout-item {
-		font-size: 1.2em;
-		font-weight: 500;
-		text-align: center;
-		height: 100%;
-		padding: 0.5rem;
-		text-align: center;
-		position: relative;
-		z-index: 0;
-		display: flex;
-		align-items: flex-start;
-		justify-content: flex-start;
+	font-size: 1.2em;
+	font-weight: 500;
+	text-align: center;
+	height: 100%;
+	padding: 0.5rem;
+	text-align: center;
+	position: relative;
+	z-index: 0;
+	display: flex;
+	align-items: flex-start;
+	justify-content: flex-start;
 	}
 
-		.stacklayout-item:before {
-			content: " ";
-			position: absolute;
-			z-index: -1;
-			width: 100%;
-			height: 100%;
-			left: 0;
-			top: 0;
-			opacity: 0.4;
-		}
+	.stacklayout-item:before {
+	content: " ";
+	position: absolute;
+	z-index: -1;
+	width: 100%;
+	height: 100%;
+	left: 0;
+	top: 0;
+	opacity: 0.4;
+	}
 
 	.stacklayout-header:before {
-		background-color: var(--bs-red);
+	background-color: var(--bs-red);
 	}
 
 	.stacklayout-content:before {
-		background-color: var(--bs-yellow);
+	background-color: var(--bs-yellow);
 	}
 
 	.stacklayout-left-side-bar:before {
-		background-color: var(--bs-green);
+	background-color: var(--bs-green);
 	}
 
 	.stacklayout-right-side-bar:before {
-		background-color: var(--bs-info);
+	background-color: var(--bs-info);
 	}
 
 	.stacklayout-footer:before {
-		background-color: var(--bs-blue);
-		opacity: 0.5;
+	background-color: var(--bs-blue);
+	opacity: 0.5;
 	}
 
 	.k-tilelayout-item-header.k-card-header {
-		padding-block: 4px !important;
-		padding-inline: 4px !important;
+	padding-block: 4px !important;
+	padding-inline: 4px !important;
 	}
 
 	.buttonclose {
-		cursor: pointer;
-		float: right;
+	cursor: pointer;
+	float: right;
 	}
 
 	@@media (max-width: 575.98px) {
-		.stacklayout-item {
-			font-size: 0.9em;
-		}
+	.stacklayout-item {
+	font-size: 0.9em;
+	}
 	}
 
 	.selected {
-		border: 2px solid #FFFFFF !important; /* Пример выделения границей */
+	border: 2px solid #FFFFFF !important; /* Пример выделения границей */
 	}
 
 </style>
@@ -103,14 +103,14 @@ OnChanged="(Customer customer) => OnAutoCompleteChanged(customer)" />-->
 		<a class="navbar-brand" href="#">LiteInvest</a>
 		<form class="d-flex internalSearch" role="search">
 			<DxComboBox @ref=combobox
-						Data="@Instruments"
-						@bind-Value="@securitySelected"
-						TextFieldName="@nameof(securitySelected.Isin)"
-						SearchMode="@ListSearchMode.AutoSearch"
-						SearchFilterCondition="@ListSearchFilterCondition.Contains"
-						ListRenderMode="ListRenderMode.Entire"
-						CssClass="cw-480"
-						InputId="cbVirtualScrolling" />
+			Data="@Instruments"
+			@bind-Value="@securitySelected"
+			TextFieldName="@nameof(securitySelected.Isin)"
+			SearchMode="@ListSearchMode.AutoSearch"
+			SearchFilterCondition="@ListSearchFilterCondition.Contains"
+			ListRenderMode="ListRenderMode.Entire"
+			CssClass="cw-480"
+			InputId="cbVirtualScrolling" />
 			<!--<AutoComplete @bind-Value="securitySelected"
 			TItem="SecurityApi"
 			DataProvider="InstrumentsDataProvider"
@@ -191,7 +191,7 @@ OnReorder="@OnReorderHandler"
 	<TileLayoutItems >
 		@foreach (var security in RegisteredInstruments)
 		{
-				<TileLayoutItem >
+			<TileLayoutItem >
 				<HeaderTemplate>
 					@security.Isin 
 					<svg @key="security.SpecialHash" class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
@@ -365,9 +365,10 @@ OnReorder="@OnReorderHandler"
 		var clone = (SecurityApi) securityApi.Clone();
 		clone.SpecialHash = DateTime.Now.GetHashCode().ToString();
 
+
 		_apidataservice.OpenInstrument(clone);
 		OpenInstrument(clone);
-		
+
 	}
 
 	private void OpenInstrument(SecurityApi sec)
@@ -386,17 +387,22 @@ OnReorder="@OnReorderHandler"
 			var res = await _apidataservice.LogIn(logform.Email, logform.pass);
 			Instruments = await _apidataservice.GetInstruments();
 
-			 var myinstruments = await _apidataservice.GetUserInstruments();
+			var myinstruments = await _apidataservice.GetUserInstruments();
 
-			 if (myinstruments != null)
-			 {
-			 	foreach (var instrument in myinstruments)
+			if (myinstruments != null)
+			{
+				foreach (var instrument in myinstruments)
 				{
-			 		OpenInstrument(instrument);
-			 	}
-			 }
+					OpenInstrument(instrument);
+				}
+			}
 
 			Console.WriteLine($"Loaded instruments {Instruments.Count()}");
+
+			//сначала подпишемся на ордера
+			await _apidataservice.SubscribePrivateOrders();
+
+			var orders = await _apidataservice.GetOrders();
 
 			loadingLogIn = false;
 			textlogin = "ON";

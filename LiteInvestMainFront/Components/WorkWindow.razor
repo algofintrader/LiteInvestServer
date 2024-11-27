@@ -5,6 +5,7 @@
 @using LiteInvestMainFront.Data
 @using LiteInvestMainFront.Services
 @using LiteInvestServer.Json
+@using LiteInvestServer.Records
 @using PlazaEngine.Entity
 @using Websocket.Client
 @using GridRowClickEventArgs = Telerik.Blazor.Components.GridRowClickEventArgs
@@ -296,7 +297,7 @@
 						<td class="@GetClassForQuote(Quotes)">
 							@Quotes.MyVolume
 							@if(Quotes.MyVolume.ToString() != string.Empty){
-									<svg class="removeOrder" @onclick="() => RemoveOrderClick(Quotes)" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="-2 -5 15 15">
+								<svg class="removeOrder" @onclick="() => RemoveOrderClick(Quotes)" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="-2 -5 15 15">
 									<line x1="0" y1="0" x2="10" y2="10" stroke="red" stroke-width="2" />
 									<line x1="0" y1="10" x2="10" y2="0" stroke="red" stroke-width="2" />
 								</svg>
@@ -426,28 +427,21 @@
 	//А вдруг у меня все получится
 	//Влруг я буду прав
 
-	[Parameter]
-	public BufferData Data { get; set; }
+	[Parameter] public BufferData Data { get; set; }
 
-	[Parameter]
-	public Action<SecurityApi>? OnClosing { get; set; }
+	[Parameter] public Action<SecurityApi>? OnClosing { get; set; }
 
-	[Parameter]
-	public SecurityApi secutityMain { get; set; }
+	[Parameter] public SecurityApi secutityMain { get; set; }
 
-	[Parameter]
-	public ApiDataService ApiDataService { get; set; }
+	[Parameter] public ApiDataService ApiDataService { get; set; }
 
-	[Parameter]
-	public int Index{ get; set; }
+	[Parameter] public int Index { get; set; }
 
 	public List<WebsocketClient> WebSockets { get; set; }
 
-	[Parameter]
-	public ConcurrentDictionary<decimal,Order> Orders { get; set; }
+	[Parameter] public ConcurrentDictionary<decimal, Order> Orders { get; set; }
 
-	[Parameter]
-	public int AgregationStep { get; set; }= 0;
+	[Parameter] public int AgregationStep { get; set; } = 0;
 
 	public string GetClassForQuote(MarketDepthLevel quote)
 	{
@@ -457,7 +451,7 @@
 		// 	return quote.Type == Side.Sell ? "highlighted-item" : "highlighted-item2";
 		// }
 
-		if (quote.Volume == 0 || quote.Volume==null)
+		if (quote.Volume == 0 || quote.Volume == null)
 		{
 			return "transparent-item";
 		}
@@ -476,6 +470,7 @@
 		jsInteropService.OnKeyDown += OnKeyDown;
 		jsInteropService.OnScroll += OnScroll;
 
+		ApiDataService.NewMyOrder += NewMyOrder;
 		ApiDataService.NewMarketDepth += OnNewMarketDepth;
 		ApiDataService.NewTicks += OnNewTicks;
 
@@ -483,6 +478,30 @@
 		WebSockets.Add(await ApiDataService.SubcribeTick(secutityMain.id));
 
 		return base.OnInitializedAsync();
+	}
+
+	private void NewMyOrder(Order myorder)
+	{
+		if (myorder.SecurityId != secutityMain.id)
+			return;
+
+		Console.WriteLine($"New Order {myorder.SecurityId} price {myorder.PriceOrder} state {myorder.State}");
+
+		if (myorder.State == Order.OrderStateType.Activ || myorder.State == Order.OrderStateType.Partial)
+		{
+			Orders[myorder.PriceOrder] = myorder;
+			UpdateOrders();
+		}
+		else if (myorder.State == Order.OrderStateType.Done
+					|| myorder.State == Order.OrderStateType.Fail
+					|| myorder.State == Order.OrderStateType.Cancel)
+		{
+
+			Console.WriteLine($"Removing Order {myorder.SecurityId} price {myorder.PriceOrder} state {myorder.State}");
+
+			Orders.Remove(myorder.PriceOrder, out var _);
+			UpdateOrders();
+		}
 	}
 
 	private string WindowId { get; set; } = Guid.NewGuid().ToString();
@@ -550,7 +569,8 @@
 					Price = order.Key,
 					Bid = 0,
 					Ask = 0,
-					MyVolume = order.Value.Volume,
+					//TODO надо проверить правильный ли это объем
+					MyVolume = order.Value.VolumeExecuted,
 				};
 				Levels.TryAdd(order.Key, md);
 			}
@@ -856,20 +876,23 @@
 		jsInteropService.OnScroll -= OnScroll;
 	}
 
-	private int volume = 1;
+	private int myVolume = 1;
 
 
 	private Task OnRowClickHandler(GridRowClickEventArgs arg)
 	{
 		var item = (MarketDepthLevel)arg.Item;
 
-		Orders.TryAdd(item.Price, new Order()
+		var order = new ClientOrder()
 		{
+			SecID = secutityMain.id,
 			Side = item.Type,
-			Volume = volume,
-		});
+			Volume = myVolume,
+			Price = item.Price,
+			Market = false,
+		};
 
-		UpdateOrders();
+	
 
 		return Task.CompletedTask;
 	}
