@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -14,7 +14,11 @@
     <PackageReference Include="Telerik.UI.for.Blazor.Trial" Version="7.0.0" />
     <PackageReference Include="Websocket.Client" Version="5.1.2" />
   </ItemGroup>
-
+  
+  <ItemGroup>
+    <None Include="appsettings.Front.json" CopyToPublishDirectory="Always" />
+  </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\LiteInvestServer\LiteInvestServer.csproj" />
     <ProjectReference Include="..\PlazaEngine\PlazaEngine\PlazaEngine.csproj" />
