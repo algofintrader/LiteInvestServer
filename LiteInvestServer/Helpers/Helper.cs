@@ -7,19 +7,17 @@ namespace LiteInvestServer.Helpers
     {
         public static void SaveXml<T>(T serializableObject, string name)
         {
+            var serializer = new DataContractSerializer(typeof(T));
+            var settings = new XmlWriterSettings()
+            {
+                Indent = true,
+                IndentChars = "\t",
+            };
 
-            
-                var serializer = new DataContractSerializer(typeof(T));
-                var settings = new XmlWriterSettings()
-                {
-                    Indent = true,
-                    IndentChars = "\t",
-                };
+            var writer = XmlWriter.Create(name, settings);
+            serializer.WriteObject(writer, serializableObject);
+            writer.Close();
 
-                var writer = XmlWriter.Create(name, settings);
-                serializer.WriteObject(writer, serializableObject);
-                writer.Close();
-           
         }
 
         /// <summary>

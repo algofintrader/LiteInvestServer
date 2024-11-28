@@ -102,6 +102,12 @@ namespace LiteInvestServer.Entity
 
         TradeCollection OpenTrades = new();
         TradeCollection CloseTrades = new();
+		
+        [DataMember]
+		public string secid { get; set; }
+
+		[DataMember]
+		public string secName { get; set; }
 
         [JsonIgnore]
         [DataMember]

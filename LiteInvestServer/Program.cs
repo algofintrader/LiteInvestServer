@@ -57,6 +57,8 @@ string userdBdName = $"{data}\\users.xml";
 string ordersBdName = $"{data}\\orders.xml";
 string tradesBdName = $"{data}\\trades.xml";
 
+string openedpositionsdbname = $"{data}\\openedpositions.xml";
+
 string myordersWebSocketstreamName = "my_orders";
 string mytradesWebSocketstreamName = "my_trades";
 string publicTradesSocketstreamName = "public_trades";
@@ -111,8 +113,9 @@ if (!Directory.Exists(data))
     UsersContext = Helper.ReadXml<ConcurrentDictionary<string, User>>(userdBdName);
     Orders = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Order>>>(ordersBdName);
     Trades = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Trade>>>(tradesBdName);
-    OpenedPositions = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Pos>>>($"{data}\\{nameof (OpenedPositions)}.xml");
-    ClosedPositions = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, List<Pos>>>>($"{data}\\{nameof(ClosedPositions)}.xml");
+    OpenedPositions = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Pos>>>(openedpositionsdbname);
+    
+    //ClosedPositions = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, List<Pos>>>>($"{data}\\{nameof(ClosedPositions)}.xml");
 
     string admin = "adminadminov";
 
@@ -377,7 +380,13 @@ void ProcessNewMyTrade(MyTrade newMytrade)
 
         if (posvalue == null)
         {
-            OpenedPositions[username][newMytrade.SecurityId] = new Pos();
+            var secname = Securities.ContainsKey(newMytrade.SecurityId) ? Securities[newMytrade.SecurityId].Isin : "Empty";
+
+			OpenedPositions[username][newMytrade.SecurityId] = new Pos() 
+            { 
+                secid= newMytrade.SecurityId,
+                secName = secname
+			};
             LogMessageAsync($"Creating new Pos for {username} ");
         }
 
@@ -929,8 +938,8 @@ void SaveDb()
             Helper.SaveXml(Orders, ordersBdName);
             Helper.SaveXml(UsersContext, userdBdName);
 
-            Helper.SaveXml(OpenedPositions, $"{data}\\{nameof(OpenedPositions)}.xml");
-            Helper.SaveXml(ClosedPositions, $"{data}\\{nameof(ClosedPositions)}.xml");
+            Helper.SaveXml(OpenedPositions, openedpositionsdbname);
+            //Helper.SaveXml(ClosedPositions, $"{data}\\{nameof(ClosedPositions)}.xml");
         }
         catch (Exception ex)
         {

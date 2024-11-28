@@ -1,7 +1,10 @@
 ﻿@using LiteInvestMainFront.Data
 @using LiteInvestServer.Entity
 
-<DxGrid CssClass="dxgrid"
+<DxGrid 
+
+@ref="gridPositions"
+CssClass="dxgrid"
 Data="@OpenedPositions"
 ShowAllRows="true"
 ColumnResizeMode="GridColumnResizeMode.NextColumn"
@@ -10,10 +13,19 @@ ShowGroupPanel="false"
 HighlightRowOnHover="true"
 FocusedRowEnabled="true">
 
+    <Columns>
+        <DxGridDataColumn FieldName="secName" Width="auto"  />
+        <DxGridDataColumn FieldName="MaxOpened" Width="auto"  />
+        <DxGridDataColumn FieldName="Side" Width="auto" />
+        <DxGridDataColumn FieldName="AverageEntry" Width="auto" />
+        <DxGridDataColumn FieldName="UnRealizedPnlPoints" Width="auto" />
+    </Columns>
+
 </DxGrid> 
 
 @code {
 
+    DxGrid gridPositions;
     List<Pos> OpenedPositions { get; set; }
 
     [Parameter]
@@ -30,8 +42,9 @@ FocusedRowEnabled="true">
         var positions = await apiDataService.GetPositions();
         if(positions!=null)
         {
-            
+            OpenedPositions = positions;
         }
+        InvokeAsync(StateHasChanged);
     }
 
 }
