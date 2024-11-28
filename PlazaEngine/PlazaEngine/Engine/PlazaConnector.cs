@@ -1913,10 +1913,14 @@ namespace PlazaEngine.Engine
                                     order.numberUser = replmsg["ext_id"].asInt();
 
                                     order.VolumeExecuted = order.volume - replmsg["public_amount_rest"].asInt(); // это у нас оставшееся в заявке
-                                    order.SecIsin = Securities.ContainsKey(order.SecurityId) ? Securities[order.SecurityId].Name : "Empty";
+									order.SecurityId = replmsg["isin_id"].asInt().ToString();
+
+                                    if(Securities!=null)
+									order.SecIsin = Securities.ContainsKey(order.SecurityId) ? Securities[order.SecurityId].Name : "Empty";
+
                                     order.priceOrder = Convert.ToDecimal(replmsg["price"].asDecimal());
                                     order.PortfolioNumber = replmsg["client_code"].asString();
-                                    order.SecurityId = replmsg["isin_id"].asInt().ToString();
+                                    
                                     //security= Securities[_securities[replmsg["isin_id"].asInt().ToString()]], // справочник всех инструментов не успевает подгружаться до прихода события orders_log
                                     order.timeCallBack = replmsg["moment"].asDateTime();
                                     order.timeCreate = replmsg["moment"].asDateTime();

@@ -110,7 +110,6 @@ namespace LiteInvestServer.Entity
 		[DataMember]
 		public string secName { get; set; }
 
-        [JsonIgnore]
         [DataMember]
         public decimal CurrentPos { get; set; } = 0;
 

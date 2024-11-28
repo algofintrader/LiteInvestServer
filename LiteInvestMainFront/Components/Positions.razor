@@ -19,10 +19,12 @@ FocusedRowEnabled="true">
 
     <Columns>
         <DxGridDataColumn FieldName="secName" Width="auto"  />
+        <DxGridDataColumn FieldName="Open" Width="auto" />
         <DxGridDataColumn FieldName="PosValue" Width="auto" />
         <DxGridDataColumn FieldName="MaxOpened" Width="auto" />
         <DxGridDataColumn FieldName="Side" Width="auto" />
         <DxGridDataColumn FieldName="AverageEntry" Width="auto" />
+        <DxGridDataColumn FieldName="RealizedPnl" Width="auto" />
         <DxGridDataColumn FieldName="UnRealizedPnlPoints" Width="auto" />
     </Columns>
 
@@ -65,7 +67,7 @@ FocusedRowEnabled="true">
     public async void LoadPoses()
     {
         LoadData();
-        timer = Helper.CreateTimerAndStart(LoadData, 3000, true);
+        timer = Helper.CreateTimerAndStart(LoadData, 1500, true);
         timer.Start();
     }
 

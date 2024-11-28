@@ -40,7 +40,7 @@ FocusedRowEnabled="true">
 
     protected override Task OnInitializedAsync()
     {
-        LoadPoses();
+        StartTimer();
         return base.OnInitializedAsync();
     }
 
@@ -53,29 +53,33 @@ FocusedRowEnabled="true">
         }
     }
 
-    /// <summary>
-    /// Каким то макаром сервер выдает один и тот же ордер по 2 раза.. 
-    /// </summary>
-    Dictionary<string, Order> OrdersDictionary { get; set; } = new()
 
     public async void LoadData()
     {
         var orders = await apiDataService.GetActiveOrders();
 
         //TODO: Апи посылает повторно один и тот же ордер. 
+        //причем только первый
         if (orders != null)
         {
-            OrdersData = orders;
+            Dictionary<string, Order> OrdersDictionary = new();
+            foreach (var order in orders)
+                OrdersDictionary[order.ExchangeOrderId] = order;
+
+            OrdersData = OrdersDictionary.Values.ToList();
         }
+
+        if (orders == null || orders.Count == 0)
+            OrdersData.Clear();
 
 
         InvokeAsync(StateHasChanged);
     }
 
-    public async void LoadPoses()
+    public async void StartTimer()
     {
         LoadData();
-        timer = Helper.CreateTimerAndStart(LoadData, 3000, true);
+        timer = Helper.CreateTimerAndStart(LoadData, 1500, true);
         timer.Start();
     }
 
