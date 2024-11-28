@@ -132,7 +132,7 @@ OnChanged="(Customer customer) => OnAutoCompleteChanged(customer)" />-->
 					<ul class="dropdown-menu">
 						<li><a class="dropdown-item" href="#" onclick="@PosClick">Открытые Позиции</a></li>
 						<li><hr class="dropdown-divider"></li>
-						<li><a class="dropdown-item" href="#">Ордера</a></li>
+						<li><a class="dropdown-item" href="#" onclick="@OrdersWindowClick">Активные ордера</a></li>
 					</ul>
 				</li>
 			</ul>
@@ -193,6 +193,23 @@ MaxHeight="500"
 @bind-Visible=poswindowVisible>
 	<BodyContentTemplate>
 		<Positions apiDataService="_apidataservice" />
+	</BodyContentTemplate>
+</DxWindow>
+
+<DxWindow 
+AllowResize="true"
+ShowCloseButton="true"
+CloseOnEscape="true"
+HeaderText="Активные ордера"
+ShowFooter="false"
+Width="max(25vw, 250px)"
+MinWidth="300"
+MinHeight="200"
+MaxWidth="800"
+MaxHeight="500"
+@bind-Visible=orderswindowsVisible>
+	<BodyContentTemplate>
+		<Orders apiDataService="_apidataservice" />
 	</BodyContentTemplate>
 </DxWindow>
 
@@ -278,7 +295,7 @@ OnReorder="@OnReorderHandler"
 	bool windowVisible;
 
 	bool poswindowVisible;
-
+	bool orderswindowsVisible;
 
 	LogInForm logform;
 
@@ -298,19 +315,23 @@ OnReorder="@OnReorderHandler"
 	}
 
 
-
-
-
 	protected async override Task OnInitializedAsync()
 	{
 		if (jsInteropService.ServiceObjectDotNetReference != null)
 		{
-			js.InvokeVoidAsync("setDonNetObjectReference", jsInteropService.ServiceObjectDotNetReference);
-
-
+			//	js.InvokeVoidAsync("setDonNetObjectReference", jsInteropService.ServiceObjectDotNetReference);
 		}
 
+	}
 
+	protected override void OnAfterRender(bool firstRender)
+	{
+		if(firstRender)
+		{
+			js.InvokeVoidAsync("setDonNetObjectReference", jsInteropService.ServiceObjectDotNetReference);
+		}
+
+		base.OnAfterRender(firstRender);
 	}
 
 	public async Task OnClosingMain(SecurityApi sec)
@@ -341,6 +362,12 @@ OnReorder="@OnReorderHandler"
 	Task OnLogin()
 	{
 		windowVisible = true;
+		return Task.CompletedTask;
+	}
+
+	Task OrdersWindowClick()
+	{
+		orderswindowsVisible = true;
 		return Task.CompletedTask;
 	}
 
@@ -414,6 +441,7 @@ OnReorder="@OnReorderHandler"
 
 			var myinstruments = await _apidataservice.GetUserInstruments();
 
+			//TODO: Косячит и апи надо переписывать
 			// if (myinstruments != null)
 			// {
 			// 	foreach (var instrument in myinstruments)
@@ -424,24 +452,24 @@ OnReorder="@OnReorderHandler"
 
 			Console.WriteLine($"Loaded instruments {Instruments.Count()}");
 
-			var orders = await _apidataservice.GetOrders();
+			// var orders = await _apidataservice.GetActiveOrders();
 
-			if (orders != null && orders.Count!=0)
-			{
-				_apidataservice.AllActiveOrders = orders.Where(o => o.State== Order.OrderStateType.Activ).ToList();
+			// if (orders != null && orders.Count!=0)
+			// {
+			// 	_apidataservice.AllActiveOrders = orders.Where(o => o.State== Order.OrderStateType.Activ).ToList();
 
-				Console.WriteLine($"Loaded Active Orders {_apidataservice.AllActiveOrders}");
-				foreach (var order in _apidataservice.AllActiveOrders)
-				{
-					Console.WriteLine($"sec ={order.SecurityId} price={order.PriceOrder} side= {order.State} ");
-					Console.WriteLine($"Cancelling order {order.NumberUserOrderId} ");
-					_apidataservice.CancelOrder(order);
-				}
-			}
-			else
-			{
-				Console.WriteLine("No orders found!");
-			}
+			// 	Console.WriteLine($"Loaded Active Orders {_apidataservice.AllActiveOrders}");
+			// 	// foreach (var order in _apidataservice.AllActiveOrders)
+			// 	// {
+			// 	// 	Console.WriteLine($"sec ={order.SecurityId} price={order.PriceOrder} side= {order.State} ");
+			// 	// 	Console.WriteLine($"Cancelling order {order.NumberUserOrderId} ");
+			// 	// 	_apidataservice.CancelOrder(order);
+			// 	// }
+			// }
+			// else
+			// {
+			// 	Console.WriteLine("No orders found!");
+			// }
 
 			//var positions = await _apidataservice.GetPositions();
 

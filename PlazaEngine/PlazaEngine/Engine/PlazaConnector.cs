@@ -152,14 +152,16 @@ namespace PlazaEngine.Engine
 
         public bool Emulation { get; set; }
 
-        /// <summary>
-        /// Создать соединение с биржой через коннектор PLAZA
-        /// </summary>
-        /// <param name="key">Ключ программы, выдается MOEX.</param>
-        /// <param name="testTrading">тестовый ли вариант?</param>
-        /// <param name="appname">название программы для подключения, соответствующий ключу</param>
-        /// <param name="TickEventPeriodMilliSecond">Периодичность отправки тиков, миллисекунд</param>
-        public PlazaConnector(string key, bool emulation, bool testTrading = true, string appname = "", 
+		/// <summary>
+		/// Создать соединение с биржой через коннектор PLAZA
+		/// </summary>
+		/// <param name="key">Ключ программы, выдается MOEX.</param>
+		/// <param name="emulation">Настоящего подключения не будет</param>
+		/// <param name="testTrading">тестовый ли вариант?</param>
+		/// <param name="appname">название программы для подключения, соответствующий ключу</param>
+		/// <param name="TickEventPeriodMilliSecond">Периодичность отправки тиков, миллисекунд</param>
+		/// <param name="depthEventMillisecond"></param>
+		public PlazaConnector(string key, bool emulation, bool testTrading = true, string appname = "", 
             int TickEventPeriodMilliSecond = 20,int depthEventMillisecond = 100)
         {
             AddPlazaDll();
@@ -1911,7 +1913,7 @@ namespace PlazaEngine.Engine
                                     order.numberUser = replmsg["ext_id"].asInt();
 
                                     order.VolumeExecuted = order.volume - replmsg["public_amount_rest"].asInt(); // это у нас оставшееся в заявке
-
+                                    order.SecIsin = Securities.ContainsKey(order.SecurityId) ? Securities[order.SecurityId].Name : "Empty";
                                     order.priceOrder = Convert.ToDecimal(replmsg["price"].asDecimal());
                                     order.PortfolioNumber = replmsg["client_code"].asString();
                                     order.SecurityId = replmsg["isin_id"].asInt().ToString();

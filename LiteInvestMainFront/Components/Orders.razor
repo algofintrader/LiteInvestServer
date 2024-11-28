@@ -1,0 +1,97 @@
+﻿@using LiteInvestMainFront.Data
+@using LiteInvestServer.Entity
+@using LiteInvestServer.Helpers
+@using System.Timers
+@using PlazaEngine.Entity
+
+@implements IDisposable;
+
+<DxGrid 
+RowDoubleClick="OnRowClicked"
+CssClass="dxgrid"
+Data="@OrdersData"
+ShowAllRows="true"
+ColumnResizeMode="GridColumnResizeMode.NextColumn"
+TextWrapEnabled="false"
+ShowGroupPanel="false"
+HighlightRowOnHover="true"
+FocusedRowEnabled="true">
+
+    <Columns>
+        <DxGridDataColumn FieldName="ExchangeOrderId" Width="auto" />
+        <DxGridDataColumn FieldName="SecIsin" Width="auto" />
+        <DxGridDataColumn FieldName="State" Width="auto" />
+        <DxGridDataColumn FieldName="Side" Width="auto" />
+        <DxGridDataColumn FieldName="PriceOrder" Width="auto" />
+        <DxGridDataColumn FieldName="TypeOrder" Width="auto" />
+        <DxGridDataColumn FieldName="Volume" Width="auto" />
+        <DxGridDataColumn FieldName="VolumeExecuted" Width="auto" />
+    </Columns>
+
+</DxGrid> 
+
+@code {
+
+    List<Order> OrdersData { get; set; } = new List<Order>();
+    System.Timers.Timer timer;
+
+    [Parameter]
+    public ApiDataService apiDataService{ get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        LoadPoses();
+        return base.OnInitializedAsync();
+    }
+
+    public void Dispose()
+    {
+        if (timer != null)
+        {
+            timer.Stop();
+            timer.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Каким то макаром сервер выдает один и тот же ордер по 2 раза.. 
+    /// </summary>
+    Dictionary<string, Order> OrdersDictionary { get; set; } = new()
+
+    public async void LoadData()
+    {
+        var orders = await apiDataService.GetActiveOrders();
+
+        //TODO: Апи посылает повторно один и тот же ордер. 
+        if (orders != null)
+        {
+            OrdersData = orders;
+        }
+
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    public async void LoadPoses()
+    {
+        LoadData();
+        timer = Helper.CreateTimerAndStart(LoadData, 3000, true);
+        timer.Start();
+    }
+
+    public async void OnRowClicked(DevExpress.Blazor.GridRowClickEventArgs e)
+    {
+        try
+        {
+            var index = e.VisibleIndex;
+            await apiDataService.CancelOrder(OrdersData.ToArray()[index]);
+            
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+    }
+
+}

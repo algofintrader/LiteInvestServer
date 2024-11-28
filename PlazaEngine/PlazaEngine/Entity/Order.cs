@@ -107,11 +107,14 @@ namespace PlazaEngine.Entity
         [DataMember]
         public string SecurityId { get; set; }
 
-        /// <summary>
-        /// внутреннее для Артема
-        /// Пытаемя уже отменить ордер
-        /// </summary>
-        private bool cancellingOrder { get; set; }
+		[DataMember]
+		public string SecIsin { get; set; }
+
+		/// <summary>
+		/// внутреннее для Артема
+		/// Пытаемя уже отменить ордер
+		/// </summary>
+		private bool cancellingOrder { get; set; }
 
         /// <summary>
         /// дописано Артемом - 

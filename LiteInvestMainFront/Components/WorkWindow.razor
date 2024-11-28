@@ -420,6 +420,7 @@
 
 	static string plusHotKey = "Equal";
 	static string minusHotKey = "Minus";
+	static string cancelHotKey = "KeyC";
 
 	DxChart<TradeApi> Chart;
 
@@ -544,6 +545,14 @@
 	{
 		if(windowId!=WindowId)
 			return;
+
+		if(keyCode == cancelHotKey)
+		{
+			foreach (var order in Orders)
+			{
+				ApiDataService.CancelOrder(order.Value);
+			}
+		}
 
 		if (keyCode == plusHotKey)
 		{
@@ -941,7 +950,6 @@
 			RemoveOrderClick(item);
 			return Task.CompletedTask;
 		}
-
 		
 		var order = new ClientOrder()
 		{

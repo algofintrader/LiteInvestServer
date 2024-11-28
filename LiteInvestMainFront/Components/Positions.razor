@@ -1,5 +1,9 @@
 ﻿@using LiteInvestMainFront.Data
 @using LiteInvestServer.Entity
+@using LiteInvestServer.Helpers
+@using System.Timers
+
+@implements IDisposable;
 
 <DxGrid 
 
@@ -15,7 +19,8 @@ FocusedRowEnabled="true">
 
     <Columns>
         <DxGridDataColumn FieldName="secName" Width="auto"  />
-        <DxGridDataColumn FieldName="MaxOpened" Width="auto"  />
+        <DxGridDataColumn FieldName="PosValue" Width="auto" />
+        <DxGridDataColumn FieldName="MaxOpened" Width="auto" />
         <DxGridDataColumn FieldName="Side" Width="auto" />
         <DxGridDataColumn FieldName="AverageEntry" Width="auto" />
         <DxGridDataColumn FieldName="UnRealizedPnlPoints" Width="auto" />
@@ -27,6 +32,7 @@ FocusedRowEnabled="true">
 
     DxGrid gridPositions;
     List<Pos> OpenedPositions { get; set; }
+    System.Timers.Timer timer;
 
     [Parameter]
     public ApiDataService apiDataService{ get; set; }
@@ -37,14 +43,30 @@ FocusedRowEnabled="true">
         return base.OnInitializedAsync();
     }
 
-    public async void LoadPoses()
+    public void Dispose()
+    {
+        if (timer != null)
+        {
+            timer.Stop();
+            timer.Dispose();
+        }
+    }
+
+    public async void LoadData()
     {
         var positions = await apiDataService.GetPositions();
-        if(positions!=null)
+        if (positions != null)
         {
             OpenedPositions = positions;
         }
         InvokeAsync(StateHasChanged);
+    }
+
+    public async void LoadPoses()
+    {
+        LoadData();
+        timer = Helper.CreateTimerAndStart(LoadData, 3000, true);
+        timer.Start();
     }
 
 }

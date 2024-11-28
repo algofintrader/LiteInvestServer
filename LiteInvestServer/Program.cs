@@ -205,8 +205,12 @@ builder.Services.AddSingleton(_ =>
                     //собственно отправляем их 
                     foreach (var socket in secIdsubcription.Value)
                     {
-                       // LogMessageAsync($"{socket.Key} Sending pack of ticks");
-                        socket.Value.Send(serializedOrder);
+                        //TODO: временная заплатка
+                        if (socket.Value != null)
+                        {
+                            // LogMessageAsync($"{socket.Key} Sending pack of ticks");
+                            socket.Value.Send(serializedOrder);
+                        }
                     }
                 }
             }
@@ -241,7 +245,7 @@ builder.Services.AddSingleton(_ =>
                 Orders.TryAdd(username, new());
 
             Orders[username][plazaOrder.ExchangeOrderId] = plazaOrder;
-            LogMessageAsync($"Order add to DB {plazaOrder}");
+            LogMessageAsync($"Order add to DB {plazaOrder} id={plazaOrder.ExchangeOrderId}");
         }
         catch (Exception ex)
         {
@@ -263,6 +267,9 @@ builder.Services.AddSingleton(_ =>
             
             foreach (var connection in websockets)
             {
+                //TODO: временная проверка
+                if(connection.Value==null) continue;
+
                 plazaOrder.Error = reason;
                 var serializedOrder = JsonSerializer.Serialize(plazaOrder, serializer);
                 await connection.Value.Send(serializedOrder).ConfigureAwait(false);
@@ -295,7 +302,10 @@ builder.Services.AddSingleton(_ =>
 
             foreach (var websocket in websockets)
             {
-                var serialized = JsonSerializer.Serialize(orderbook, serializer);
+				//TODO: временная проверка
+				if (websocket.Value == null) continue;
+
+				var serialized = JsonSerializer.Serialize(orderbook, serializer);
                 websocket.Value.Send(serialized);
             }
 
@@ -661,7 +671,7 @@ common.MapPost("/Register", async (UserCredentials userCredentials) =>
     UsersContext.TryAdd(userCredentials.LoginEmail, new User(userCredentials.LoginEmail, userCredentials.Password)
     {
         Limit = 20000, 
-        CanTrade = false,
+        CanTrade = true,
         Admin = false,
     });
 
@@ -790,8 +800,17 @@ Trading.MapGet("/GetOpenPositions", async (HttpContext httpContext) =>
         if (!OpenedPositions.ContainsKey(userName))
             return Results.Empty;
 
+
+
         if (OpenedPositions.ContainsKey(userName))
-            return Results.Json(OpenedPositions[userName].Values.ToList());
+        {
+
+            if(OpenedPositions[userName].Values==null || OpenedPositions[userName].Values.Count==0)
+                return Results.Empty;
+
+			return Results.Json(OpenedPositions[userName].Values.ToList());
+		}
+         
 
         //if (OpenedPositions.ContainsKey(userName) && OpenedPositions[userName].ContainsKey(sec.id) && OpenedPositions[userName][sec.id] != null)
         //        return Results.Json(new List<Pos>() { OpenedPositions[userName][sec.id] });
@@ -884,7 +903,14 @@ Trading.MapGet("/GetOrders", async (HttpContext httpContext) =>
 	        return Results.Empty;
         //проверка, а есть ли такой юзер и может ли он торговать
 
-        return Results.Json(Orders[userName].Values);
+        //TODO: здесь нужна невроятная оптимизация 
+
+        var result = Orders[userName].Values.Where(o => o.State == Order.OrderStateType.Activ || o.State == Order.OrderStateType.Partial);
+
+        if (result == null)
+            return Results.Empty;
+
+		return Results.Json(result);
     }
     catch (Exception ex)
     {

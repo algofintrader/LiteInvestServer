@@ -186,7 +186,7 @@ namespace LiteInvestMainFront.Data
 			//TODO: Сделать десериализацию нормальную 
 			//var answer = JsonConvert.DeserializeObject(response.Content);
 		}
-		public async Task<List<Order>> GetOrders()
+		public async Task<List<Order>> GetActiveOrders()
 		{
 
 			try
