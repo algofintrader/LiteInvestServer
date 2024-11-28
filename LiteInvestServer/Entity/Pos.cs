@@ -98,7 +98,8 @@ namespace LiteInvestServer.Entity
     [DataContract]
     public class Pos
     {
-        private decimal _comission = 0.02m / 100;
+		[DataMember]
+		public decimal comissionInside { get; set; } = 0.02m / 100;
 
         TradeCollection OpenTrades = new();
         TradeCollection CloseTrades = new();
@@ -111,56 +112,55 @@ namespace LiteInvestServer.Entity
 
         [JsonIgnore]
         [DataMember]
-        public decimal CurrentPos { get; private set; } = 0;
+        public decimal CurrentPos { get; set; } = 0;
 
-        [DataMember]
         public decimal PosValue { get => Side == Side.Buy? CurrentPos : - CurrentPos; }
 
         [DataMember]
-        public Side Side { get; private set; }
+        public Side Side { get;  set; }
 
-        [DataMember]
+        
         public string StringSide { get => Side.ToString(); }
 
         [DataMember]
-        public decimal AverageEntry{ get; private set; }
+        public decimal AverageEntry{ get; set; }
 
         [DataMember]
-        public DateTime OpenTime { get; private set; }
+        public DateTime OpenTime { get; set; }
 
         [DataMember]
-        public DateTime CloseTime { get; private set; }
+        public DateTime CloseTime { get;  set; }
 
         [DataMember]
-        public decimal AverageExit { get; private set; }
+        public decimal AverageExit { get;  set; }
 
         [DataMember]
-        public bool Open { get; private set; }
+        public bool Open { get;  set; }
 
         [DataMember]
         public decimal MaxOpened { get; set; }
 
-        [DataMember]
-        public decimal Comission => MaxOpened * 2 * _comission;
+       
+        public decimal Comission => MaxOpened * 2 * comissionInside;
 
         /// <summary>
         /// сразу считает 
         /// </summary>
         [DataMember]
-        public decimal RealizedPnl { get; private set; }
+        public decimal RealizedPnl { get;  set; }
 
         /// <summary>
         /// Прибыль в пунтках
         /// </summary>
         [DataMember]
-        public decimal RealizedPnlPoints { get; private set; }
+        public decimal RealizedPnlPoints { get;  set; }
 
 
         [DataMember]
-        public decimal UnRealizedPnl { get; private set; }
+        public decimal UnRealizedPnl { get;  set; }
 
         [DataMember]
-        public decimal UnRealizedPnlPoints { get; private set; }
+        public decimal UnRealizedPnlPoints { get;  set; }
 
         object tradelock = new object();
 

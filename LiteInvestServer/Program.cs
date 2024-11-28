@@ -103,21 +103,38 @@ builder.Services.AddSingleton(_ =>
     }*/
 
 
-if (!Directory.Exists(data))
+    if (!Directory.Exists(data))
         System.IO.Directory.CreateDirectory(directoryInfo.ToString());
 
 
-    //TODO: Перепишу всю эту часть, когда сделаю нормальное сохранение. 
+	//TODO: Перепишу всю эту часть, когда сделаю нормальное сохранение. 
 
-    Securities = Helper.ReadXml<ConcurrentDictionary<string, SecurityApi>>(securitiesBdName);
-    UsersContext = Helper.ReadXml<ConcurrentDictionary<string, User>>(userdBdName);
-    Orders = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Order>>>(ordersBdName);
-    Trades = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Trade>>>(tradesBdName);
+	if (File.Exists(securitiesBdName))
+		Securities = Helper.ReadXml<ConcurrentDictionary<string, SecurityApi>>(securitiesBdName);
+
+	if (File.Exists(userdBdName))
+		UsersContext = Helper.ReadXml<ConcurrentDictionary<string, User>>(userdBdName);
+
+	if (File.Exists(ordersBdName))
+		Orders = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Order>>>(ordersBdName);
+
+
+        //Trades = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Trade>>>(tradesBdName);
+        
+    if(File.Exists(openedpositionsdbname))
     OpenedPositions = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, Pos>>>(openedpositionsdbname);
     
-    //ClosedPositions = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, List<Pos>>>>($"{data}\\{nameof(ClosedPositions)}.xml");
 
-    string admin = "adminadminov";
+    
+    //тестовое сохраннение 
+    //OpenedPositions = new ConcurrentDictionary<string, ConcurrentDictionary<string, Pos>>();
+    //OpenedPositions.TryAdd("somekey", new ConcurrentDictionary<string, Pos>());
+    //OpenedPositions["somekey"].TryAdd("pos1", new Pos() { secid = "1", secName = "pa" });
+
+
+	//ClosedPositions = Helper.ReadXml<ConcurrentDictionary<string, ConcurrentDictionary<string, List<Pos>>>>($"{data}\\{nameof(ClosedPositions)}.xml");
+
+	string admin = "adminadminov";
 
     if (!UsersContext.ContainsKey(admin))
         UsersContext.TryAdd(admin, new User(admin, "adminPass#1R") { Admin = true, CanTrade = false });
@@ -934,11 +951,10 @@ void SaveDb()
         try
         {
             Helper.SaveXml(Securities, securitiesBdName);
-            Helper.SaveXml(Trades, tradesBdName);
+            //Helper.SaveXml(Trades, tradesBdName);
             Helper.SaveXml(Orders, ordersBdName);
             Helper.SaveXml(UsersContext, userdBdName);
-
-            Helper.SaveXml(OpenedPositions, openedpositionsdbname);
+             Helper.SaveXml(OpenedPositions, openedpositionsdbname);
             //Helper.SaveXml(ClosedPositions, $"{data}\\{nameof(ClosedPositions)}.xml");
         }
         catch (Exception ex)

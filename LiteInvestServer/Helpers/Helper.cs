@@ -7,7 +7,7 @@ namespace LiteInvestServer.Helpers
     {
         public static void SaveXml<T>(T serializableObject, string name)
         {
-            var serializer = new DataContractSerializer(typeof(T));
+
             var settings = new XmlWriterSettings()
             {
                 Indent = true,
@@ -15,7 +15,7 @@ namespace LiteInvestServer.Helpers
             };
 
             var writer = XmlWriter.Create(name, settings);
-            serializer.WriteObject(writer, serializableObject);
+            new DataContractSerializer(typeof(T)).WriteObject(writer, serializableObject);
             writer.Close();
 
         }
@@ -41,6 +41,9 @@ namespace LiteInvestServer.Helpers
             }
             catch (Exception ex)
             {
+                //TODO: Крайне жесткое место, если вылетает ошибка, то это пизда.
+                //Диспоуза нет и потом запись в это же место не работает лол. 
+                Console.WriteLine($"Fatal error reading {name}");
                 return (T)Activator.CreateInstance(typeof(T));
             }
         }
