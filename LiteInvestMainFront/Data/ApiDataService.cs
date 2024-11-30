@@ -72,11 +72,11 @@ namespace LiteInvestMainFront.Data
 		public DateTime expirationTime { get; set; }
 	}
 
-	public class ApiDataService
+	public class ApiDataService:IDisposable
 	{
 		string mainadress = "http://188.72.77.60:3000/";
 		Uri websocketurl = new Uri("ws://188.72.77.60:5000/");
-		WebsocketClient websocketClient;
+		//WebsocketClient websocketClient;
 
 		RestClient client;
 
@@ -109,6 +109,7 @@ namespace LiteInvestMainFront.Data
 		public Action<Order> NewMyOrder { get; set; }
 
 		public List<Order> AllActiveOrders { get; set; }
+		public WebsocketClient orderwebcocketclient { get; private set; }
 
 		public ApiDataService()
 		{
@@ -143,22 +144,25 @@ namespace LiteInvestMainFront.Data
 
 		public async Task<Order?> SendOrder(ClientOrder order)
 		{
-
-			var request = new RestRequest(sendOrder);
-
-			request.AddHeader("liteinvest", token);
-			request.AddBody(order);
-
-			var response = await client.PostAsync(request);
-
-			if (!response.IsSuccessful)
+			try
 			{
-				Console.WriteLine(response.ErrorMessage);
+				var request = new RestRequest(sendOrder);
+
+				request.AddHeader("liteinvest", token);
+				request.AddBody(order);
+
+				var response = await client.PostAsync(request);
+
+				if (!response.IsSuccessful)
+				{
+					Console.WriteLine(response.ErrorMessage);
+				}
+
+				var r = JsonConvert.DeserializeObject<Order>(response.Content);
+
+				return r;
 			}
-
-			var r = JsonConvert.DeserializeObject<Order>(response.Content);
-
-			return r;
+			catch (Exception ex) { Console.WriteLine(ex.Message); return null; }
 
 			//TODO: Сделать десериализацию нормальную 
 			//var answer = JsonConvert.DeserializeObject(response.Content);
@@ -166,22 +170,25 @@ namespace LiteInvestMainFront.Data
 
 		public async Task<ClientOrder?> CancelOrder(Order order)
 		{
-
-			var request = new RestRequest(cancelOrder);
-
-			request.AddHeader("liteinvest", token);
-			request.AddBody(order);
-
-			var response = await client.PostAsync(request);
-
-			if (!response.IsSuccessful)
+			try
 			{
-				Console.WriteLine(response.ErrorMessage);
+				var request = new RestRequest(cancelOrder);
+
+				request.AddHeader("liteinvest", token);
+				request.AddBody(order);
+
+				var response = await client.PostAsync(request);
+
+				if (!response.IsSuccessful)
+				{
+					Console.WriteLine(response.ErrorMessage);
+				}
+
+				var r = JsonConvert.DeserializeObject<ClientOrder>(response.Content);
+
+				return r;
 			}
-
-			var r = JsonConvert.DeserializeObject<ClientOrder>(response.Content);
-
-			return r;
+			catch (Exception ex) { Console.WriteLine(ex.Message); return null; }
 
 			//TODO: Сделать десериализацию нормальную 
 			//var answer = JsonConvert.DeserializeObject(response.Content);
@@ -208,6 +215,7 @@ namespace LiteInvestMainFront.Data
 			}
 			catch (Exception ex)
 			{
+				Console.WriteLine($"{ex.Message}");
 				return null;
 			}
 
@@ -237,6 +245,7 @@ namespace LiteInvestMainFront.Data
 			}
 			catch (Exception ex)
 			{
+				Console.WriteLine(ex.Message);
 				return null;
 			}
 
@@ -345,35 +354,42 @@ namespace LiteInvestMainFront.Data
 
 		public async Task<WebsocketClient> SubcribeTick(string secid)
 		{
-
-			var webscoketrequest =
-				websocketurl
-					.AddParameter("stream", "public_trades")
-					.AddParameter("sec_id", secid)
-					.AddParameter("liteinvest", token);
-
-
-			websocketClient = new WebsocketClient(webscoketrequest);
-
-			websocketClient.MessageReceived.Subscribe(msg =>
+			try
 			{
-				try
+				var webscoketrequest =
+					websocketurl
+						.AddParameter("stream", "public_trades")
+						.AddParameter("sec_id", secid)
+						.AddParameter("liteinvest", token);
+
+
+				var websocketClient = new WebsocketClient(webscoketrequest);
+
+				websocketClient.MessageReceived.Subscribe(msg =>
 				{
-					// var ticks = JsonConvert.DeserializeObject<List<Trade>>(msg.Text);
-					var ticks = JsonConvert.DeserializeObject<List<TradeApi>>(msg.Text);
-					NewTicks?.Invoke(ticks[0].SecurityId, ticks);
-				}
-				catch (Exception ex)
-				{
-					Console.WriteLine(ex.ToString());
-				}
+					try
+					{
+						// var ticks = JsonConvert.DeserializeObject<List<Trade>>(msg.Text);
+						var ticks = JsonConvert.DeserializeObject<List<TradeApi>>(msg.Text);
+						NewTicks?.Invoke(ticks[0].SecurityId, ticks);
+					}
+					catch (Exception ex)
+					{
+						Console.WriteLine(ex.ToString());
+					}
 
-			});
+				});
 
-			Console.WriteLine(webscoketrequest);
+				Console.WriteLine(webscoketrequest);
 
-			await websocketClient.Start();
-			return websocketClient;
+				await websocketClient.Start();
+				return websocketClient;
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine(ex.ToString());
+				return null;
+			}
 
 		}
 
@@ -386,77 +402,108 @@ namespace LiteInvestMainFront.Data
 		/// <returns></returns>
 		public async Task<WebsocketClient> SubscribeOrderBook(string secid)
 		{
-			var webscoketrequest =
-				websocketurl
-					.AddParameter("stream", "orderbook")
-					.AddParameter("sec_id", secid)
-					.AddParameter("liteinvest", token);
-
-			websocketClient = new WebsocketClient(webscoketrequest);
-
-			websocketClient.MessageReceived.Subscribe(async msg =>
+			try
 			{
-				try
+				var webscoketrequest =
+					websocketurl
+						.AddParameter("stream", "orderbook")
+						.AddParameter("sec_id", secid)
+						.AddParameter("liteinvest", token);
+
+				var websocketClient = new WebsocketClient(webscoketrequest);
+
+				websocketClient.MessageReceived.Subscribe(async msg =>
 				{
-					//почему то не хочет десериализовывать стакан нормальнь
-					var md = JsonConvert.DeserializeObject<MarketDepth>(msg.Text,
-						new JsonSerializerSettings() { CheckAdditionalContent = true, });
+					try
+					{
+						//почему то не хочет десериализовывать стакан нормальнь
+						var md = JsonConvert.DeserializeObject<MarketDepth>(msg.Text,
+							new JsonSerializerSettings() { CheckAdditionalContent = true, });
 
-					ProcessOrderBook(md);
-				}
-				catch (Exception ex)
-				{
+						ProcessOrderBook(md);
+					}
+					catch (Exception ex)
+					{
 
-				}
-			});
+					}
+				});
 
 
-			Console.WriteLine(webscoketrequest);
+				Console.WriteLine(webscoketrequest);
 
-			await websocketClient.Start();
-			return websocketClient;
+				await websocketClient.Start();
+				return websocketClient;
+			}
+			catch (Exception ex) 
+			{
+				Console.WriteLine(ex.Message);
+				return null;
+			}
 		}
 
 		bool ordersubscribed = false;
 
+		public async void StopPrivateOrderSubscription()
+		{
+			try
+			{
+				if (orderwebcocketclient != null)
+					orderwebcocketclient.StopOrFail(status: System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "");
+			}
+			catch (Exception ex) 
+			{
+			Console.WriteLine($"{ex.Message}");
+			}
+		}
+
+
 		public async Task<WebsocketClient> SubscribePrivateOrders()
 		{
-
-			if (ordersubscribed)
-				return null;
-
-
-			ordersubscribed = true;
-
-			var webscoketrequest =
-				websocketurl
-					.AddParameter("stream", "my_orders")
-					.AddParameter("liteinvest", token);
-
-			websocketClient = new WebsocketClient(webscoketrequest);
-
-			Console.WriteLine("Order socket "+ webscoketrequest);
-
-			websocketClient.MessageReceived.Subscribe(async msg =>
+			try
 			{
-				try
+				if (ordersubscribed)
+					return orderwebcocketclient;
+
+				if (orderwebcocketclient != null)
+					return orderwebcocketclient;
+
+				ordersubscribed = true;
+
+				var webscoketrequest =
+					websocketurl
+						.AddParameter("stream", "my_orders")
+						.AddParameter("liteinvest", token);
+
+				orderwebcocketclient = new WebsocketClient(webscoketrequest);
+
+				Console.WriteLine("Order socket " + webscoketrequest);
+
+				orderwebcocketclient.MessageReceived.Subscribe(async msg =>
 				{
-					//почему то не хочет десериализовывать стакан нормальнь
-					var order = JsonConvert.DeserializeObject<Order>(msg.Text, new JsonSerializerSettings() { CheckAdditionalContent = true, });
-					NewMyOrder?.Invoke(order);
+					try
+					{
+						//почему то не хочет десериализовывать стакан нормальнь
+						var order = JsonConvert.DeserializeObject<Order>(msg.Text, new JsonSerializerSettings() { CheckAdditionalContent = true, });
+						NewMyOrder?.Invoke(order);
 
-				}
-				catch (Exception ex)
-				{
-					Console.WriteLine(ex.Message);
-				}
-			});
+					}
+					catch (Exception ex)
+					{
+						Console.WriteLine(ex.Message);
+					}
+				});
 
 
-			Console.WriteLine(webscoketrequest);
+				Console.WriteLine("Subcribing OrderBook ->" + webscoketrequest);
 
-			await websocketClient.Start();
-			return websocketClient;
+				await orderwebcocketclient.Start();
+				return orderwebcocketclient;
+			}
+			catch(Exception ex)
+			{
+				Console.WriteLine(ex.Message);
+				return null;
+			}
 		}
 
 		public void StopOrderBookProcesor(string secId)
@@ -537,7 +584,9 @@ namespace LiteInvestMainFront.Data
 			return 1;
 		}
 
-
-
+		public void Dispose()
+		{
+			GC.SuppressFinalize(this);
+		}
 	}
 }

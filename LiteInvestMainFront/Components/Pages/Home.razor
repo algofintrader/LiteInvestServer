@@ -9,7 +9,7 @@
 
 @inject IJSRuntime js;
 @inject JsInteropService jsInteropService;
-
+@implements IDisposable;
 @using LiteInvestMainFront.Components.Layout
 @rendermode InteractiveServer
 
@@ -18,75 +18,75 @@
 @inject ApiDataService _apidataservice
 
 <style>
-	.internalSearch {
-	margin: 10px
-	}
+    .internalSearch {
+    margin: 10px
+    }
 
-	.stacklayout-item {
-	font-size: 1.2em;
-	font-weight: 500;
-	text-align: center;
-	height: 100%;
-	padding: 0.5rem;
-	text-align: center;
-	position: relative;
-	z-index: 0;
-	display: flex;
-	align-items: flex-start;
-	justify-content: flex-start;
-	}
+    .stacklayout-item {
+    font-size: 1.2em;
+    font-weight: 500;
+    text-align: center;
+    height: 100%;
+    padding: 0.5rem;
+    text-align: center;
+    position: relative;
+    z-index: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    }
 
-	.stacklayout-item:before {
-	content: " ";
-	position: absolute;
-	z-index: -1;
-	width: 100%;
-	height: 100%;
-	left: 0;
-	top: 0;
-	opacity: 0.4;
-	}
+    .stacklayout-item:before {
+    content: " ";
+    position: absolute;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    opacity: 0.4;
+    }
 
-	.stacklayout-header:before {
-	background-color: var(--bs-red);
-	}
+    .stacklayout-header:before {
+    background-color: var(--bs-red);
+    }
 
-	.stacklayout-content:before {
-	background-color: var(--bs-yellow);
-	}
+    .stacklayout-content:before {
+    background-color: var(--bs-yellow);
+    }
 
-	.stacklayout-left-side-bar:before {
-	background-color: var(--bs-green);
-	}
+    .stacklayout-left-side-bar:before {
+    background-color: var(--bs-green);
+    }
 
-	.stacklayout-right-side-bar:before {
-	background-color: var(--bs-info);
-	}
+    .stacklayout-right-side-bar:before {
+    background-color: var(--bs-info);
+    }
 
-	.stacklayout-footer:before {
-	background-color: var(--bs-blue);
-	opacity: 0.5;
-	}
+    .stacklayout-footer:before {
+    background-color: var(--bs-blue);
+    opacity: 0.5;
+    }
 
-	.k-tilelayout-item-header.k-card-header {
-	padding-block: 4px !important;
-	padding-inline: 4px !important;
-	}
+    .k-tilelayout-item-header.k-card-header {
+    padding-block: 4px !important;
+    padding-inline: 4px !important;
+    }
 
-	.buttonclose {
-	cursor: pointer;
-	float: right;
-	}
+    .buttonclose {
+    cursor: pointer;
+    float: right;
+    }
 
-	@@media (max-width: 575.98px) {
-	.stacklayout-item {
-	font-size: 0.9em;
-	}
-	}
+    @@media (max-width: 575.98px) {
+    .stacklayout-item {
+    font-size: 0.9em;
+    }
+    }
 
-	.selected {
-	border: 2px solid #FFFFFF !important; /* Пример выделения границей */
-	}
+    .selected {
+    border: 2px solid #FFFFFF !important; /* Пример выделения границей */
+    }
 
 </style>
 
@@ -99,53 +99,53 @@ OnChanged="(Customer customer) => OnAutoCompleteChanged(customer)" />-->
 
 
 <nav class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
-	<div class="container-fluid">
-		<a class="navbar-brand" href="#">LiteInvest</a>
-		<form class="d-flex internalSearch" role="search">
-			<DxComboBox @ref=combobox
-			Data="@Instruments"
-			@bind-Value="@securitySelected"
-			TextFieldName="@nameof(securitySelected.Isin)"
-			SearchMode="@ListSearchMode.AutoSearch"
-			SearchFilterCondition="@ListSearchFilterCondition.Contains"
-			ListRenderMode="ListRenderMode.Entire"
-			CssClass="cw-480"
-			InputId="cbVirtualScrolling" />
-			<!--<AutoComplete @bind-Value="securitySelected"
-			TItem="SecurityApi"
-			DataProvider="InstrumentsDataProvider"
-			PropertyName="Isin"
-			Placeholder="Выберите инструмент"
-			OnChanged="(SecurityApi customer) => OnAutoCompleteChanged(customer)" />-->
-			<!--<input class="form-control me-2" type="search" placeholder="Инструменты"  aria-label="Search">
-			<button class="btn btn-outline-success" type="submit">Search</button>-->
-		</form>
-		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-			<span class="navbar-toggler-icon"></span>
-		</button>
-		<div class="collapse navbar-collapse" id="navbarSupportedContent">
-			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
-				<li class="nav-item dropdown">
-					<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-						Торговля
-					</a>
-					<ul class="dropdown-menu">
-						<li><a class="dropdown-item" href="#" onclick="@PosClick">Открытые Позиции</a></li>
-						<li><hr class="dropdown-divider"></li>
-						<li><a class="dropdown-item" href="#" onclick="@OrdersWindowClick">Активные ордера</a></li>
-					</ul>
-				</li>
-			</ul>
-			<ul class="nav navbar-nav ml-auto">
-				<!--<li class="nav-item">
-				<a class="nav-link" href="#"><span class="fas fa-user"></span> Sign Up</a>
-				</li>-->
-				<li class="nav-item">
-					<a class="nav-link" href="#" onclick="@OnLogin"><span class="fas fa-sign-in-alt"></span>@textlogin</a>
-				</li>
-			</ul>
-		</div>
-	</div>
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">LiteInvest</a>
+        <form class="d-flex internalSearch" role="search">
+            <DxComboBox @ref=combobox
+            Data="@Instruments"
+            @bind-Value="@securitySelected"
+            TextFieldName="@nameof(securitySelected.Isin)"
+            SearchMode="@ListSearchMode.AutoSearch"
+            SearchFilterCondition="@ListSearchFilterCondition.Contains"
+            ListRenderMode="ListRenderMode.Entire"
+            CssClass="cw-480"
+            InputId="cbVirtualScrolling" />
+            <!--<AutoComplete @bind-Value="securitySelected"
+            TItem="SecurityApi"
+            DataProvider="InstrumentsDataProvider"
+            PropertyName="Isin"
+            Placeholder="Выберите инструмент"
+            OnChanged="(SecurityApi customer) => OnAutoCompleteChanged(customer)" />-->
+            <!--<input class="form-control me-2" type="search" placeholder="Инструменты"  aria-label="Search">
+            <button class="btn btn-outline-success" type="submit">Search</button>-->
+        </form>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Торговля
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="@PosClick">Открытые Позиции</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="@OrdersWindowClick">Активные ордера</a></li>
+                    </ul>
+                </li>
+            </ul>
+            <ul class="nav navbar-nav ml-auto">
+                <!--<li class="nav-item">
+                <a class="nav-link" href="#"><span class="fas fa-user"></span> Sign Up</a>
+                </li>-->
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="@OnLogin"><span class="fas fa-sign-in-alt"></span>@textlogin</a>
+                </li>
+            </ul>
+        </div>
+    </div>
 </nav>
 
 
@@ -169,13 +169,13 @@ MinHeight="200"
 MaxWidth="800"
 MaxHeight="500"
 @bind-Visible=windowVisible>
-	<BodyContentTemplate>
-		<LogInForm @ref="logform" />
-	</BodyContentTemplate>
+    <BodyContentTemplate>
+        <LogInForm @ref="logform" />
+    </BodyContentTemplate>
 
-	<FooterContentTemplate>
-		<DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Primary" Text="OK" Click="@OnLoginClick" />
-	</FooterContentTemplate>
+    <FooterContentTemplate>
+        <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Primary" Text="OK" Click="@OnLoginClick" />
+    </FooterContentTemplate>
 </DxWindow>
 
 
@@ -191,9 +191,9 @@ MinHeight="200"
 MaxWidth="800"
 MaxHeight="500"
 @bind-Visible=poswindowVisible>
-	<BodyContentTemplate>
-		<Positions apiDataService="_apidataservice" />
-	</BodyContentTemplate>
+    <BodyContentTemplate>
+        <Positions apiDataService="_apidataservice" />
+    </BodyContentTemplate>
 </DxWindow>
 
 <DxWindow 
@@ -208,9 +208,9 @@ MinHeight="200"
 MaxWidth="800"
 MaxHeight="500"
 @bind-Visible=orderswindowsVisible>
-	<BodyContentTemplate>
-		<Orders apiDataService="_apidataservice" />
-	</BodyContentTemplate>
+    <BodyContentTemplate>
+        <Orders apiDataService="_apidataservice" />
+    </BodyContentTemplate>
 </DxWindow>
 
 <TelerikTileLayout Columns="RegisteredInstruments.Count"
@@ -222,34 +222,34 @@ RowSpacing="0px"
 Resizable="true"
 OnReorder="@OnReorderHandler"
 >
-	<TileLayoutItems >
-		@foreach (var security in RegisteredInstruments)
-		{
-			<TileLayoutItem >
-				<HeaderTemplate>
-					@security.Isin 
-					<svg @key="security.SpecialHash" class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
-						<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"/>
-						<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"/>
-					</svg>
-				</HeaderTemplate>
-				<Content>
-					<div @onclick="@((e) => {@js.InvokeVoidAsync(" toggleSelected", e);})" class="tile-content">
-						<WorkWindow @key="security.SpecialHash" 
+    <TileLayoutItems >
+        @foreach (var security in RegisteredInstruments)
+        {
+            <TileLayoutItem >
+                <HeaderTemplate>
+                    @security.Isin 
+                    <svg @key="security.SpecialHash" class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
+                        <line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"/>
+                        <line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"/>
+                    </svg>
+                </HeaderTemplate>
+                <Content>
+                    <div @onclick="@((e) => {@js.InvokeVoidAsync(" toggleSelected", e);})" class="tile-content">
+                        <WorkWindow @key="security.SpecialHash" 
 
-						Data="GetBuffersData(security.id)"
-						start="GetBuffersData(security.id).start"
-						dt="GetBuffersData(security.id).dt" 
-						levelsFromBest="GetBuffersData(security.id).levelsFromBest" 
-						minchart="GetBuffersData(security.id).minchart"
-						maxchart="GetBuffersData(security.id).maxchart"
-						OnClosing="OnClosingWorkingWindow" secutityMain="@security" 
-						ApiDataService="@_apidataservice" />
-					</div>
-				</Content>
-			</TileLayoutItem>
-		}
-	</TileLayoutItems>
+                        Data="GetBuffersData(security.id)"
+                        start="GetBuffersData(security.id).start"
+                        dt="GetBuffersData(security.id).dt" 
+                        levelsFromBest="GetBuffersData(security.id).levelsFromBest" 
+                        minchart="GetBuffersData(security.id).minchart"
+                        maxchart="GetBuffersData(security.id).maxchart"
+                        OnClosing="OnClosingWorkingWindow" secutityMain="@security" 
+                        ApiDataService="@_apidataservice" />
+                    </div>
+                </Content>
+            </TileLayoutItem>
+        }
+    </TileLayoutItems>
 </TelerikTileLayout>
 
 @* <DxStackLayout CssClass="w-100 ch-480" Orientation="Orientation.Horizontal">
@@ -278,223 +278,252 @@ OnReorder="@OnReorderHandler"
 
 
 
-	public class Scale
-	{
-		public string Value { get; set; }
-	}
+    public class Scale
+    {
+        public string Value { get; set; }
+    }
 
-	DxComboBox<SecurityApi, SecurityApi> combobox;
+    DxComboBox<SecurityApi, SecurityApi> combobox;
 
-	public List<Scale> Scales = new();
-	public Scale selectedvalue;
+    public List<Scale> Scales = new();
+    public Scale selectedvalue;
 
-	string textlogin = "Войти";
-	bool loadingLogIn;
+    string textlogin = "Войти";
+    bool loadingLogIn;
 
-	DxWindow windowRef;
-	bool windowVisible;
+    DxWindow windowRef;
+    bool windowVisible;
 
-	bool poswindowVisible;
-	bool orderswindowsVisible;
+    bool poswindowVisible;
+    bool orderswindowsVisible;
 
-	LogInForm logform;
+    LogInForm logform;
 
-	private SecurityApi _securitySelected;
-	private SecurityApi securitySelected
-	{
-		get
-		{
-			return _securitySelected;
-		}
-		set
-		{
-			_securitySelected = value;
-			OnAutoCompleteChanged(value);
+    private SecurityApi _securitySelected;
+    private SecurityApi securitySelected
+    {
+        get
+        {
+            return _securitySelected;
+        }
+        set
+        {
+            _securitySelected = value;
+            OnAutoCompleteChanged(value);
 
-		}
-	}
-
-
-	protected async override Task OnInitializedAsync()
-	{
-		if (jsInteropService.ServiceObjectDotNetReference != null)
-		{
-			//	js.InvokeVoidAsync("setDonNetObjectReference", jsInteropService.ServiceObjectDotNetReference);
-		}
-
-	}
-
-	protected override void OnAfterRender(bool firstRender)
-	{
-		if(firstRender)
-		{
-			js.InvokeVoidAsync("setDonNetObjectReference", jsInteropService.ServiceObjectDotNetReference);
-		}
-
-		base.OnAfterRender(firstRender);
-	}
-
-	public async Task OnClosingMain(SecurityApi sec)
-	{
-		try
-		{
-			await _apidataservice.CloseInstrument(sec);
-			var index = RegisteredInstruments.FindIndex(s => s.SpecialHash == sec.SpecialHash);
-			RegisteredInstruments.RemoveAt(index);
-
-		}
-		catch (Exception ex)
-		{
-
-		}
+        }
+    }
 
 
+    protected async override Task OnInitializedAsync()
+    {
+        if (jsInteropService.ServiceObjectDotNetReference != null)
+        {
+            //	js.InvokeVoidAsync("setDonNetObjectReference", jsInteropService.ServiceObjectDotNetReference);
+        }
 
-		// Remove tile with the given ID
-		//RegisteredInstruments.Remove(instrument);
-	}
+    }
 
-	public IEnumerable<SecurityApi>? Instruments = new List<SecurityApi>();
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if(firstRender)
+        {
+            js.InvokeVoidAsync("setDonNetObjectReference", jsInteropService.ServiceObjectDotNetReference);
+        }
 
-	List<SecurityApi> RegisteredInstruments = new();
+        base.OnAfterRender(firstRender);
+    }
 
+    public async Task OnClosingMain(SecurityApi sec)
+    {
+        try
+        {
+            //await _apidataservice.CloseInstrument(sec);
+            var index = RegisteredInstruments.FindIndex(s => s.SpecialHash == sec.SpecialHash);
+            RegisteredInstruments.RemoveAt(index);
 
-	Task OnLogin()
-	{
-		windowVisible = true;
-		return Task.CompletedTask;
-	}
+        }
+        catch (Exception ex)
+        {
 
-	Task OrdersWindowClick()
-	{
-		orderswindowsVisible = true;
-		return Task.CompletedTask;
-	}
-
-	Task PosClick()
-	{
-		poswindowVisible = true;
-		return Task.CompletedTask;
-	}
-
-	/*
-	private IEnumerable<Customer> GetCustomers()
-		{
-		return new List<Customer>
-			{
-			new(1, "Pich S"),
-			new(2, "sfh Sobi"),
-		};
-	}*/
-
-	ConcurrentDictionary<string,BufferData> bufferDatas = new ();
-
-	//ConcurrentDictionary<string, List<TradeApi>> TicksDictionary = new();
-
-	public BufferData GetBuffersData(string secid)
-	{
-		if (!bufferDatas.ContainsKey(secid))
-			bufferDatas.TryAdd(secid, new BufferData());
-
-		return bufferDatas[secid];
-	}
-
-	/*
-	public List<TradeApi> GetTicks(string secid)
-		{
-		if (!TicksDictionary.ContainsKey(secid))
-			TicksDictionary.TryAdd(secid, new List<TradeApi>());
-
-		return TicksDictionary[secid];
-	}*/
-
-	private void OnAutoCompleteChanged(SecurityApi securityApi)
-	{
-
-		if (securityApi == null)
-			return;
-
-		var clone = (SecurityApi) securityApi.Clone();
-		clone.SpecialHash = DateTime.Now.GetHashCode().ToString();
+        }
 
 
-		//_apidataservice.OpenInstrument(clone);
-		OpenInstrument(clone);
 
-	}
+        // Remove tile with the given ID
+        //RegisteredInstruments.Remove(instrument);
+    }
 
-	private void OpenInstrument(SecurityApi sec)
-	{
-		RegisteredInstruments.Add(sec);
-		Console.WriteLine($"'{sec.Isin} hash = {sec.SpecialHash}' registered.");
-		InvokeAsync(StateHasChanged);
-	}
+    public IEnumerable<SecurityApi>? Instruments = new List<SecurityApi>();
+
+    List<SecurityApi> RegisteredInstruments = new();
 
 
-	private async void OnLoginClick(MouseEventArgs obj)
-	{
-		if (logform != null)
-		{
-			loadingLogIn =true;
-			var res = await _apidataservice.LogIn(logform.Email, logform.pass);
-			Instruments = await _apidataservice.GetInstruments();
+    Task OnLogin()
+    {
+        windowVisible = true;
+        return Task.CompletedTask;
+    }
 
-			var myinstruments = await _apidataservice.GetUserInstruments();
+    Task OrdersWindowClick()
+    {
+        orderswindowsVisible = true;
+        return Task.CompletedTask;
+    }
 
-			//TODO: Косячит и апи надо переписывать
-			// if (myinstruments != null)
-			// {
-			// 	foreach (var instrument in myinstruments)
-			// 	{
-			// 		OpenInstrument(instrument);
-			// 	}
-			// }
+    Task PosClick()
+    {
+        poswindowVisible = true;
+        return Task.CompletedTask;
+    }
 
-			Console.WriteLine($"Loaded instruments {Instruments.Count()}");
+    /*
+    private IEnumerable<Customer> GetCustomers()
+        {
+        return new List<Customer>
+        {
+        new(1, "Pich S"),
+    new(2, "sfh Sobi"),
+    };
+    }*/
 
-			// var orders = await _apidataservice.GetActiveOrders();
+    ConcurrentDictionary<string,BufferData> bufferDatas = new ();
 
-			// if (orders != null && orders.Count!=0)
-			// {
-			// 	_apidataservice.AllActiveOrders = orders.Where(o => o.State== Order.OrderStateType.Activ).ToList();
+    //ConcurrentDictionary<string, List<TradeApi>> TicksDictionary = new();
 
-			// 	Console.WriteLine($"Loaded Active Orders {_apidataservice.AllActiveOrders}");
-			// 	// foreach (var order in _apidataservice.AllActiveOrders)
-			// 	// {
-			// 	// 	Console.WriteLine($"sec ={order.SecurityId} price={order.PriceOrder} side= {order.State} ");
-			// 	// 	Console.WriteLine($"Cancelling order {order.NumberUserOrderId} ");
-			// 	// 	_apidataservice.CancelOrder(order);
-			// 	// }
-			// }
-			// else
-			// {
-			// 	Console.WriteLine("No orders found!");
-			// }
+    public BufferData GetBuffersData(string secid)
+    {
+        if (!bufferDatas.ContainsKey(secid))
+            bufferDatas.TryAdd(secid, new BufferData());
 
-			//var positions = await _apidataservice.GetPositions();
+        return bufferDatas[secid];
+    }
 
-			loadingLogIn = false;
-			textlogin = "ON";
-		}
+    /*
+    public List<TradeApi> GetTicks(string secid)
+    {
+    if (!TicksDictionary.ContainsKey(secid))
+        TicksDictionary.TryAdd(secid, new List<TradeApi>());
 
-		windowRef.CloseAsync();
-	}
+    return TicksDictionary[secid];
+    }*/
 
+    private void OnAutoCompleteChanged(SecurityApi securityApi)
+    {
 
-	private void OnClosingWorkingWindow(SecurityApi instr)
-	{
+        if (securityApi == null)
+            return;
 
-		int index = RegisteredInstruments.FindIndex(instrument => instrument.SpecialHash == instr.SpecialHash);
-
-		//RegisteredInstruments.RemoveAt(index);
-		RegisteredInstruments.Remove(instr);
-		//RegisteredInstruments.TryRemove(instr.Isin, out var _);
-		InvokeAsync(StateHasChanged);
-	}
+        var clone = (SecurityApi) securityApi.Clone();
+        clone.SpecialHash = DateTime.Now.GetHashCode().ToString();
 
 
-	private void OnReorderHandler(TileLayoutReorderEventArgs obj)
-	{
+        //_apidataservice.OpenInstrument(clone);
+        OpenInstrument(clone);
+
+    }
+
+    private void OpenInstrument(SecurityApi sec)
+    {
+        RegisteredInstruments.Add(sec);
+        Console.WriteLine($"'{sec.Isin} hash = {sec.SpecialHash}' registered.");
+        InvokeAsync(StateHasChanged);
+    }
+
+
+    private async void OnLoginClick(MouseEventArgs obj)
+    {
+
+        try{
+            if (logform != null)
+            {
+                loadingLogIn =true;
+                var res = await _apidataservice.LogIn(logform.Email, logform.pass);
+                Instruments = await _apidataservice.GetInstruments();
+
+                //var myinstruments = await _apidataservice.GetUserInstruments();
+
+                //TODO: Косячит и апи надо переписывать
+                // if (myinstruments != null)
+                // {
+                // 	foreach (var instrument in myinstruments)
+                // 	{
+                // 		OpenInstrument(instrument);
+                // 	}
+                // }
+
+                Console.WriteLine($"Loaded instruments {Instruments.Count()}");
+
+                // var orders = await _apidataservice.GetActiveOrders();
+
+                // if (orders != null && orders.Count!=0)
+                // {
+                // 	_apidataservice.AllActiveOrders = orders.Where(o => o.State== Order.OrderStateType.Activ).ToList();
+
+                // 	Console.WriteLine($"Loaded Active Orders {_apidataservice.AllActiveOrders}");
+                // 	// foreach (var order in _apidataservice.AllActiveOrders)
+                // 	// {
+                // 	// 	Console.WriteLine($"sec ={order.SecurityId} price={order.PriceOrder} side= {order.State} ");
+                // 	// 	Console.WriteLine($"Cancelling order {order.NumberUserOrderId} ");
+                // 	// 	_apidataservice.CancelOrder(order);
+                // 	// }
+                // }
+                // else
+                // {
+                // 	Console.WriteLine("No orders found!");
+                // }
+
+                //var positions = await _apidataservice.GetPositions();
+
+                loadingLogIn = false;
+                textlogin = "ON";
+            }
+
+            windowRef.CloseAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+
+    private void OnClosingWorkingWindow(SecurityApi instr)
+    {
+        try{
+            int index = RegisteredInstruments.FindIndex(instrument => instrument.SpecialHash == instr.SpecialHash);
+
+            //RegisteredInstruments.RemoveAt(index);
+            RegisteredInstruments.Remove(instr);
+            //RegisteredInstruments.TryRemove(instr.Isin, out var _);
+            InvokeAsync(StateHasChanged);
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    public void Dispose()
+    {
+
+        try{
+            if (_apidataservice != null)
+                _apidataservice.StopPrivateOrderSubscription();
+
+            if (_apidataservice != null)
+                _apidataservice.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+       GC.SuppressFinalize(this);
+    }
+
+    private void OnReorderHandler(TileLayoutReorderEventArgs obj)
+    {
 		
 	}
 

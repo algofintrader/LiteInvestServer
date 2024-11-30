@@ -510,31 +510,37 @@
 
 	private void NewMyOrder(Order myorder)
 	{
-		if (myorder.SecurityId != secutityMain.id)
-			return;
+		try{
+			if (myorder.SecurityId != secutityMain.id)
+				return;
 
-		Console.WriteLine($"New Order {myorder.SecurityId} side = {myorder.Side} price {myorder.PriceOrder} state {myorder.State}");
+			Console.WriteLine($"New Order {myorder.SecurityId} side = {myorder.Side} price {myorder.PriceOrder} state {myorder.State}");
 
-		if (myorder.State == Order.OrderStateType.Activ || myorder.State == Order.OrderStateType.Partial)
-		{
-			Orders[myorder.PriceOrder] = myorder;
+			if (myorder.State == Order.OrderStateType.Activ || myorder.State == Order.OrderStateType.Partial)
+			{
+				Orders[myorder.PriceOrder] = myorder;
 
-			UpdateOrdersAndGrid();
+				UpdateOrdersAndGrid();
+			}
+			else if (myorder.State == Order.OrderStateType.Done
+						|| myorder.State == Order.OrderStateType.Fail
+						|| myorder.State == Order.OrderStateType.Cancel)
+			{
+
+				Console.WriteLine($"Removing Order {myorder.SecurityId} price {myorder.PriceOrder} state {myorder.State}");
+
+				Orders.Remove(myorder.PriceOrder, out var _);
+
+				if (LastCalculatedQuotesDictionary.ContainsKey(myorder.PriceOrder))
+					LastCalculatedQuotesDictionary[myorder.PriceOrder].RestVolume = null;
+
+				UpdateOrdersAndGrid();
+
+			}
 		}
-		else if (myorder.State == Order.OrderStateType.Done
-					|| myorder.State == Order.OrderStateType.Fail
-					|| myorder.State == Order.OrderStateType.Cancel)
+		catch (Exception ex)
 		{
-
-			Console.WriteLine($"Removing Order {myorder.SecurityId} price {myorder.PriceOrder} state {myorder.State}");
-
-			Orders.Remove(myorder.PriceOrder, out var _);
-
-			if (LastCalculatedQuotesDictionary.ContainsKey(myorder.PriceOrder))
-				LastCalculatedQuotesDictionary[myorder.PriceOrder].RestVolume = null;
-
-			UpdateOrdersAndGrid();
-
+			Console.WriteLine(ex.Message);
 		}
 	}
 
@@ -543,37 +549,45 @@
 
 	private void OnKeyDown(string windowId, string keyCode, bool isCtrl, bool isShift)
 	{
-		if(windowId!=WindowId)
-			return;
 
-		if(keyCode == cancelHotKey)
+		try
 		{
-			foreach (var order in Orders)
+			if (windowId != WindowId)
+				return;
+
+			if (keyCode == cancelHotKey)
 			{
-				ApiDataService.CancelOrder(order.Value);
+				foreach (var order in Orders)
+				{
+					ApiDataService.CancelOrder(order.Value);
+				}
 			}
-		}
 
-		if (keyCode == plusHotKey)
-		{
-			if (AgregationStep > 0)
+			if (keyCode == plusHotKey)
 			{
-				AgregationStep -= 5;
-				Console.WriteLine($"{secutityMain.Isin} New Agregation Step {AgregationStep}");
+				if (AgregationStep > 0)
+				{
+					AgregationStep -= 5;
+					Console.WriteLine($"{secutityMain.Isin} New Agregation Step {AgregationStep}");
+
+					AggregateQuotes(bestbidsaved, bestasksaved, LastMdsaved);
+					InvokeAsync(StateHasChanged);
+				}
+			}
+
+			if (keyCode == minusHotKey)
+			{
+				AgregationStep += 5;
 
 				AggregateQuotes(bestbidsaved, bestasksaved, LastMdsaved);
 				InvokeAsync(StateHasChanged);
+
+				Console.WriteLine($"{secutityMain.Isin} New Agregation Step {AgregationStep}");
 			}
 		}
-
-		if (keyCode == minusHotKey)
+		catch (Exception ex)
 		{
-			AgregationStep += 5;
-
-			AggregateQuotes(bestbidsaved, bestasksaved, LastMdsaved);
-			InvokeAsync(StateHasChanged);
-
-			Console.WriteLine($"{secutityMain.Isin} New Agregation Step {AgregationStep}");
+			Console.WriteLine(ex.Message);
 		}
 
 		//Console.WriteLine($"{keyCode} {windowId}");
@@ -620,7 +634,6 @@
 
 			Levels[order.Key].RestVolume = order.Value.Volume;
 			//Console.WriteLine($"Order price added {order.Key} volume={order.Value.Volume}");
-
 		}
 	}
 
@@ -647,7 +660,7 @@
 		}
 		catch (Exception ex)
 		{
-
+			Console.WriteLine(ex.Message);
 		}
 	}
 
@@ -897,25 +910,41 @@
 
 	async Task<Task> OnClosingMain()
 	{
-		ApiDataService.StopOrderBookProcesor(secutityMain.id);
-
-		foreach (var webSocket in WebSockets)
+		try
 		{
-			try
-			{
-				var r = await webSocket.StopOrFail(WebSocketCloseStatus.NormalClosure, "Закрыта вкладка");
+			//NOTE: помоему уже никак не поддерживается от слова совсем 
+			ApiDataService.StopOrderBookProcesor(secutityMain.id);
 
-				if (!r)
+			foreach (var webSocket in WebSockets)
+			{
+				if (webSocket == null)
+					continue;
+
+				try
 				{
+					var r = await webSocket.StopOrFail(WebSocketCloseStatus.NormalClosure, "Закрыта вкладка");
+
+					if (!r)
+					{
+						Console.WriteLine($"Socket not closed! {secutityMain.id}");
+					}
+
+					else
+					{
+						Console.WriteLine($"Socket OK closed! {secutityMain.id}");
+					}
 
 				}
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine(ex.Message);
+				catch (Exception ex)
+				{
+					Console.WriteLine(ex.Message);
+				}
 			}
 		}
-		//TODO: Сделать отписку по инструментам и полный Dispose
+		catch(Exception ex)
+		{
+			Console.WriteLine(ex.Message);
+		}
 
 		OnClosing?.Invoke(secutityMain);
 		return Task.CompletedTask;
@@ -943,26 +972,33 @@
 
 	private Task OnRowClickHandler(GridRowClickEventArgs arg)
 	{
-		var item = (MarketDepthLevel)arg.Item;
-
-		if(Orders.ContainsKey(item.Price))
+		try
 		{
-			RemoveOrderClick(item);
-			return Task.CompletedTask;
+			var item = (MarketDepthLevel)arg.Item;
+
+			if (Orders.ContainsKey(item.Price))
+			{
+				RemoveOrderClick(item);
+				return Task.CompletedTask;
+			}
+
+			var order = new ClientOrder()
+				{
+					SecID = secutityMain.id,
+					Side = item.Type,
+					Volume = orderVolume,
+					Price = item.Price,
+					Market = false,
+				};
+
+			Console.WriteLine($"Sending order price = {order.Price} side = {order.Side}");
+
+			ApiDataService.SendOrder(order);
 		}
-		
-		var order = new ClientOrder()
+		catch (Exception ex)
 		{
-			SecID = secutityMain.id,
-			Side = item.Type,
-			Volume = orderVolume,
-			Price = item.Price,
-			Market = false,
-		};
-
-		Console.WriteLine($"Sending order price = {order.Price} side = {order.Side}");
-
-		ApiDataService.SendOrder(order);
+			Console.WriteLine(ex.Message);
+		}
 
 		return Task.CompletedTask;
 	}

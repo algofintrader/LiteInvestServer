@@ -170,7 +170,7 @@ namespace LiteInvestServer.WebScoketFactory
                         ws.Close();
                     }
 
-                    Console.Out.WriteLineAsync($"incoming websocket {ws.ConnectionInfo}").ConfigureAwait(false);
+                    Console.Out.WriteLineAsync($"{DateTime.Now} incoming websocket {ws.ConnectionInfo.Path}").ConfigureAwait(false);
 
                     //ПРИХОДЯЩИЙ СТРИМ приходит сюда 
                     var WsParameters = GetParameters(ws);
