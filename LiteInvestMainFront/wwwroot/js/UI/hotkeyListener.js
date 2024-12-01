@@ -17,8 +17,7 @@ function keyDownHandler(e, windowId) {
         }
     }
 }
-function keyUpHandler(e)
-{
+function keyUpHandler(e) {
     //if (e.target && (e.target.nodeName != "INPUT")) {
     //    DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("KeyUp", e.code, e.ctrlKey, e.shiftKey);
     //}
@@ -32,23 +31,65 @@ window.addHotkeyListener = (windowId) => {
 };
 
 function getScrollEvent(gridTableId) {
-    setTimeout(() => {
-        let parent = document.getElementById(gridTableId);
-        if (parent) {
-            let targetElement = parent.querySelector(".k-grid-content");
-            if (targetElement) {
-                targetElement.addEventListener('scroll', (event) => {
+    //setTimeout(() => {
+    //    let parent = document.getElementById(gridTableId);
+    //    if (parent) {
+    //        let targetElement = parent.querySelector(".k-grid-content");
+    //        if (targetElement) {
+    //            targetElement.addEventListener('scroll', (event) => {
 
-                    if (parent) {
-                        console.log(parent);
-                        DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("OnScroll", gridTableId);
-                    } else {
-                        console.log("Элемент с ID " + gridTableId + " не найден");
-                    }
-                });
-            }
-        } else {
-            console.log("Родительский элемент с ID " + gridTableId + " не найден");
+    //                if (parent) {
+    //                    DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("OnScroll", gridTableId);
+    //                } else {
+    //                    console.log("Элемент с ID " + gridTableId + " не найден");
+    //                }
+    //            });
+    //        }
+    //    } else {
+    //        console.log("Родительский элемент с ID " + gridTableId + " не найден");
+    //    }
+    //}, 2000);
+}
+
+function getWheelEvent(historyTableId) {
+    let parent = document.getElementById(historyTableId);
+    if (parent) {
+        let targetElement = parent.querySelector(".k-grid-content");
+        if (targetElement) {
+            targetElement.addEventListener('wheel', (event) => {
+
+                if (parent) {
+                    DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("OnWheel", historyTableId);
+
+                    const isZoomIn = event.deltaY < 0; // Скролл вверх (+) — увеличение
+                    const isZoomOut = event.deltaY > 0; // Скролл вниз (-) — уменьшение
+
+                    // Задаем шаг изменения ширины
+                    const zoomStep = 30; // Шаг изменения ширины в пикселях
+
+                    const columns = targetElement.querySelectorAll('th, td');
+
+                    columns.forEach((column, index) => {
+                        const currentWidth = parseInt(window.getComputedStyle(column).width, 10);
+
+                        // Если скроллим вверх (увеличение), увеличиваем ширину
+                        if (isZoomIn && currentWidth < 300) {
+                            column.style.width = `${currentWidth + zoomStep}px`;
+                        }
+
+                        // Если скроллим вниз (уменьшение), уменьшаем ширину
+                        if (isZoomOut && currentWidth > 50) {
+                            column.style.width = `${currentWidth - zoomStep}px`;
+                        }
+
+                    })
+                }
+                else {
+                    console.log("Элемент с ID " + gridTableId + " не найден");
+                }
+            });
         }
-    }, 2000);
+    } else {
+        console.log("Родительский элемент с ID " + gridTableId + " не найден");
+    };
 }

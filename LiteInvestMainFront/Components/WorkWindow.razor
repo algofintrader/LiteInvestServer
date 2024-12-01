@@ -72,6 +72,15 @@
 	border-radius: 5px;
 	}
 
+	.k-grid-footer {
+		padding-inline-end: 0px !important;
+	}
+
+	.dxbl-chart-root .dxbl-chart {
+		padding: 0px !important;
+	}
+
+
 	.k-grid-content {
 	scrollbar-width: none;
 	}
@@ -216,10 +225,17 @@
 		</GridLayoutRows>
 		<GridLayoutItems>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="1">
-				<TelerikGrid  Size="Small" Class="telerik-table" Data="@Quotes">
+				<TelerikGrid  Size="Small" Class="telerik-table" Data="@ClusterDatas">
 					<GridColumns>
-						<Telerik.Blazor.Components.GridColumn Field="Volume" HeaderClass="d-none" />
-						<Telerik.Blazor.Components.GridColumn Field="Price" HeaderClass="d-none" />
+						@foreach(ClusterData clusterData in ClusterDatas){
+							<Telerik.Blazor.Components.GridColumn Field="@clusterData.Volume.ToString()" HeaderClass="d-none">@*  форматирование строки? *@
+								<FooterTemplate>
+									<span>
+										@clusterData.DateTime
+									</span>
+								</FooterTemplate>
+							</Telerik.Blazor.Components.GridColumn>
+					}
 					</GridColumns>
 				</TelerikGrid>
 			</Telerik.Blazor.Components.GridLayoutItem>
@@ -311,111 +327,6 @@
 	</TelerikGridLayout>
 </div>
 
-@*
-<div class="card cardnew">
-	<div class="card-header">
-		@secutityMain.Isin
-		<button type="button" class="buttonclose btn-close" aria-label="Close" @onclick="OnClosingMain"></button>
-	</div>
-	<div class="card-body">
-
-		<DxGridLayout CssClass="w-100 ch-480">
-			<Rows>
-				<DxGridLayoutRow />
-				<DxGridLayoutRow Height="auto" />
-			</Rows>
-			<Columns>
-				<DxGridLayoutColumn />
-				<DxGridLayoutColumn />
-				<DxGridLayoutColumn />
-			</Columns>
-			<Items>
-				<DxGridLayoutItem Row="0" Column="0">
-					<Template>
-						<div class="gridlayout-item">
-							Clasters
-						</div>
-					</Template>
-				</DxGridLayoutItem>
-
-				<DxGridLayoutItem Row="0" Column="1">
-					<Template>
-						<div class=" gridlayout-item">
-							<DxChart CssClass="chart"
-									 CustomizeSeriesPoint="@PrepareSeriesPoint"
-									 @ref="Chart"
-									 Data="Ticks"
-									 Width="100%"
-									 LabelOverlap="ChartLabelOverlap.Hide">
-								<DxChartLineSeries Name="ticksLineSeries"
-												   T="Trade"
-												   TArgument="DateTime"
-												   TValue="decimal"
-												   ArgumentField="si => si.Time"
-												   ValueField="si => si.Price"
-												   HoverMode="ChartContinuousSeriesHoverMode.Series">
-
-									<DxChartLegend Visible="false" />
-
-									<!--<DxChartSeriesPoint Visible="true"
-													HoverMode="ChartSeriesPointHoverMode.None" />-->
-									<!--<DxChartSeriesLabel Visible="true"
-													ValueFormat="ChartElementFormat.Thousands(1)" />-->
-								</DxChartLineSeries>
-
-								<DxChartArgumentAxis Visible="false">
-
-									<DxChartAxisTick Visible="false" />
-									<DxChartAxisMinorTick Visible="false" />
-
-									<DxChartAxisGridLines Visible="true" />
-
-								</DxChartArgumentAxis>
-
-
-								<DxChartValueAxis Visible="false">
-
-									<DxChartAxisTick Visible="false" />
-									<DxChartAxisMinorTick Visible="false" />
-
-									<DxChartAxisGridLines Visible="true" />
-
-									<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart" />
-								</DxChartValueAxis>
-							</DxChart>
-						</div>
-					</Template>
-				</DxGridLayoutItem>
-
-				<DxGridLayoutItem Row="0" Column="2">
-					<Template>
-						<div class=" gridlayout-item">
-							<DxGrid CssClass="dxgrid"
-									@ref=Grid
-									Data="@Quotes"
-									ShowAllRows="true"
-									ColumnResizeMode="GridColumnResizeMode.NextColumn"
-									TextWrapEnabled="false"
-									CustomizeElement="Grid_CustomizeElement"
-									ShowGroupPanel="false"
-									HighlightRowOnHover="true"
-									FocusedRowEnabled="true">
-
-								<Columns>
-									<DxGridDataColumn FieldName="Volume" Width="30px" />
-									<DxGridDataColumn FieldName="Price" Width="30px" />
-									<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
-								</Columns>
-							</DxGrid>
-						</div>
-					</Template>
-				</DxGridLayoutItem>
-			</Items>
-		</DxGridLayout>
-	</div>
-</div> *@
-
-
 @code {
 
 	static string plusHotKey = "Equal";
@@ -445,6 +356,20 @@
 		set
 		{
 			Data.Ticks = value;
+		}
+	}
+
+	public List<ClusterData> ClusterDatas { get; set; }
+
+	public class ClusterData
+	{
+		public decimal Volume;
+		public DateTime DateTime;
+
+		public ClusterData(decimal volume, DateTime dateTime)
+		{
+			Volume = volume;
+			DateTime = dateTime;
 		}
 	}
 
@@ -505,7 +430,19 @@
 		WebSockets.Add(await ApiDataService.SubscribeOrderBook(secutityMain.id));
 		WebSockets.Add(await ApiDataService.SubcribeTick(secutityMain.id));
 
+
+
 		return base.OnInitializedAsync();
+	}
+
+	private void UpdateClusterData(decimal volumeSumm)
+	{
+		if (ClusterDatas != null && ClusterDatas.Count > 0)
+		{
+			ClusterDatas.RemoveAt(0);
+		}
+
+		ClusterDatas.Add(new ClusterData(volumeSumm, DateTime.Now));
 	}
 
 	private void NewMyOrder(Order myorder)
@@ -857,22 +794,6 @@
 	{
 		Console.WriteLine($"{count} scroll");
 		Grid.MakeRowVisible(count);
-
-	}
-
-	void Grid_CustomizeElement(GridCustomizeElementEventArgs e)
-	{
-
-		if (e.ElementType == GridElementType.DataRow && (PlazaEngine.Entity.Side)e.Grid.GetRowValue(e.VisibleIndex, "Type") == Side.Sell)
-		{
-			e.CssClass = "highlighted-item";
-		}
-
-		if (e.ElementType == GridElementType.DataRow && (PlazaEngine.Entity.Side)e.Grid.GetRowValue(e.VisibleIndex, "Type") == Side.Buy)
-		{
-			e.CssClass = "highlighted-item2";
-		}
-
 
 	}
 
