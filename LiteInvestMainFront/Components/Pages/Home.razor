@@ -213,7 +213,8 @@ MaxHeight="500"
     </BodyContentTemplate>
 </DxWindow>
 
-<TelerikTileLayout Columns="RegisteredInstruments.Count"
+<TelerikTileLayout 
+Columns="RegisteredInstruments.Count"
 ColumnWidth="auto"
 RowHeight="90vh"
 Reorderable="true"
@@ -427,7 +428,9 @@ OnReorder="@OnReorderHandler"
     {
         RegisteredInstruments.Add(sec);
         Console.WriteLine($"'{sec.Isin} hash = {sec.SpecialHash}' registered.");
-        InvokeAsync(StateHasChanged);
+
+        //не требуется, так как мы напрямую работем с коллекцией. 
+        //InvokeAsync(StateHasChanged);
     }
 
 
@@ -495,8 +498,9 @@ OnReorder="@OnReorderHandler"
 
             //RegisteredInstruments.RemoveAt(index);
             RegisteredInstruments.Remove(instr);
+
             //RegisteredInstruments.TryRemove(instr.Isin, out var _);
-            InvokeAsync(StateHasChanged);
+            //InvokeAsync(StateHasChanged);
         }
         catch(Exception ex)
         {
