@@ -226,18 +226,17 @@ OnReorder="@OnReorderHandler"
     <TileLayoutItems >
         @foreach (var security in RegisteredInstruments)
         {
-            <TileLayoutItem >
+            <TileLayoutItem @key="security.SpecialHash">
                 <HeaderTemplate>
                     @security.Isin 
-                    <svg @key="security.SpecialHash" class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
+                    <svg class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
                         <line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"/>
                         <line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"/>
                     </svg>
                 </HeaderTemplate>
                 <Content>
                     <div @onclick="@((e) => {@js.InvokeVoidAsync(" toggleSelected", e);})" class="tile-content">
-                        <WorkWindow @key="security.SpecialHash" 
-
+                        <WorkWindow 
                         Data="GetBuffersData(security.id)"
                         start="GetBuffersData(security.id).start"
                         dt="GetBuffersData(security.id).dt" 
