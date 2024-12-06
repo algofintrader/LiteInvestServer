@@ -226,7 +226,7 @@ OnReorder="@OnReorderHandler"
     <TileLayoutItems >
         @foreach (var security in RegisteredInstruments)
         {
-            <TileLayoutItem @key="security.SpecialHash">
+            <TileLayoutItem @key="security.SpecialHash" >
                 <HeaderTemplate>
                     @security.Isin 
                     <svg class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
@@ -235,8 +235,8 @@ OnReorder="@OnReorderHandler"
                     </svg>
                 </HeaderTemplate>
                 <Content>
-                    <div @onclick="@((e) => {@js.InvokeVoidAsync(" toggleSelected", e);})" class="tile-content">
-                        <WorkWindow 
+                    <div class="tile-content">
+                        <WorkWindow @onclick="@((e) => {@js.InvokeVoidAsync(" toggleSelected", e);})"
                         Data="GetBuffersData(security.id)"
                         start="GetBuffersData(security.id).start"
                         dt="GetBuffersData(security.id).dt" 
@@ -322,6 +322,11 @@ OnReorder="@OnReorderHandler"
             //	js.InvokeVoidAsync("setDonNetObjectReference", jsInteropService.ServiceObjectDotNetReference);
         }
 
+    }
+
+    protected override bool ShouldRender()
+    {
+        return base.ShouldRender();
     }
 
     protected override void OnAfterRender(bool firstRender)

@@ -13,9 +13,7 @@
 @implements IDisposable;
 @inject IJSRuntime JSRuntime
 @inject JsInteropService jsInteropService;
-
 @rendermode InteractiveServer
-
 
 <style>
 	.cardnew {
@@ -300,7 +298,7 @@
 			<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
 			</Columns>
 			</DxGrid> *@
-				<TelerikGrid Id="@GridTableId" OnRowClick="@OnRowClickHandler" Height="90vh" Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
+				<TelerikGrid @ref="QuotesGrid" Id="@GridTableId" OnRowClick="@OnRowClickHandler" Height="90vh" Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
 					<GridColumns>
 						<Telerik.Blazor.Components.GridColumn Width="45%" Field="Volume" HeaderClass="d-none" />
 						<Telerik.Blazor.Components.GridColumn Width="45%" Field="Price" HeaderClass="d-none" />
@@ -312,6 +310,7 @@
 						</td>
 						<td class="@GetClassForQuote(Quotes)">
 							@Quotes.Price
+							@* 	@Quotes.Price.ToString("0") *@
 						</td>
 						<td class="@GetClassForQuote(Quotes)">
 							@Quotes.RestVolume
@@ -338,9 +337,9 @@
 
 	DxChart<TradeApi> Chart;
 
+	private TelerikGrid<MarketDepthLevel> QuotesGrid { get; set; }
+
 	IGrid Grid;
-	//А вдруг у меня все получится
-	//Влруг я буду прав
 
 	[Parameter] public BufferData Data { get; set; }
 
@@ -352,15 +351,16 @@
 
 	[Parameter] public int Index { get; set; }
 
+	public List<TradeApi> Ticks { get; set; } = new List<TradeApi>();
 
-	public List<TradeApi> Ticks
-	{
-		get => Data.Ticks;
-		set
-		{
-			Data.Ticks = value;
-		}
-	}
+	// public List<TradeApi> Ticks
+	// {
+	// 	get => Data.Ticks;
+	// 	set
+	// 	{
+	// 		Data.Ticks = value;
+	// 	}
+	// }
 
 	public List<ClusterData> ClusterDatas { get; set; } = new List<ClusterData>();
 
@@ -487,6 +487,20 @@
 	private string WindowId { get; set; } = Guid.NewGuid().ToString();
 	private string GridTableId { get; set; } = Guid.NewGuid().ToString();
 
+	private void UpdateAll()
+	{
+		InvokeAsync(StateHasChanged);
+	}
+
+	private void UpdateGrid()
+	{
+		InvokeAsync(()=> 
+		{
+			QuotesGrid.Data = Quotes;
+			QuotesGrid?.Rebind(); 
+		});		
+	}
+
 	private void OnKeyDown(string windowId, string keyCode, bool isCtrl, bool isShift)
 	{
 
@@ -511,7 +525,7 @@
 					Console.WriteLine($"{secutityMain.Isin} New Agregation Step {AgregationStep}");
 
 					AggregateQuotes(bestbidsaved, bestasksaved, LastMdsaved);
-					InvokeAsync(StateHasChanged);
+					//UpdateAll();
 				}
 			}
 
@@ -520,7 +534,7 @@
 				AgregationStep += 5;
 
 				AggregateQuotes(bestbidsaved, bestasksaved, LastMdsaved);
-				InvokeAsync(StateHasChanged);
+				//UpdateAll();
 
 				Console.WriteLine($"{secutityMain.Isin} New Agregation Step {AgregationStep}");
 			}
@@ -541,12 +555,23 @@
 		//Console.WriteLine($"{windowId}");
 	}
 
+	protected override bool ShouldRender()
+	{
+		 return false;
+
+		//return base.ShouldRender();
+	}
+
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
 		if (firstRender)
 		{
 			await JSRuntime.InvokeVoidAsync("getScrollEvent", GridTableId);
 			await JSRuntime.InvokeVoidAsync("addHotkeyListener", WindowId);
+		}
+		else
+		{
+			
 		}
 	}
 
@@ -595,7 +620,8 @@
 			LastMdsaved = md;
 
 			AggregateQuotes(bestbid, bestask, md);
-			InvokeAsync(StateHasChanged);
+			UpdateGrid();
+			//InvokeAsync(StateHasChanged);
 
 		}
 		catch (Exception ex)
@@ -658,14 +684,14 @@
 			CheckDictionaryForOrders(md);
 			LastCalculatedQuotesDictionary = md;
 
-			Quotes = md.Values;
+			Quotes = md.Values.ToList();
 		}
 		else
 		{
 			CheckDictionaryForOrders(AgregatedLevels);
 			LastCalculatedQuotesDictionary = AgregatedLevels;
 
-			Quotes = AgregatedLevels.Values.OrderByDescending(s => s.Price);
+			Quotes = AgregatedLevels.Values.OrderByDescending(s => s.Price).ToList();
 		}
 
 		maxchart = bestbid.Price + levelsFromBest * secutityMain.PriceStep;
@@ -680,9 +706,9 @@
 			return;
 
 		CheckDictionaryForOrders(LastCalculatedQuotesDictionary);
-		Quotes = LastCalculatedQuotesDictionary.Values.OrderByDescending(s => s.Price);
+		Quotes = LastCalculatedQuotesDictionary.Values.OrderByDescending(s => s.Price).ToList();
 
-		InvokeAsync(StateHasChanged);
+		UpdateGrid();
 	}
 	/*------ временно -------------- */
 
@@ -705,7 +731,8 @@
 
 
 	//---------------------------------//
-
+	DateTime lasttime = DateTime.Now;
+	int counter = 0;
 
 	private async void OnNewTicks(string secinstrument, List<TradeApi> ticks)
 	{
@@ -715,25 +742,25 @@
 
 		try
 		{
-			DateTime lasttime = DateTime.Now;
+			// DateTime lasttime = DateTime.Now;
 
-			try
-			{
-				if (Ticks.Count != 0 && Ticks[Ticks.Count - 1].Time != null)
-				{
-					lasttime = Ticks[Ticks.Count - 1].Time;
-				}
-				else
-				{
-					lasttime = DateTime.Now;
-				}
-			}
-			catch (Exception ex)
-			{
-				lasttime = DateTime.Now;
-			}
+			// try
+			// {
+			// 	if (Ticks.Count != 0 && Ticks[Ticks.Count - 1].Time != null)
+			// 	{
+			// 		lasttime = Ticks[Ticks.Count - 1].Time;
+			// 	}
+			// 	else
+			// 	{
+			// 		lasttime = DateTime.Now;
+			// 	}
+			// }
+			// catch (Exception ex)
+			// {
+			// 	lasttime = DateTime.Now;
+			// }
 
-			int counter = 0;
+
 			foreach (var tick in ticks)
 			{
 				start++;
@@ -760,7 +787,7 @@
 
 		}
 
-		await InvokeAsync(() => { Chart.RefreshData(); });
+		/* await InvokeAsync(() => { */ Chart.RefreshData();/*  }); */
 	}
 
 	private void RemoveOrderClick(MarketDepthLevel level)
@@ -875,7 +902,8 @@
 	}
 
 	Orientation currentOrientation;
-	IEnumerable<MarketDepthLevel> Quotes;
+
+	List<MarketDepthLevel> Quotes { get; set; }
 
 	string messageConnection { get; set; }
 	public object GetColor { get; set; }
