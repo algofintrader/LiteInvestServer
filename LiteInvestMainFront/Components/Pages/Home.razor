@@ -236,7 +236,7 @@ OnReorder="@OnReorderHandler"
                 </HeaderTemplate>
                 <Content>
                     <div class="tile-content">
-                        <WorkWindow @onclick="@((e) => {@js.InvokeVoidAsync(" toggleSelected", e);})"
+                        <WorkWindow @* @onclick="@((e) => {@js.InvokeVoidAsync(" toggleSelected", e);})" *@
                         Data="GetBuffersData(security.id)"
                         start="GetBuffersData(security.id).start"
                         dt="GetBuffersData(security.id).dt" 
