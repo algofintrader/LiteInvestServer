@@ -213,6 +213,9 @@ MaxHeight="500"
     </BodyContentTemplate>
 </DxWindow>
 
+
+@*  @onclick="@((e) => {@js.InvokeVoidAsync(" toggleSelected", e);})"  *@
+
 <TelerikTileLayout 
 Columns="RegisteredInstruments.Count"
 ColumnWidth="auto"
@@ -236,7 +239,7 @@ OnReorder="@OnReorderHandler"
                 </HeaderTemplate>
                 <Content>
                     <div class="tile-content">
-                        <WorkWindow @* @onclick="@((e) => {@js.InvokeVoidAsync(" toggleSelected", e);})" *@
+                        <WorkWindow 
                         Data="GetBuffersData(security.id)"
                         start="GetBuffersData(security.id).start"
                         dt="GetBuffersData(security.id).dt" 
@@ -244,7 +247,7 @@ OnReorder="@OnReorderHandler"
                         minchart="GetBuffersData(security.id).minchart"
                         maxchart="GetBuffersData(security.id).maxchart"
                         OnClosing="OnClosingWorkingWindow" secutityMain="@security" 
-                        ApiDataService="@_apidataservice" />
+                        />
                     </div>
                 </Content>
             </TileLayoutItem>

@@ -139,7 +139,7 @@ builder.Services.AddSingleton(_ =>
     if (!UsersContext.ContainsKey(admin))
         UsersContext.TryAdd(admin, new User(admin, "adminPass#1R") { Admin = true, CanTrade = false });
 
-    plaza = new PlazaConnector("02mMLX144T2yxnfzEUrCjUKzXKciQKJ",false, testTrading: false, appname: "osaApplication")
+    plaza = new PlazaConnector("02mMLX144T2yxnfzEUrCjUKzXKciQKJ",Helper.isSimulation(), testTrading: false, appname: "osaApplication")
     {
         Limit = 30,
         LoadTicksFromStart = false,

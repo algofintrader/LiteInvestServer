@@ -61,6 +61,7 @@ namespace LiteInvestServer.Helpers
 
         public static bool isSimulation()
         {
+            
             if (DateTime.Now.DayOfWeek == DayOfWeek.Saturday || DateTime.Now.DayOfWeek == DayOfWeek.Sunday)
                 return true;
 

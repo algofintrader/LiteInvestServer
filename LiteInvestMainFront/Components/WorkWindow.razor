@@ -13,6 +13,9 @@
 @implements IDisposable;
 @inject IJSRuntime JSRuntime
 @inject JsInteropService jsInteropService;
+
+@inject ApiDataService ApiDataService;
+
 @rendermode InteractiveServer
 
 <style>
@@ -347,7 +350,7 @@
 
 	[Parameter] public SecurityApi secutityMain { get; set; }
 
-	[Parameter] public ApiDataService ApiDataService { get; set; }
+	// [Parameter] public ApiDataService ApiDataService { get; set; }
 
 	[Parameter] public int Index { get; set; }
 
