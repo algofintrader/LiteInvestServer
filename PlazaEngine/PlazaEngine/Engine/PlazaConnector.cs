@@ -9,24 +9,50 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Xml.Linq;
-using PlazaEngine.Entity;
 using ru.micexrts.cgate;
 using ru.micexrts.cgate.message;
 using PlazaEngine.Depth;
-using RouterLoggerSpace;
 using System.Runtime.CompilerServices;
 using System.Data.SqlTypes;
 using System.Net.NetworkInformation;
 using System.Text;
 using System.Runtime.Serialization;
 using System.Timers;
+using LiteInvest.Entity.PlazaEntity;
 
 //using SKM.V3;
 //using SKM.V3.Models;
 
 namespace PlazaEngine.Engine
 {
-    public enum ServerConnectStatus
+
+	internal static class MessageUnicodeConverter
+	{
+		internal static string asUnicodeString(this ru.micexrts.cgate.message.Value value)
+		{
+			string s = "";
+			try
+			{
+				var t = value.GetType();
+				if (t.Name == "ValueCXX")
+				{
+					var b = value.asBytes();
+					s = Encoding.UTF8.GetString(Encoding.Convert(Encoding.GetEncoding(1251), Encoding.GetEncoding(65001), b));
+				}
+				else
+				{
+					s = value.asString();
+					Debug.WriteLine(t.Name);
+				}
+			}
+			catch
+			{
+				s = value.asString();
+			}
+			return s;
+		}
+	}
+	public enum ServerConnectStatus
     {
         /// <summary>
         /// connected
@@ -1882,7 +1908,42 @@ namespace PlazaEngine.Engine
                                 try
                                 {
                                     RouterLogger.Log($"{replmsg}", "user_deal");
-                                    MyTrade trade = new MyTrade(replmsg);
+                                    
+                                    MyTrade trade = new MyTrade();
+
+                                    trade.Price = Convert.ToDecimal(replmsg["price"].asDecimal());
+                                    trade.NumberTrade = replmsg["id_deal"].asUnicodeString();
+                                    trade.SecurityId = replmsg["isin_id"].asUnicodeString();
+                                    trade.Time = replmsg["moment"].asDateTime();
+                                    trade.Volume = replmsg["xamount"].asInt();
+
+                                    string portfolioBuy = replmsg["code_buy"].asUnicodeString();
+                                    string portfolioSell = replmsg["code_sell"].asUnicodeString();
+                                  
+                                    trade.Comment = "";
+                                    trade.NumberOrderMarket = "";
+                                    trade.Portfolio = "";
+
+                                    if (!string.IsNullOrWhiteSpace(portfolioBuy))
+                                    {
+                                        trade.NumberOrderUser = replmsg["ext_id_buy"].asInt();
+                                        trade.NumberOrderMarket = replmsg["public_order_id_buy"].asUnicodeString();
+                                        trade.Side = Side.Buy;
+
+                                        trade.Comment = replmsg["comment_buy"].asUnicodeString();
+                                        trade.Portfolio = replmsg["code_buy"].asUnicodeString();
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(portfolioSell))
+                                    {
+
+                                        trade.NumberOrderUser = replmsg["ext_id_sell"].asInt();
+                                        trade.NumberOrderMarket = replmsg["public_order_id_sell"].asUnicodeString();
+                                        trade.Side = Side.Sell;
+
+                                        trade.Comment = replmsg["comment_sell"].asUnicodeString();
+                                        trade.Portfolio = replmsg["code_sell"].asUnicodeString();
+                                    }
+
 
                                     if (NewMyTradeEvent != null && trade.Time > StartOfConnector)
                                     {
@@ -1905,25 +1966,25 @@ namespace PlazaEngine.Engine
                                     if (!Orders.TryGetValue(numberUser, out Order order))
                                     {
                                         order = new Order();
-                                        order.timeSet = replmsg["moment"].asDateTime();
-                                        order.volume = replmsg["public_amount"].asInt();
+                                        order.TimeSet = replmsg["moment"].asDateTime();
+                                        order.Volume = replmsg["public_amount"].asInt();
                                     }
-                                    var oldState = order.state;
+                                    var oldState = order.State;
                                     order.SetNumberMarket(replmsg["public_order_id"].asUnicodeString());
-                                    order.numberUser = replmsg["ext_id"].asInt();
+                                    order.NumberUserOrderId = replmsg["ext_id"].asInt();
 
-                                    order.VolumeExecuted = order.volume - replmsg["public_amount_rest"].asInt(); // это у нас оставшееся в заявке
+                                    order.VolumeExecuted = order.Volume - replmsg["public_amount_rest"].asInt(); // это у нас оставшееся в заявке
 									order.SecurityId = replmsg["isin_id"].asInt().ToString();
 
                                     if(Securities!=null)
 									order.SecIsin = Securities.ContainsKey(order.SecurityId) ? Securities[order.SecurityId].Name : "Empty";
 
-                                    order.priceOrder = Convert.ToDecimal(replmsg["price"].asDecimal());
+                                    order.PriceOrder = Convert.ToDecimal(replmsg["price"].asDecimal());
                                     order.PortfolioNumber = replmsg["client_code"].asString();
                                     
                                     //security= Securities[_securities[replmsg["isin_id"].asInt().ToString()]], // справочник всех инструментов не успевает подгружаться до прихода события orders_log
-                                    order.timeCallBack = replmsg["moment"].asDateTime();
-                                    order.timeCreate = replmsg["moment"].asDateTime();
+                                    order.TimeCallBack = replmsg["moment"].asDateTime();
+                                    order.TimeCreate = replmsg["moment"].asDateTime();
                                     //order.timeSet = Helper.GetTimeMoscowNow();
                                     order.Comment = replmsg["comment"].asString();
                                     
@@ -1932,22 +1993,22 @@ namespace PlazaEngine.Engine
 
                                     if (action == 0)
                                     {
-                                        order.state = Order.OrderStateType.Cancel;
-                                        order.timeCancel = order.TimeCallBack;
+                                        order.State = Order.OrderStateType.Cancel;
+                                        order.TimeCancel = order.TimeCallBack;
                                     }
                                     else if (action == 1)
                                     {
-                                        order.state = Order.OrderStateType.Activ;
+                                        order.State = Order.OrderStateType.Activ;
                                     }
                                     else if (action == 2 && replmsg["public_amount_rest"].asInt() == 0)
                                     {
-                                        order.state = Order.OrderStateType.Done;
-                                        order.timeDone = replmsg["moment"].asDateTime();
+                                        order.State = Order.OrderStateType.Done;
+                                        order.TimeDone = replmsg["moment"].asDateTime();
                                     }
                                     else if (action == 2 && replmsg["public_amount_rest"].asInt() != 0)
                                     {
-                                        order.state = Order.OrderStateType.Partial;
-                                        order.timeDone = replmsg["moment"].asDateTime();
+                                        order.State = Order.OrderStateType.Partial;
+                                        order.TimeDone = replmsg["moment"].asDateTime();
                                     }
                                     else if(action ==3) // нет такого статуса в коннекторе
                                     {
@@ -1958,11 +2019,11 @@ namespace PlazaEngine.Engine
 
                                     if (dir == 1)
                                     {
-                                        order.side = Side.Buy;
+                                        order.Side = Side.Buy;
                                     }
                                     else if (dir == 2)
                                     {
-                                        order.side = Side.Sell;
+                                        order.Side = Side.Sell;
                                     }
 
                                     Orders[order.NumberUserOrderId] = order;
@@ -1983,7 +2044,7 @@ namespace PlazaEngine.Engine
 
                                     if (order.TimeCallBack > StartOfConnector)
                                     {
-                                        if (oldState != order.state)
+                                        if (oldState != order.State)
                                         {
                                             OrderChangedEvent?.Invoke(order, "The order has changed state.");
                                         }
@@ -2216,9 +2277,9 @@ namespace PlazaEngine.Engine
                                     string msgCode = msgData["message"].asUnicodeString();
                                     if (Orders.TryGetValue(NumberUser, out var order))
                                     {
-                                        if (order.state == Order.OrderStateType.Pending)
+                                        if (order.State == Order.OrderStateType.Pending)
                                         {
-                                            order.state = Order.OrderStateType.Fail;
+                                            order.State = Order.OrderStateType.Fail;
                                             NewCanceledOrder?.Invoke(order, msgCode);
                                         }
                                     }
@@ -2241,13 +2302,13 @@ namespace PlazaEngine.Engine
                                     if (!Orders.TryGetValue(NumberUser, out var order))
                                     {
                                         order = new Order();
-                                        order.numberUser = NumberUser;
+                                        order.NumberUserOrderId = NumberUser;
                                     }
                                     if (NumberMarket.Length > 1)
                                     {
                                         order.SetNumberMarket(NumberMarket);
                                     }
-                                    order.timeSet = timeSet;
+                                    order.TimeSet = timeSet;
                                     Orders[order.NumberUserOrderId] = order;
 
                                     string msgCode = msgData["message"].asUnicodeString();
@@ -2255,16 +2316,16 @@ namespace PlazaEngine.Engine
 
                                     if (code == 0)
                                     {
-                                        if (order.state == Order.OrderStateType.Pending)
+                                        if (order.State == Order.OrderStateType.Pending)
                                         {
-                                            order.state = Order.OrderStateType.Activ;
+                                            order.State = Order.OrderStateType.Activ;
                                         }
                                         NewActiveOrder?.Invoke(order);
                                     }
                                     else
                                     {
                                         
-                                        order.state = Order.OrderStateType.Fail;
+                                        order.State = Order.OrderStateType.Fail;
                                         NewCanceledOrder?.Invoke(order, msgCode);
                                     }
 
@@ -2278,15 +2339,15 @@ namespace PlazaEngine.Engine
                                     int code = msgData["code"].asInt();
                                     string message = msgData["message"].asUnicodeString();
                                     int num_orders = msgData["num_orders"].asInt();
-                                    var oldState = order?.state;
+                                    var oldState = order?.State;
                                     if (code == 0)
                                     {
-                                        if (order != null && order?.state != Order.OrderStateType.Done)
+                                        if (order != null && order?.State != Order.OrderStateType.Done)
                                         {
-                                            order.state = Order.OrderStateType.Cancel;
+                                            order.State = Order.OrderStateType.Cancel;
                                         }
                                     }
-                                    if (oldState != order?.state)
+                                    if (oldState != order?.State)
                                     {
                                         OrderChangedEvent?.Invoke(order, $"{message} Обработано: {num_orders}");
                                     }
@@ -2346,7 +2407,7 @@ namespace PlazaEngine.Engine
             RouterLogger.Log($"ExecuteOrder {order} start" , "ExecuteOrder");
             if (order.TypeOrder == Order.OrderType.Market)
             {
-                order.priceOrder = order.Side == Side.Buy ? Securities[order.SecurityId].PriceLimitHigh : Securities[order.SecurityId].PriceLimitLow;
+                order.PriceOrder = order.Side == Side.Buy ? Securities[order.SecurityId].PriceLimitHigh : Securities[order.SecurityId].PriceLimitLow;
             }
 
             Orders[order.NumberUserOrderId] = order;
@@ -2355,19 +2416,19 @@ namespace PlazaEngine.Engine
             {
 
                 order.ExchangeOrderId = DateTime.Now.GetHashCode().ToString();
-                order.state = Order.OrderStateType.Activ;
+                order.State = Order.OrderStateType.Activ;
 
                 OrderChangedEvent?.Invoke(order, "The order has been sent.");
 
                 var timer = new System.Timers.Timer(30000) { AutoReset = false };
                 timer.Elapsed += (s, e) =>
                 {
-                    order.state = Order.OrderStateType.Done;
+                    order.State = Order.OrderStateType.Done;
                     OrderChangedEvent?.Invoke(order, "The order has been executed.");
                 };
                 timer.Start();
 
-                return $"Request for Emulation order #{order.numberUser} sent.";
+                return $"Request for Emulation order #{order.NumberUserOrderId} sent.";
             }
 
 
@@ -2392,10 +2453,10 @@ namespace PlazaEngine.Engine
             smsg["type"].set(1);
             smsg["dir"].set(dir);
             smsg["amount"].set(Convert.ToInt32(order.Volume));
-            smsg["price"].set(order.priceOrder.ToString(new CultureInfo("en-US")));
+            smsg["price"].set(order.PriceOrder.ToString(new CultureInfo("en-US")));
             smsg["ext_id"].set(order.NumberUserOrderId);
             smsg["comment"].set(order.Comment);
-            order.timeCreate = GetTimeMoscowNow();
+            order.TimeCreate = GetTimeMoscowNow();
 
            
 
@@ -2411,7 +2472,7 @@ namespace PlazaEngine.Engine
                     }
                     catch
                     {
-                        order.state = Order.OrderStateType.Fail;
+                        order.State = Order.OrderStateType.Fail;
                     }
 
                     NewActiveOrder?.Invoke(order);
@@ -2424,7 +2485,7 @@ namespace PlazaEngine.Engine
                 }
                 catch (Exception ex)
                 {
-                    order.state = Order.OrderStateType.Fail;
+                    order.State = Order.OrderStateType.Fail;
                     NewActiveOrder?.Invoke(order);
                     
                     OrderChangedEvent?.Invoke(order, "Error sending order.");
@@ -2436,8 +2497,8 @@ namespace PlazaEngine.Engine
             
             
 
-            RouterLogger.Log($"Request for placing order #{order.numberUser} sent.", "ExecuteOrder");
-            return $"Request for placing order #{order.numberUser} sent.";
+            RouterLogger.Log($"Request for placing order #{order.NumberUserOrderId} sent.", "ExecuteOrder");
+            return $"Request for placing order #{order.NumberUserOrderId} sent.";
         }
 
         /// <summary>
@@ -2510,7 +2571,7 @@ namespace PlazaEngine.Engine
                 var timer = new System.Timers.Timer(100) { AutoReset = false };
                 timer.Elapsed += (s, e) =>
                 {
-                    order.state = Order.OrderStateType.Cancel;
+                    order.State = Order.OrderStateType.Cancel;
                     OrderChangedEvent?.Invoke(order, "The order has been cancelled.");
                 };
                 timer.Start();

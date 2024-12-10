@@ -10,7 +10,10 @@
 
   <ItemGroup>
     <Compile Remove="Engine\PlazaMarketDepthCreator.cs" />
-    <Compile Remove="Entity\Position.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\LiteInvest.Entity\LiteInvest.Entity.csproj" />
   </ItemGroup>
 
   <ItemGroup>

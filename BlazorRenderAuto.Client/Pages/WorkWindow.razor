@@ -1,0 +1,702 @@
+﻿@using System.Collections.Concurrent
+@using System.Collections.ObjectModel
+@using System.Reactive.Linq
+@using BlazorRenderAuto.Client.Entity
+@using BlazorRenderAuto.Client.Services
+@using DevExpress.Blazor.Internal
+@using LiteInvest.Entity.PlazaEntity
+@using LiteInvest.Entity.ServerEntity
+@using Telerik.Blazor.Components
+@using Telerik.DataSource
+@using Telerik.DataSource.Extensions
+@using _Imports = BlazorRenderAuto.Client._Imports
+@using GridRowClickEventArgs = Telerik.Blazor.Components.GridRowClickEventArgs
+
+@* @inject ApiDataServiceTest ApiDataServiceTest *@
+@inject ApiDataService ApiDataService
+@implements IDisposable
+
+@rendermode InteractiveAuto
+
+<style>
+	.cardnew {
+	height: 800px;
+	}
+	/* Общие стили для WorkWindow */
+	.workwindow-container {
+	background-color: #f5f5f5;
+	border: 1px solid #ddd;
+	border-radius: 5px;
+	min-height: 250px;
+	}
+
+	.telerik-table {
+	padding: 0px;
+	}
+
+	.k-grid-md td, .k-grid-md .k-table-td {
+	padding-block: 0px !important;
+	padding-inline: 0px !important;
+	}
+
+	.small-row-height .k-placeholder-line {
+		display: none;
+	}
+
+	.small-row-height.k-grid td {
+		margin: 0;
+		padding: 0;
+	}
+
+
+	/* Стили для контейнера с таблицей */
+	.table-container {
+	height: 90vh;
+	scrollbar-width: thin;
+	overflow-y: auto; /* Включаем вертикальный скроллинг */
+	}
+
+	/* Стили для самой таблицы */
+	.telerik-grid {
+	width: 100%;
+	height: 100%;
+	}
+
+	/* Стили для контента таблицы */
+	.telerik-grid .k-grid-content {
+	overflow-y: auto; /* Включаем вертикальный скроллинг в таблице */
+	}
+
+	/* Заголовок WorkWindow */
+	.workwindow-container h3 {
+	margin-top: 0;
+	font-size: 18px;
+	color: #333;
+	font-weight: bold;
+	}
+
+	/* Стили для TileLayout (если нужно стилизовать плитки) */
+	.telerik-tilelayout-item {
+	min-width: 285px;
+	min-height: 285px;
+	margin-bottom: 15px;
+	}
+
+	.tile-content {
+	background-color: #fff;
+	border-radius: 5px;
+	}
+
+	.k-grid-footer {
+	padding-inline-end: 0px !important;
+	}
+
+	.dxbl-chart-root .dxbl-chart {
+	padding: 0px !important;
+	}
+
+
+	.k-grid-content {
+	scrollbar-width: none;
+	}
+
+	.k-grid-header {
+	padding-inline-end: 0px !important;
+	}
+	/* Дополнительные улучшения для внешнего вида */
+	.telerik-grid .k-header {
+	background-color: #f0f0f0;
+	color: #333;
+	text-align: center;
+	font-weight: bold;
+	}
+
+	.telerik-grid .k-grid-header {
+	border-bottom: 1px solid #ddd;
+	}
+
+	.telerik-grid .k-grid-table {
+	border-spacing: 0;
+	border-collapse: collapse;
+	}
+
+	.telerik-grid .k-grid-table td,
+	.telerik-grid .k-grid-table th {
+	text-align: center;
+	border: 1px solid #ddd;
+	}
+
+	.k-card-body {
+	padding: 0px;
+	padding-block: 0 !important;
+	padding-inline: 0 !important;
+	}
+	/*.k-tilelayout-item-header{
+	display: none;
+	}*/
+	.k-grid-content {
+	padding: 0px;
+	}
+
+	.k-tilelayout-item-body k-card-body {
+	padding: 0px;
+	}
+	/* Убираем паддинги для всего TileLayout */
+	.telerik-tilelayout {
+	padding: 0;
+	}
+
+	.gridlayout-item {
+	font-size: 1.2em;
+	font-weight: 500;
+	text-align: center;
+	width: 100%;
+	height: 800px;
+	text-align: center;
+	position: relative;
+	z-index: 0;
+	display: flex;
+	align-items: start;
+	justify-content: start;
+	}
+
+	.gridlayout-item:before {
+	content: " ";
+	position: absolute;
+	z-index: -1;
+	width: 100%;
+	height: 100%;
+	left: 0;
+	top: 0;
+	opacity: 0.4;
+	}
+
+	.gridlayout-header:before {
+	background-color: var(--bs-red);
+	}
+
+	.gridlayout-content:before {
+	background-color: var(--bs-yellow);
+	}
+
+	.gridlayout-left-side-bar:before {
+	background-color: var(--bs-green);
+	}
+
+	.gridlayout-right-side-bar:before {
+	}
+
+	.gridlayout-footer:before {
+	background-color: var(--bs-blue);
+	opacity: 0.5;
+	}
+
+	.dxgrid {
+	height: 100%;
+	}
+
+
+	.dxbl-grid {
+	--dxbl-grid-font-size: 10px;
+	}
+
+	.chart {
+	height: 80vh;
+	}
+
+	.highlighted-item {
+	background-color: var(--bs-danger-bg-subtle)
+	}
+
+	.highlighted-item2 {
+	background-color: var(--bs-success-bg-subtle)
+	}
+
+	.transparent-item {
+	background-color: transparent
+	}
+
+	.card-body {
+	padding: 0;
+	}
+
+	.removeOrder {
+	cursor: pointer;
+	float: right;
+	}
+
+</style>
+
+
+<div id="@WindowId" tabindex="0">
+
+	<TelerikGridLayout>
+		<GridLayoutColumns>
+			<Telerik.Blazor.Components.GridLayoutColumn Width="33.33%"/>
+			<Telerik.Blazor.Components.GridLayoutColumn Width="33.33%"/>
+			<Telerik.Blazor.Components.GridLayoutColumn Width="33.33%" />
+		</GridLayoutColumns>
+
+		<GridLayoutRows>
+			<Telerik.Blazor.Components.GridLayoutRow />
+		</GridLayoutRows>
+
+		<GridLayoutItems>
+			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="1">
+
+			</Telerik.Blazor.Components.GridLayoutItem>
+			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
+			
+				<TelerikGrid Data="@Quotes"
+				             TItem="@MarketDepthLevel"
+				             ScrollMode="@GridScrollMode.Virtual"
+							 Height="90vh" RowHeight="30" PageSize="20"
+				             Sortable="true"
+				             Class="small-row-height">
+					<GridColumns>
+						<GridColumn Field="@nameof(MarketDepthLevel.Price)" Title="Product Name"/>
+						<GridColumn Field="@nameof(MarketDepthLevel.Volume)"/>
+					</GridColumns>
+				</TelerikGrid>
+
+			</Telerik.Blazor.Components.GridLayoutItem>
+			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
+
+				<TelerikGrid 
+					@ref="QuotesGrid" Id="@GridTableId" 
+					OnRowClick="@OnRowClickHandler" 
+					RowHeight="10"
+					Height="90vh"
+					Data="@Quotes"
+					TItem="@MarketDepthLevel"
+					ScrollMode="@GridScrollMode.Virtual"
+					PageSize="40">
+					<GridColumns>
+						<GridColumn Field="@nameof(MarketDepthLevel.Volume)" HeaderClass="d-none" />
+						<GridColumn  Field="@nameof(MarketDepthLevel.Price)" HeaderClass="d-none" />
+						<GridColumn  Field="@nameof(MarketDepthLevel.RestVolume)" HeaderClass="d-none" />
+					</GridColumns>
+					<RowTemplate Context="Quotes">
+						<td class="@GetClassForQuote(Quotes)">
+							@Quotes.Volume
+						</td>
+						<td class="@GetClassForQuote(Quotes)">
+							@Quotes.Price
+							@* 	@Quotes.Price.ToString("0") *@
+						</td>
+						<td class="@GetClassForQuote(Quotes)">
+							@Quotes.RestVolume
+							@if (Quotes.RestVolume.ToString() != string.Empty)
+							{
+								<svg class="removeOrder" @onclick="() => RemoveOrderClick(Quotes)" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="-2 -5 15 15">
+									<line x1="0" y1="0" x2="10" y2="10" stroke="red" stroke-width="2"/>
+									<line x1="0" y1="10" x2="10" y2="0" stroke="red" stroke-width="2"/>
+								</svg>
+							}
+						</td>
+					</RowTemplate>
+				</TelerikGrid>
+
+			</Telerik.Blazor.Components.GridLayoutItem>
+		</GridLayoutItems>
+	</TelerikGridLayout>
+
+</div>
+
+
+
+@code {
+
+
+	private List<Product> GridData { get; set; } = new List<Product>();
+
+	private async Task OnGridRead(GridReadEventArgs args)
+	{
+		await Task.Delay(200); // simulate network delay
+
+		DataSourceResult result = GridData.ToDataSourceResult(args.Request);
+
+		args.Data = result.Data;
+		args.Total = result.Total;
+		args.AggregateResults = result.AggregateResults;
+	}
+
+	protected override void OnInitialized()
+	{
+		GridData = new List<Product>();
+		var rnd = new Random();
+
+		for (int i = 1; i <= 1000; i++)
+		{
+			GridData.Add(new Product()
+			{
+				Id = i,
+				Name = $"Product {i}",
+				Stock = rnd.Next(0, 100)
+			});
+		}
+	}
+
+	public class Product
+	{
+		public int Id { get; set; }
+		public string Name { get; set; } = string.Empty;
+		public int Stock { get; set; }
+	}
+
+
+
+
+
+
+	[Parameter] public string secHash { get; set; }
+	[Parameter] public SecurityApi secutityMain { get; set; }
+
+	// public ObservableCollection<Quote> GridData { get; set; }
+	public ObservableCollection<MarketDepthLevel> Quotes { get; set; }
+
+	public List<int?> WebSockets { get; set; }
+	public TelerikGrid<MarketDepthLevel> QuotesGrid { get; set; }
+
+	private string WindowId { get; set; } = Guid.NewGuid().ToString();
+	private string GridTableId { get; set; } = Guid.NewGuid().ToString();
+
+
+	/// <summary>
+	/// Индекс к которому мы должны таблицу откскроллить!
+	/// Обновляется на лету
+	/// </summary>
+	int bestbidIndex { get; set; }
+
+	protected override async Task<Task> OnInitializedAsync()
+	{
+		Console.WriteLine($"{DateTime.Now} On Initialized secID{secutityMain.id} set WorkWindow");
+
+		//Quotes = new();
+
+		ApiDataService.NewMyOrder += NewMyOrder;
+		ApiDataService.NewQuotes += OnNewMarketDepth;
+		ApiDataService.NewTicks += OnNewTicks;
+
+
+		//сначала подпишемся на ордера
+
+		//TODO: Сделать нормальную подписку на частные ордера
+
+		WebSockets = new List<int?>();
+
+		WebSockets.Add(await ApiDataService.SubscribeOrderBook(secutityMain.id));
+		WebSockets.Add(await ApiDataService.SubcribeTick(secutityMain.id));
+
+		return base.OnInitializedAsync();
+	}
+
+	// public override Task SetParametersAsync(ParameterView parameters)
+	// {
+
+	// 	Console.WriteLine($"{DateTime.Now} Re Parameters set WorkWindow");
+
+	// 	return base.SetParametersAsync(parameters);
+	// }
+
+	protected override async Task OnParametersSetAsync()
+	{
+		Console.WriteLine($"{DateTime.Now} On Parameters {secutityMain.id} set WorkWindow");
+
+		base.OnParametersSet();
+	}
+
+
+	/// <summary>
+	/// Выставление
+	/// или отмена если нажали по той же ячейке.
+	/// </summary>
+	/// <param name="arg"></param>
+	/// <returns></returns>
+	private Task OnRowClickHandler(GridRowClickEventArgs arg)
+	{
+		try
+		{
+			// var item = (MarketDepthLevel)arg.Item;
+
+			// if (Orders.ContainsKey(item.Price))
+			// {
+			// 	RemoveOrderClick(item);
+			// 	return Task.CompletedTask;
+			// }
+
+			// var order = new ClientOrder()
+			// {
+			// 	SecID = secutityMain.id,
+			// 	Side = item.Type,
+			// 	Volume = orderVolume,
+			// 	Price = item.Price,
+			// 	Market = false,
+			// };
+
+			// Console.WriteLine($"Sending order price = {order.Price} side = {order.Side}");
+
+			// ApiDataService.SendOrder(order);
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex.Message);
+		}
+
+		return Task.CompletedTask;
+	}
+
+	private void RemoveOrderClick(MarketDepthLevel level)
+	{
+
+		// Orders.TryGetValue(level.Price, out var _order);
+
+		// if (_order == null)
+		// 	Console.WriteLine("No Order Found in Row");
+
+		// ApiDataService.CancelOrder(_order);
+
+
+	}
+
+	int renders = 0;
+	protected override bool ShouldRender()
+	{
+		Console.WriteLine($"{DateTime.Now} Should {secutityMain.id} Render WorkWindow");
+		return base.ShouldRender();
+	}
+
+
+	private void OnNewTicks(string arg1, List<TradeApi> arg2)
+	{
+
+	}
+
+	ConcurrentDictionary<decimal, MarketDepthLevel> QuotesDictionary = new();
+
+	/// <summary>
+	///Хранит информацию 
+	/// </summary>
+	Dictionary<decimal, int> IndexesQuotes = new Dictionary<decimal, int>();
+
+
+	private void InitialBuildQuotes(decimal bestbid)
+	{
+		try
+		{
+			int levels = 100 ;
+
+			//округление
+			// var min = (bestbid * 0.7m);
+
+			var min = bestbid - levels * secutityMain.PriceStep;
+			var realmin = min - min % secutityMain.PriceStep;
+			//округление
+			//var max = bestbid * 1.3m;
+			var max = bestbid + levels * secutityMain.PriceStep;
+			var realmax = max - max % secutityMain.PriceStep;
+
+			Console.WriteLine($"secid={secutityMain.id} BESTBID ={bestbid} MIN {realmin} MAX {realmax}");
+
+			int index = 0;
+
+			ObservableCollection<MarketDepthLevel> localQuotesBuild = new();
+
+			// for (decimal i = realmin; i < realmax; i += secutityMain.PriceStep)
+			// {
+			// 	IndexesQuotes.TryAdd(i, index);
+			// 	localQuotesBuild.Add(MarketDepthLevel.GetEmptyLevel(i));
+			// 	//LocalQuotesBuild.Add(new MarketDepthLevel() { Ask = 1, Price = i, });
+			// 	index++;
+			// }
+			Quotes = new();
+			
+			
+			for (decimal i = max; i > min; i -= secutityMain.PriceStep)
+			{
+				IndexesQuotes.TryAdd(i, index);
+				localQuotesBuild.Add(MarketDepthLevel.GetEmptyLevel(i));
+				//LocalQuotesBuild.Add(new MarketDepthLevel() { Ask = 1, Price = i, });
+				index++;
+			}
+
+			Quotes = localQuotesBuild;
+			
+			Console.WriteLine($"{secutityMain.id} LOADED INITIAL EMPTY QUOTES");
+
+		}
+		catch (Exception ex)
+		{
+
+		}
+
+	}
+
+
+	private void OnNewMarketDepth(List<MarketDepthLevel> bids, List<MarketDepthLevel> asks, string secID)
+	{
+		if (secID != secutityMain.id)
+			return;
+
+		var bestbid = bids[0].Price;
+
+		//Обновление индекса
+		if (IndexesQuotes.ContainsKey(bestbid))
+		{
+			bestbidIndex = IndexesQuotes[bestbid];
+			Console.WriteLine($" BestBidIndex {bestbidIndex} bestbID= {bestbid}");
+		}
+
+		// ------- перенос котировок в словарь ------------//
+
+		var newdictionaryQuotes = new ConcurrentDictionary<decimal, MarketDepthLevel>();
+		foreach (var bid in bids)
+		{
+			newdictionaryQuotes.TryAdd(bid.Price, bid);
+		}
+
+		foreach (var ask in asks)
+		{
+			newdictionaryQuotes.TryAdd(ask.Price, ask);
+		}
+
+
+		//изначальная установка
+		if (Quotes==null)
+		{
+			QuotesDictionary = newdictionaryQuotes;
+			InitialBuildQuotes(bids[0].Price);
+
+			//TODO: вот здесь надо двинуть в середину. в первый раз!
+
+		}
+		else
+		{
+			// обновление
+
+			// удалился из нашей колллекции уровень...
+			//
+			foreach (var quoteKey in QuotesDictionary.Keys.ToList())
+			{
+
+				if (!newdictionaryQuotes.ContainsKey(quoteKey))
+				{
+					//Уровень удален.. 
+					//Значит кидаем 0
+
+					var indexfound = IndexesQuotes[quoteKey];
+					//меняем на нулевой
+					Quotes[indexfound] = MarketDepthLevel.GetEmptyLevel(quoteKey);
+
+					//меняем коллекицю внутри цикла
+					QuotesDictionary.TryRemove(quoteKey, out var _);
+
+					//Console.WriteLine($" {secID} Level removed {quoteKey} index = {indexfound}");
+
+				}
+				else
+				{
+					//новая котировка
+					var freshQuote = newdictionaryQuotes[quoteKey];
+					var oldquote = QuotesDictionary[quoteKey];
+
+					if (oldquote != freshQuote)
+					{
+						//Поменялась котировочка.. 
+						var indexfound = IndexesQuotes[quoteKey];
+						Quotes[indexfound] = freshQuote;
+
+
+						QuotesDictionary[quoteKey] = freshQuote;
+						//Console.WriteLine($" {secID} Level Changed! {quoteKey} index = {indexfound}");
+
+					}
+
+				} 
+
+
+			}
+
+			foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
+			{
+				//в нашей колекции нет нового уровня... 
+				if (!QuotesDictionary.ContainsKey(quoteKey))
+				{
+					var indexfound = IndexesQuotes[quoteKey];
+					Quotes[indexfound] = newdictionaryQuotes[quoteKey];
+
+					QuotesDictionary.TryAdd(quoteKey, newdictionaryQuotes[quoteKey]);
+					//Console.WriteLine($" {secID} Level Added! {quoteKey} index = {indexfound}");
+
+				}
+			}
+
+			//TODO: ВОЗМОЖНО ЕЩЕ НЕ УЧЕЛ Какой то перебор
+
+		}
+
+		//------- перенос котировок в словарь ------------//
+
+
+
+	}
+
+	private void NewMyOrder(Order obj)
+	{
+		//throw new NotImplementedException();
+	}
+
+
+	//------------ графика ------------//
+
+
+
+
+	public string GetClassForQuote(MarketDepthLevel quote)
+	{
+
+		if (quote.Volume == 0 || quote.Volume == null)
+		{
+			return "transparent-item";
+		}
+
+		return quote.Type == Side.Sell ? "highlighted-item" : "highlighted-item2";
+
+	}
+
+
+
+	// protected override Task OnParametersSetAsync()
+	// {
+	// 	GridData = ApiDataServiceTest.GetQuotes();
+
+	// 	ApiDataServiceTest.NewQuoteChange += ProcessQuote;
+	// 	ApiDataServiceTest.SubscribeForQuotes("11");
+
+	// 	return base.OnParametersSetAsync();
+	// }
+
+	// public void ProcessQuote(QuoteChange q)
+	// {
+	// 	if (GridData != null)
+	// 	{
+	// 		GridData[q.section] = q.Quote;
+	// 		Console.WriteLine($"updated {q.section} {q.Quote.Price}");
+	// 	}
+	// }
+	public void Dispose()
+	{
+		Console.WriteLine($"Disposing {secutityMain.id}");
+
+		ApiDataService.NewMyOrder -= NewMyOrder;
+		ApiDataService.NewQuotes -= OnNewMarketDepth;
+		ApiDataService.NewTicks -= OnNewTicks;
+
+		foreach (var websocketID in WebSockets)
+		{
+			ApiDataService.StopWebSocket(websocketID);
+		}
+
+	}
+
+}

@@ -1,0 +1,156 @@
+﻿@* @page "/counter" *@
+@page "/"
+
+@using System.Collections.ObjectModel
+@using BlazorRenderAuto.Client.Services
+@using DevExpress.Blazor
+@using LiteInvest.Entity.ServerEntity
+@using Telerik.Blazor.Components
+
+@inject ApiDataService ApiDataService;
+
+
+@rendermode InteractiveAuto
+
+<style>
+    .internalSearch {
+    margin: 10px
+    }
+
+    .stacklayout-item {
+    font-size: 1.2em;
+    font-weight: 500;
+    text-align: center;
+    height: 100%;
+    padding: 0.5rem;
+    text-align: center;
+    position: relative;
+    z-index: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    }
+
+    .stacklayout-item:before {
+    content: " ";
+    position: absolute;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    opacity: 0.4;
+    }
+
+    .stacklayout-header:before {
+    background-color: var(--bs-red);
+    }
+
+    .stacklayout-content:before {
+    background-color: var(--bs-yellow);
+    }
+
+    .stacklayout-left-side-bar:before {
+    background-color: var(--bs-green);
+    }
+
+    .stacklayout-right-side-bar:before {
+    background-color: var(--bs-info);
+    }
+
+    .stacklayout-footer:before {
+    background-color: var(--bs-blue);
+    opacity: 0.5;
+    }
+
+    .k-tilelayout-item-header.k-card-header {
+    padding-block: 4px !important;
+    padding-inline: 4px !important;
+    }
+
+    .buttonclose {
+    cursor: pointer;
+    float: right;
+    }
+
+    @@media (max-width: 575.98px) {
+    .stacklayout-item {
+    font-size: 0.9em;
+    }
+    }
+
+    .selected {
+    border: 2px solid #FFFFFF !important; /* Пример выделения границей */
+    }
+
+</style>
+
+
+<TelerikRootComponent>
+
+	<Menu NewSecSelected="@NewSecAdded" LoginClicked="LogInClicked"></Menu>
+	<WindowsRenderer/>
+
+</TelerikRootComponent>
+
+
+@code {
+
+    //texts//
+
+    IEnumerable<SecurityApi> Instruments { get; set; } 
+
+
+    private SecurityApi SecuritySelected { get; set; }
+
+    public DxComboBox<SecurityApi, SecurityApi> ComboBoxSec { get; set; }
+    public bool loadingLogIn { get; set; }
+
+    // private void OnAutoCompleteChanged(SecurityApi securityApi)
+    // {
+
+    //     if (securityApi == null)
+    //         return;
+
+    //     var clone = (SecurityApi) securityApi.Clone();
+    //     clone.SpecialHash = DateTime.Now.GetHashCode().ToString();
+
+
+    //     OpenInstrument(clone);
+
+    // }
+
+
+    protected override bool ShouldRender()
+    {
+        Console.WriteLine($"{DateTime.Now} Основное -  ShouldRender");
+
+        return base.ShouldRender();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine($"{DateTime.Now} Основное - OnAfterRender");
+
+	    base.OnAfterRender(firstRender);
+    }
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine($"{DateTime.Now} Основное - ParametersSet!");
+
+		base.OnParametersSet();
+	}
+
+
+    private async void LogInClicked()
+    {
+        //await windowRef.ShowAtAsync();
+    }
+
+    private void NewSecAdded(SecurityApi sec)
+    {
+	   
+    }
+
+}

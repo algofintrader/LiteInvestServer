@@ -1,8 +1,4 @@
-﻿using PlazaEngine.Entity;
-
-using RouterLoggerSpace;
-
-using ru.micexrts.cgate;
+﻿using ru.micexrts.cgate;
 using ru.micexrts.cgate.message;
 
 using System;
@@ -11,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using LiteInvest.Entity.PlazaEntity;
 
 namespace PlazaEngine.Engine
 {
@@ -146,7 +143,17 @@ namespace PlazaEngine.Engine
                                     }
                                     var isin_id = replmsg["isin_id"].asInt().ToString();
 
-                                    Trade trade = new Trade(replmsg, _dealsOnLine, plazaConnector.Securities);
+                                    Trade trade = new Trade(plazaConnector.Securities);
+
+                                    trade.TransactionID = replmsg["id_deal"].asLong().ToString();
+                                    trade.SecurityId = replmsg["isin_id"].asInt().ToString();
+                                    if (plazaConnector.Securities.TryGetValue(replmsg["isin_id"].asInt().ToString(), out Security? _secname))
+                                        trade.SecurityName = _secname.Name;
+                                    trade.Time = replmsg["moment"].asDateTime();
+                                    trade.IsOnline = _dealsOnLine;
+                                    trade.Side = replmsg["public_order_id_buy"].asLong() > replmsg["public_order_id_sell"].asLong() ? Side.Buy : Side.Sell;
+                                    trade.Volume = replmsg["xamount"].asInt();
+                                    trade.Price = Convert.ToDecimal(replmsg["price"].asDecimal());
 
                                     AllTicks[trade.SecurityId] = trade;
                                     

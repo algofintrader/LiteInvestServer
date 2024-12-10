@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using DevExpress.Blazor;
-using PlazaEngine.Entity;
+using LiteInvest.Entity.PlazaEntity;
 
 namespace LiteInvestMainFront.Data
 {

@@ -22,6 +22,8 @@
 
   <ItemGroup>
     <Folder Include="Controllers\" />
+    <Folder Include="Entity\" />
+    <Folder Include="Records\" />
   </ItemGroup>
 
 </Project>

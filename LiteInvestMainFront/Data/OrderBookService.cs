@@ -1,6 +1,6 @@
-﻿using LiteInvestServer.Json;
-using PlazaEngine.Entity;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
+using LiteInvest.Entity.PlazaEntity;
+using LiteInvest.Entity.ServerEntity;
 
 namespace LiteInvestMainFront.Data
 {

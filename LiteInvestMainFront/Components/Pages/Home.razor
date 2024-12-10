@@ -1,10 +1,9 @@
 ﻿@page "/"
 @using System.Collections.Concurrent
 @using System.Collections.ObjectModel
+@using LiteInvest.Entity.ServerEntity
 @using LiteInvestMainFront.Data
-@using LiteInvestServer.Json
 @using Orientation = DevExpress.Blazor.Orientation
-@using PlazaEngine.Entity
 @using LiteInvestMainFront.Services
 
 @inject IJSRuntime js;
@@ -104,21 +103,13 @@ OnChanged="(Customer customer) => OnAutoCompleteChanged(customer)" />-->
         <form class="d-flex internalSearch" role="search">
             <DxComboBox @ref=combobox
             Data="@Instruments"
-            @bind-Value="@securitySelected"
-            TextFieldName="@nameof(securitySelected.Isin)"
+            @bind-Value="@SecuritySelected"
+            TextFieldName="@nameof(SecuritySelected.Isin)"
             SearchMode="@ListSearchMode.AutoSearch"
             SearchFilterCondition="@ListSearchFilterCondition.Contains"
             ListRenderMode="ListRenderMode.Entire"
             CssClass="cw-480"
             InputId="cbVirtualScrolling" />
-            <!--<AutoComplete @bind-Value="securitySelected"
-            TItem="SecurityApi"
-            DataProvider="InstrumentsDataProvider"
-            PropertyName="Isin"
-            Placeholder="Выберите инструмент"
-            OnChanged="(SecurityApi customer) => OnAutoCompleteChanged(customer)" />-->
-            <!--<input class="form-control me-2" type="search" placeholder="Инструменты"  aria-label="Search">
-            <button class="btn btn-outline-success" type="submit">Search</button>-->
         </form>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -303,7 +294,7 @@ OnReorder="@OnReorderHandler"
     LogInForm logform;
 
     private SecurityApi _securitySelected;
-    private SecurityApi securitySelected
+    private SecurityApi SecuritySelected
     {
         get
         {

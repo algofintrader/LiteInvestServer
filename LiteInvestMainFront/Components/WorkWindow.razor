@@ -2,11 +2,10 @@
 @using System.Drawing
 @using System.Net.WebSockets
 @using DevExpress.Data.Browsing
+@using LiteInvest.Entity.PlazaEntity
+@using LiteInvest.Entity.ServerEntity
 @using LiteInvestMainFront.Data
 @using LiteInvestMainFront.Services
-@using LiteInvestServer.Json
-@using LiteInvestServer.Records
-@using PlazaEngine.Entity
 @using Websocket.Client
 @using GridRowClickEventArgs = Telerik.Blazor.Components.GridRowClickEventArgs
 @using Orientation = DevExpress.Blazor.Orientation
@@ -284,23 +283,7 @@
 				</DxChart>
 			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
-				@* 			<DxGrid CssClass="dxgrid"
-			@ref=Grid
-			Data="@Quotes"
-			ShowAllRows="true"
-			ColumnResizeMode="GridColumnResizeMode.NextColumn"
-			TextWrapEnabled="false"
-			CustomizeElement="Grid_CustomizeElement"
-			ShowGroupPanel="false"
-			HighlightRowOnHover="true"
-			FocusedRowEnabled="true">
 
-			<Columns>
-			<DxGridDataColumn FieldName="Volume" />
-			<DxGridDataColumn FieldName="Price"/>
-			<DxGridDataColumn FieldName="Type" Width="0" Visible="false" />
-			</Columns>
-			</DxGrid> *@
 				<TelerikGrid @ref="QuotesGrid" Id="@GridTableId" OnRowClick="@OnRowClickHandler" Height="90vh" Resizable="true" Size="Small" Class="telerik-table" Data="@Quotes">
 					<GridColumns>
 						<Telerik.Blazor.Components.GridColumn Width="45%" Field="Volume" HeaderClass="d-none" />

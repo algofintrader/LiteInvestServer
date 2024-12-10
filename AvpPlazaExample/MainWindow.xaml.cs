@@ -18,11 +18,10 @@ using System.Xml.Linq;
 using System.Xml.Serialization;
 
 using AvpPlazaTester;
-
+using LiteInvest.Entity.PlazaEntity;
 using PlazaEngine;
 using PlazaEngine.Engine;
-using PlazaEngine.Entity;
-using RouterLoggerSpace;
+
 
 namespace AvpPlazaExample
 {
@@ -352,7 +351,7 @@ namespace AvpPlazaExample
 
         ConcurrentQueue<MarketDepth> depthQueue = new ConcurrentQueue<MarketDepth>();
 
-        private void Plaza_MarketDepthChangeEvent(PlazaEngine.Entity.MarketDepth depth)
+        private void Plaza_MarketDepthChangeEvent(MarketDepth depth)
         {
             if (selectedSec is null) return;
 

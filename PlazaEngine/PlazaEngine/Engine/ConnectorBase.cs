@@ -1,6 +1,7 @@
-﻿using PlazaEngine.Entity;
+﻿
 
 using System.Collections.Concurrent;
+using LiteInvest.Entity.PlazaEntity;
 
 namespace PlazaEngine.Engine
 {

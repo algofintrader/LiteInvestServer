@@ -1,6 +1,5 @@
 ﻿
 using Fleck;
-using LiteInvestServer.Entity;
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -9,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Security.Claims;
 using System.Web;
+using LiteInvest.Entity.ServerEntity;
 
 namespace LiteInvestServer.WebScoketFactory
 {

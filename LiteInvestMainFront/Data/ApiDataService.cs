@@ -1,5 +1,4 @@
 ﻿using RestSharp;
-using LiteInvestServer.Json;
 using System.Text.Json;
 using System;
 using System.Collections.Concurrent;
@@ -13,10 +12,9 @@ using Websocket.Client;
 //TODO: провести рефакторинг (пока запихнул по быстрому)
 //А так надо все объекты вывести нормально
 
-using PlazaEngine.Entity;
 using System.Web;
-using LiteInvestServer.Records;
-using LiteInvestServer.Entity;
+using LiteInvest.Entity.PlazaEntity;
+using LiteInvest.Entity.ServerEntity;
 
 namespace LiteInvestMainFront.Data
 {

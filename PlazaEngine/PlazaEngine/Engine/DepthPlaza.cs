@@ -10,11 +10,11 @@ using System.Runtime.InteropServices;
 using ru.micexrts.cgate.message;
 using System.Reflection.Metadata;
 using PlazaEngine.Engine;
-using PlazaEngine.Entity;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Transactions;
 using System.Reflection;
+using LiteInvest.Entity.PlazaEntity;
 
 namespace PlazaEngine.Depth
 {
@@ -723,7 +723,7 @@ namespace PlazaEngine.Depth
 
             foreach (var item in mdBuy)
             {
-                Entity.MarketDepthLevel MDLevel = new Entity.MarketDepthLevel();
+               MarketDepthLevel MDLevel = new ();
 				MDLevel.Price = item.Key;
 				MDLevel.Bid = item.Value;
                 //md.Bids.Add(MDLevel);
@@ -731,7 +731,7 @@ namespace PlazaEngine.Depth
             }
             foreach (var item in mdSell)
             {
-                Entity.MarketDepthLevel MDLevel = new Entity.MarketDepthLevel();
+	            MarketDepthLevel MDLevel = new ();
                 MDLevel.Price = item.Key;
                 MDLevel.Ask = item.Value;
                 md.Asks.Insert(0,MDLevel);
