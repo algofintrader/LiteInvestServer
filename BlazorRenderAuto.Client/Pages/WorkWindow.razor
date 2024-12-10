@@ -18,7 +18,9 @@
 
 @rendermode InteractiveAuto
 
-<style>
+
+
+ <style>
 	.cardnew {
 	height: 800px;
 	}
@@ -28,6 +30,11 @@
 	border: 1px solid #ddd;
 	border-radius: 5px;
 	min-height: 250px;
+	}
+
+	.k-table-row{
+		font-size:10px;
+		line-height:10px;
 	}
 
 	.telerik-table {
@@ -225,7 +232,7 @@
 	float: right;
 	}
 
-</style>
+</style> 
 
 
 <div id="@WindowId" tabindex="0">
@@ -246,18 +253,6 @@
 
 			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
-			
-				<TelerikGrid Data="@Quotes"
-				             TItem="@MarketDepthLevel"
-				             ScrollMode="@GridScrollMode.Virtual"
-							 Height="90vh" RowHeight="30" PageSize="20"
-				             Sortable="true"
-				             Class="small-row-height">
-					<GridColumns>
-						<GridColumn Field="@nameof(MarketDepthLevel.Price)" Title="Product Name"/>
-						<GridColumn Field="@nameof(MarketDepthLevel.Volume)"/>
-					</GridColumns>
-				</TelerikGrid>
 
 			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
@@ -270,7 +265,7 @@
 					Data="@Quotes"
 					TItem="@MarketDepthLevel"
 					ScrollMode="@GridScrollMode.Virtual"
-					PageSize="40">
+					PageSize="150">
 					<GridColumns>
 						<GridColumn Field="@nameof(MarketDepthLevel.Volume)" HeaderClass="d-none" />
 						<GridColumn  Field="@nameof(MarketDepthLevel.Price)" HeaderClass="d-none" />
@@ -484,7 +479,7 @@
 	{
 		try
 		{
-			int levels = 100 ;
+			int levels = 500 ;
 
 			//округление
 			// var min = (bestbid * 0.7m);
@@ -544,7 +539,7 @@
 		if (IndexesQuotes.ContainsKey(bestbid))
 		{
 			bestbidIndex = IndexesQuotes[bestbid];
-			Console.WriteLine($" BestBidIndex {bestbidIndex} bestbID= {bestbid}");
+			//Console.WriteLine($" BestBidIndex {bestbidIndex} bestbID= {bestbid}");
 		}
 
 		// ------- перенос котировок в словарь ------------//
