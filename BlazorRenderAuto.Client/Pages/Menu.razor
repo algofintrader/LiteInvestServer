@@ -49,7 +49,7 @@
                                  @bind-Value="@AutoComplete"
                                  Placeholder="Enter your role (can be free text)"
                                  Filterable="true"
-                                 OnChange="() => SecuritySelected = Instruments.FirstOrDefault(i => i.Isin == AutoComplete)"
+                                 OnChange="OnChangeHandler"
                                  FilterOperator="@StringFilterOperator.StartsWith"
                                  ShowClearButton="true" />
         </form>
@@ -80,6 +80,23 @@
 
 @code
 {
+    private string lastOnChangeValue { get; set; }
+
+    private async Task OnChangeHandler (object theUserInput)
+    {
+        string currValue = theUserInput as string;
+
+        if (!currValue.Equals(lastOnChangeValue))
+        {
+            lastOnChangeValue = currValue;
+
+            if (Instruments.FirstOrDefault(i => i.Isin == AutoComplete) != null)
+            {
+                SecuritySelected = Instruments.FirstOrDefault(i => i.Isin == AutoComplete);
+            }
+        }
+    }
+
     DxWindow windowRef;
     bool windowVisible;
 
