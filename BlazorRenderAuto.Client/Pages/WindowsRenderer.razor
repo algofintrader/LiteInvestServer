@@ -19,7 +19,7 @@ Resizable="true">
 <TileLayoutItems >
 		@foreach (var security in OpenedInstruments)
 		{
-			<TileLayoutItem @key="security.SpecialHash" >
+			<TileLayoutItem @key="security.SpecialHash">
 				<HeaderTemplate>
 					@security.Isin 
 					<svg class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
