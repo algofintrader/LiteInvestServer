@@ -7,7 +7,7 @@ namespace BlazorRenderAuto.Client.Services
 		public DotNetObjectReference<JsInteropService> ServiceObjectDotNetReference { get; set; } = null;
 		public event Action<string, bool, bool> OnKeyUp;
 		public event Action<string, string, bool, bool> OnKeyDown;
-		public event Action<string, string, string> OnScroll;
+		public event Action<string, string, string, int> OnScroll;
 		public event Action<string> OnWheel;
 		public JsInteropService()
 		{
@@ -24,9 +24,9 @@ namespace BlazorRenderAuto.Client.Services
 			OnKeyUp?.Invoke(keyCode, isCtrl, isShift);
 		}
 		[JSInvokable("OnScroll")]
-		public void OnScrollJs(string windowId, string firstVisibleRowPrice, string lastVisibleRowPrice)
+		public void OnScrollJs(string windowId, string firstVisibleRowPrice, string lastVisibleRowPrice, int visibleRowCount)
 		{
-			OnScroll?.Invoke(windowId, firstVisibleRowPrice, lastVisibleRowPrice);
+			OnScroll?.Invoke(windowId, firstVisibleRowPrice, lastVisibleRowPrice, visibleRowCount);
 		}
 		[JSInvokable("OnWheel")]
 		public void OnWheelJs(string elementId)

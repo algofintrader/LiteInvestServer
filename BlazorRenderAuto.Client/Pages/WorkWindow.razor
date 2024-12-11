@@ -502,8 +502,8 @@
 			// 	index++;
 			// }
 			Quotes = new();
-			
-			
+
+
 			for (decimal i = max; i > min; i -= secutityMain.PriceStep)
 			{
 				IndexesQuotes.TryAdd(i, index);
@@ -578,13 +578,13 @@
 				{
 
 
-                    //меняем коллекицю внутри цикла
-                    QuotesDictionary.TryRemove(quoteKey, out var _);
+					//меняем коллекицю внутри цикла
+					QuotesDictionary.TryRemove(quoteKey, out var _);
 
 					//Уровень удален.. 
 					//Значит кидаем 0
 					if (!IndexesQuotes.ContainsKey(quoteKey))
-					continue;
+						continue;
 
 					var indexfound = IndexesQuotes[quoteKey];
 					//меняем на нулевой
@@ -601,10 +601,10 @@
 
 					if (oldquote != freshQuote)
 					{
-                        QuotesDictionary[quoteKey] = freshQuote;
+						QuotesDictionary[quoteKey] = freshQuote;
 
-                        if (!IndexesQuotes.ContainsKey(quoteKey))
-                            continue;
+						if (!IndexesQuotes.ContainsKey(quoteKey))
+							continue;
 
 						//Поменялась котировочка.. 
 						var indexfound = IndexesQuotes[quoteKey];
@@ -623,11 +623,11 @@
 			{
 				//в нашей колекции нет нового уровня... 
 				if (!QuotesDictionary.ContainsKey(quoteKey))
-                {
-                    QuotesDictionary[quoteKey] = newdictionaryQuotes[quoteKey];
-					
-                    if (!IndexesQuotes.ContainsKey(quoteKey))
-                        continue;
+				{
+					QuotesDictionary[quoteKey] = newdictionaryQuotes[quoteKey];
+
+					if (!IndexesQuotes.ContainsKey(quoteKey))
+						continue;
 
 					var indexfound = IndexesQuotes[quoteKey];
 					Quotes[indexfound] = newdictionaryQuotes[quoteKey];
@@ -693,7 +693,7 @@
 	int firstVisibleIndex;
 	int lastVisibleIndex;
 
-	private void OnScroll(string gridTableId, string firstVisibleRowPrice, string lastVisibleRowPrice)
+	private void OnScroll(string gridTableId, string firstVisibleRowPrice, string lastVisibleRowPrice, int visibleRowCount)
 	{
 		if (gridTableId == GridTableId)
 		{
@@ -711,6 +711,7 @@
 
 		Console.WriteLine($"{firstVisibleIndex} {firstVisibleRowPrice}");
 		Console.WriteLine($"{lastVisibleIndex} {lastVisibleRowPrice}");
+		Console.WriteLine($"Видимые строки {visibleRowCount}");
 
 		//Console.WriteLine($"{windowId}");
 	}

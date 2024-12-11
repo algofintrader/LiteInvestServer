@@ -49,6 +49,7 @@ function getScrollEvent(gridTableId) {
 
                     let firstVisibleRowPrice = null;
                     let lastVisibleRowPrice = null;
+                    let visibleRowCount = 0;
 
                     rows.forEach((row, index) => {
                         let rect = row.getBoundingClientRect();
@@ -63,6 +64,8 @@ function getScrollEvent(gridTableId) {
                                     firstVisibleRowPrice = price;
                                 }
                                 lastVisibleRowPrice = price;
+
+                                visibleRowCount++;
                             }
                         }
                     });
@@ -71,7 +74,8 @@ function getScrollEvent(gridTableId) {
                         DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync(
                             "OnScroll", gridTableId,
                             firstVisibleRowPrice,
-                            lastVisibleRowPrice
+                            lastVisibleRowPrice,
+                            visibleRowCount
                         );
                     }
                 } else {
@@ -83,6 +87,7 @@ function getScrollEvent(gridTableId) {
         console.log("Родительский элемент с ID " + gridTableId + " не найден");
     }
 }
+
 
 function getWheelEvent(historyTableId) {
     let parent = document.getElementById(historyTableId);
