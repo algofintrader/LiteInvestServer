@@ -22,6 +22,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddScoped<ApiDataService>();
 builder.Services.AddScoped<ApiDataServiceTest>();
+builder.Services.AddScoped<JsInteropService>();
 
 builder.Services.AddTelerikBlazor();
 builder.Services.AddDevExpressBlazor(config => config.BootstrapVersion = DevExpress.Blazor.BootstrapVersion.v5);

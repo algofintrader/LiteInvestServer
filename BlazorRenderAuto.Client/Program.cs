@@ -10,5 +10,6 @@ builder.Services.AddDevExpressBlazor(config => config.BootstrapVersion = DevExpr
 
 builder.Services.AddScoped<ApiDataService>();
 builder.Services.AddScoped<ApiDataServiceTest>();
+builder.Services.AddScoped<JsInteropService>();
 
 await builder.Build().RunAsync();

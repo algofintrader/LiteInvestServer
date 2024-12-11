@@ -14,6 +14,8 @@
 
 @* @inject ApiDataServiceTest ApiDataServiceTest *@
 @inject ApiDataService ApiDataService
+@inject JsInteropService jsInteropService
+@inject IJSRuntime JSRuntime
 @implements IDisposable
 
 @rendermode InteractiveAuto
@@ -21,6 +23,11 @@
 
 
  <style>
+
+	.highlight-row {
+		background-color: yellow !important;
+	}
+
 	.cardnew {
 	height: 800px;
 	}
@@ -228,8 +235,21 @@
 	}
 
 	.removeOrder {
+	flex-shrink: 0;
 	cursor: pointer;
 	float: right;
+	}
+
+	.restVolume {
+		display: flex;
+		height: 22px;
+	}
+
+	.restVolumeSpan {
+		flex-shrink: 1;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis
 	}
 
 </style> 
@@ -261,26 +281,31 @@
 					@ref="QuotesGrid" Id="@GridTableId" 
 					OnRowClick="@OnRowClickHandler" 
 					RowHeight="10"
-					Height="90vh"
+					Height="80vh"
 					Data="@Quotes"
 					TItem="@MarketDepthLevel"
 					ScrollMode="@GridScrollMode.Virtual"
 					PageSize="150">
 					<GridColumns>
-						<GridColumn Field="@nameof(MarketDepthLevel.Volume)" HeaderClass="d-none" />
-						<GridColumn  Field="@nameof(MarketDepthLevel.Price)" HeaderClass="d-none" />
-						<GridColumn  Field="@nameof(MarketDepthLevel.RestVolume)" HeaderClass="d-none" />
+						<GridColumn Width="1fr" Field="@nameof(MarketDepthLevel.Volume)" HeaderClass="d-none" />
+						<GridColumn Width="1fr"  Field="@nameof(MarketDepthLevel.Price)" HeaderClass="d-none" />
+						<GridColumn Width="50px"  Field="@nameof(MarketDepthLevel.RestVolume)" HeaderClass="d-none" />
 					</GridColumns>
 					<RowTemplate Context="Quotes">
 						<td class="@GetClassForQuote(Quotes)">
-							@Quotes.Volume
+							@if (Quotes.Volume != 0)
+							{
+								@Quotes.Volume
+							}
 						</td>
-						<td class="@GetClassForQuote(Quotes)">
-							@Quotes.Price
+						<td class="@GetClassForQuote(Quotes) price">
+							@Quotes.Price.ToString("G29")
 							@* 	@Quotes.Price.ToString("0") *@
 						</td>
-						<td class="@GetClassForQuote(Quotes)">
-							@Quotes.RestVolume
+						<td class="@GetClassForQuote(Quotes) restVolume">
+							<span class="restVolumeSpan">
+								@Quotes.RestVolume
+							</span>
 							@if (Quotes.RestVolume.ToString() != string.Empty)
 							{
 								<svg class="removeOrder" @onclick="() => RemoveOrderClick(Quotes)" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="-2 -5 15 15">
@@ -373,7 +398,8 @@
 		ApiDataService.NewQuotes += OnNewMarketDepth;
 		ApiDataService.NewTicks += OnNewTicks;
 
-
+		jsInteropService.OnKeyDown += OnKeyDown;
+		jsInteropService.OnScroll += OnScroll;
 		//сначала подпишемся на ордера
 
 		//TODO: Сделать нормальную подписку на частные ордера
@@ -384,6 +410,19 @@
 		WebSockets.Add(await ApiDataService.SubcribeTick(secutityMain.id));
 
 		return base.OnInitializedAsync();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await JSRuntime.InvokeVoidAsync("getScrollEvent", GridTableId);
+			await JSRuntime.InvokeVoidAsync("addHotkeyListener", WindowId);
+		}
+		else
+		{
+
+		}
 	}
 
 	// public override Task SetParametersAsync(ParameterView parameters)
@@ -659,6 +698,50 @@
 
 	}
 
+	private void OnKeyDown(string windowId, string keyCode, bool isCtrl, bool isShift)
+	{
+		try
+		{
+			if (windowId != WindowId)
+				return;
+
+			if (keyCode == "Backspace")
+			{
+				JSRuntime.InvokeVoidAsync("scrollToRow", GridTableId, bestbidIndex);
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex.Message);
+		}
+
+		//Console.WriteLine($"{keyCode} {windowId}");
+	}
+
+	int firstVisibleIndex;
+	int lastVisibleIndex;
+
+	private void OnScroll(string gridTableId, string firstVisibleRowPrice, string lastVisibleRowPrice)
+	{
+		if (gridTableId == GridTableId)
+		{
+			int index = Quotes.FindIndex(q => q.Price.ToString("G29") == firstVisibleRowPrice);
+			if (index > -1)
+			{
+				firstVisibleIndex = index;
+			}
+			index = Quotes.FindIndex(q => q.Price.ToString("G29") == lastVisibleRowPrice);
+			if (index > -1)
+			{
+				lastVisibleIndex = index;
+			}
+		}
+
+		Console.WriteLine($"{firstVisibleIndex} {firstVisibleRowPrice}");
+		Console.WriteLine($"{lastVisibleIndex} {lastVisibleRowPrice}");
+
+		//Console.WriteLine($"{windowId}");
+	}
 
 
 	// protected override Task OnParametersSetAsync()
@@ -682,6 +765,9 @@
 	public void Dispose()
 	{
 		Console.WriteLine($"Disposing {secutityMain.id}");
+
+		jsInteropService.OnKeyDown -= OnKeyDown;
+		jsInteropService.OnScroll -= OnScroll;
 
 		ApiDataService.NewMyOrder -= NewMyOrder;
 		ApiDataService.NewQuotes -= OnNewMarketDepth;

@@ -8,7 +8,8 @@
 @using Telerik.Blazor.Components
 
 @inject ApiDataService ApiDataService;
-
+@inject JsInteropService jsInteropService;
+@inject IJSRuntime js;
 
 @rendermode InteractiveAuto
 
@@ -130,6 +131,11 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
+        if (firstRender)
+        {
+            js.InvokeVoidAsync("setDonNetObjectReference", jsInteropService.ServiceObjectDotNetReference);
+        }
+
         Console.WriteLine($"{DateTime.Now} Основное - OnAfterRender");
 
 	    base.OnAfterRender(firstRender);
