@@ -22,10 +22,10 @@
 
 
 
- <style>
+<style>
 
 	.highlight-row {
-		background-color: yellow !important;
+	background-color: yellow !important;
 	}
 
 	.cardnew {
@@ -40,8 +40,8 @@
 	}
 
 	.k-table-row{
-		font-size:10px;
-		line-height:10px;
+	font-size:10px;
+	line-height:10px;
 	}
 
 	.telerik-table {
@@ -54,12 +54,12 @@
 	}
 
 	.small-row-height .k-placeholder-line {
-		display: none;
+	display: none;
 	}
 
 	.small-row-height.k-grid td {
-		margin: 0;
-		padding: 0;
+	margin: 0;
+	padding: 0;
 	}
 
 
@@ -241,15 +241,15 @@
 	}
 
 	.restVolume {
-		display: flex;
-		height: 22px;
+	display: flex;
+	height: 22px;
 	}
 
 	.restVolumeSpan {
-		flex-shrink: 1;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis
+	flex-shrink: 1;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis
 	}
 
 </style> 
@@ -278,14 +278,14 @@
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
 
 				<TelerikGrid 
-					@ref="QuotesGrid" Id="@GridTableId" 
-					OnRowClick="@OnRowClickHandler" 
-					RowHeight="10"
-					Height="90vh"
-					Data="@Quotes"
-					TItem="@MarketDepthLevel"
-					ScrollMode="@GridScrollMode.Virtual"
-					PageSize="150">
+				@ref="QuotesGrid" Id="@GridTableId" 
+				OnRowClick="@OnRowClickHandler" 
+				RowHeight="10"
+				Height="90vh"
+				Data="@Quotes"
+				TItem="@MarketDepthLevel"
+				ScrollMode="@GridScrollMode.Virtual"
+				PageSize="150">
 					<GridColumns>
 						<GridColumn Width="1fr" Field="@nameof(MarketDepthLevel.Volume)" HeaderClass="d-none" />
 						<GridColumn Width="1fr"  Field="@nameof(MarketDepthLevel.Price)" HeaderClass="d-none" />
@@ -527,6 +527,18 @@
 
 	}
 
+    bool skipped = false;
+	public async void EasySkip(int index)
+	{
+        if (!skipped)
+        {
+            skipped = true;
+            var state = QuotesGrid.GetState();
+            state.Skip = index - 10;
+            await QuotesGrid.SetStateAsync(state);
+        }
+    }
+
 
 	private void OnNewMarketDepth(List<MarketDepthLevel> bids, List<MarketDepthLevel> asks, string secID)
 	{
@@ -539,8 +551,9 @@
 		if (IndexesQuotes.ContainsKey(bestbid))
 		{
 			bestbidIndex = IndexesQuotes[bestbid];
+			EasySkip(bestbidIndex);
 			//Console.WriteLine($" BestBidIndex {bestbidIndex} bestbID= {bestbid}");
-		}
+        }
 
 		// ------- перенос котировок в словарь ------------//
 
@@ -561,10 +574,11 @@
 		{
 			QuotesDictionary = newdictionaryQuotes;
 			InitialBuildQuotes(bids[0].Price);
+      
 
-			//TODO: вот здесь надо двинуть в середину. в первый раз!
+            //TODO: вот здесь надо двинуть в середину. в первый раз!
 
-		}
+        }
 		else
 		{
 			// обновление
@@ -641,7 +655,7 @@
 
 		}
 
-		//------- перенос котировок в словарь ------------//
+		//-------раскидывание по уровням динамически ------------//
 
 
 
