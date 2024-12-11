@@ -327,11 +327,35 @@
 
 @code {
 
+    static string plusHotKey = "Equal";
+    static string minusHotKey = "Minus";
+    static string cancelHotKey = "KeyC";
+
 	[Parameter] public string secHash { get; set; }
 	[Parameter] public SecurityApi secutityMain { get; set; }
 
+	/// <summary>
+	/// Последний собранный масштаб
+	/// </summary>
+	private int prevbuildScale { get; set; } = 0;
 
-	public int Scale { get; set; } = 1;
+	private int _scale;
+	public int Scale
+	{
+		get => _scale;
+		set
+		{
+			if (_scale != value)
+				OnScaleChanged(value);
+
+			_scale = value;
+		}
+	}
+
+	private void OnScaleChanged(int newscale)
+	{
+
+	}
 
 	// public ObservableCollection<Quote> GridData { get; set; }
 	public ObservableCollection<MarketDepthLevel> Quotes { get; set; }
@@ -354,6 +378,8 @@
 		Console.WriteLine($"{DateTime.Now} On Initialized secID{secutityMain.id} set WorkWindow");
 
 		//Quotes = new();
+
+		Scale = 1;
 
 		ApiDataService.NewMyOrder += NewMyOrder;
 		ApiDataService.NewQuotes += OnNewMarketDepth;
@@ -454,7 +480,7 @@
 
 	}
 
-	int renders = 0;
+
 	protected override bool ShouldRender()
 	{
 		Console.WriteLine($"{DateTime.Now} Should {secutityMain.id} Render WorkWindow");
@@ -467,11 +493,11 @@
 		if(secID!=secutityMain.id)
 			return;
 
-        foreach (var tick in Ticks)
-        {
-            Console.WriteLine($"New tick arrived! {tick.Price}");
-        }
-    }
+		foreach (var tick in Ticks)
+		{
+			Console.WriteLine($"New tick arrived! {tick.Price}");
+		}
+	}
 
 	ConcurrentDictionary<decimal, MarketDepthLevel> QuotesDictionary = new();
 
@@ -481,7 +507,7 @@
 	Dictionary<decimal, int> IndexesQuotes = new Dictionary<decimal, int>();
 
 
-	private void InitialBuildQuotes(decimal bestbid)
+	private void BuildAndRenderInitialQuotes(decimal bestbid)
 	{
 		try
 		{
@@ -490,13 +516,19 @@
 			//округление
 			// var min = (bestbid * 0.7m);
 
-			var min = bestbid - levels * secutityMain.PriceStep;
-			var realmin = min - min % secutityMain.PriceStep;
-			//округление
-			//var max = bestbid * 1.3m;
-			var max = bestbid + levels * secutityMain.PriceStep;
-			var realmax = max - max % secutityMain.PriceStep;
+			decimal agrregatedlevel = bestbid - bestbid % (secutityMain.PriceStep * Scale);
 
+			//previous 
+			// var min = bestbid - levels * secutityMain.PriceStep * Scale;
+			// var realmin = min - min % secutityMain.PriceStep * Scale;
+			// var max = bestbid + levels * secutityMain.PriceStep;
+			// var realmax = max - max % secutityMain.PriceStep;
+
+			//new
+			var realmin = agrregatedlevel - levels * secutityMain.PriceStep * Scale;
+			var realmax = agrregatedlevel + levels * secutityMain.PriceStep * Scale;
+
+			Console.WriteLine($"secid={secutityMain.id} maxSEC ={secutityMain.PriceLimitHigh} minSEC= {secutityMain.PriceLimitLow} ");
 			Console.WriteLine($"secid={secutityMain.id} BESTBID ={bestbid} MIN {realmin} MAX {realmax}");
 
 			int index = 0;
@@ -510,10 +542,15 @@
 			// 	//LocalQuotesBuild.Add(new MarketDepthLevel() { Ask = 1, Price = i, });
 			// 	index++;
 			// }
-			Quotes = new();
 
+			if(Quotes==null )
+				Quotes = new();
+			else 
+				Quotes.Clear();
 
-			for (decimal i = max; i > min; i -= secutityMain.PriceStep)
+			IndexesQuotes.Clear();
+
+			for (decimal i = realmax; i > realmin; i -= secutityMain.PriceStep * Scale)
 			{
 				IndexesQuotes.TryAdd(i, index);
 				localQuotesBuild.Add(MarketDepthLevel.GetEmptyLevel(i));
@@ -537,18 +574,17 @@
 	}
 
 	bool skipped = false;
-	public async void EasySkip(int index)
-	{
-		if (!skipped)
-		{
-			skipped = true;
-			var state = QuotesGrid.GetState();
-			state.Skip = index - 10;
-			await QuotesGrid.SetStateAsync(state);
-		}
-	}
 
-	//смена уровней по хоткею.
+    public async void EasySkip(int index)
+    {
+        skipped = true;
+        var state = QuotesGrid.GetState();
+        state.Skip = index - 10;
+        await QuotesGrid.SetStateAsync(state);
+
+    }
+
+    //смена уровней по хоткею.
 	//обновление таблицы соотвветсвенно основной. 
 	private void ChangeScale()
 	{
@@ -561,34 +597,71 @@
 	/// Придется сравнивать прошлый вариант с новым. 
 	/// </summary>
 	/// <param name="newquotes"></param>
-	private void ScaleBuilder(ConcurrentDictionary<decimal, MarketDepthLevel> newquotes)
-    {
+	private ConcurrentDictionary<decimal, MarketDepthLevel> ScaleBuilderQuotes(ConcurrentDictionary<decimal, MarketDepthLevel> newquotes)
+	{
 
-        ConcurrentDictionary<decimal, MarketDepthLevel> QuotesAgregated = new ();
+		//здесь не может быть пустых уровней 
+		ConcurrentDictionary<decimal, MarketDepthLevel> QuotesAgregated = new ();
 		foreach (var level in newquotes)
 		{
 			decimal agrregatedlevel = level.Key - level.Key % (secutityMain.PriceStep * Scale);
 
-            if (QuotesAgregated.ContainsKey(agrregatedlevel))
-            {
-				//
-            }
-            else
-            {
+			//Console.WriteLine($"Agregated Level {agrregatedlevel}");
 
-            }
+			if (!QuotesAgregated.ContainsKey(agrregatedlevel))
+			{
+				QuotesAgregated[agrregatedlevel] = new MarketDepthLevel()
+                {
+                    Bid = level.Value.Bid,
+                    Ask = level.Value.Ask,
+                    Price = agrregatedlevel,
+                };
+			}
+			else
+			{
+				//в середине получается мы постоянно имеет и бид и аск.
+				if (level.Value.Type != QuotesAgregated[agrregatedlevel].Type)
+				{
+
+				}
+
+				if (level.Value.Type == Side.Buy)
+					QuotesAgregated[agrregatedlevel].Bid += level.Value.Bid;
+
+				if (level.Value.Type == Side.Sell)
+					QuotesAgregated[agrregatedlevel].Ask += level.Value.Ask;
+			}
+		}
+
+        return QuotesAgregated;
+
+        #region Для теста того что мы насобрали
+
+        // var sorteddictionary = QuotesAgregated.Values.OrderByDescending(s => s.Price).ToList();
+        // foreach (var level in sorteddictionary)
+        // {
+        //     if (level.Ask!=0 && level.Bid!=0)
+        //         Console.WriteLine($"SPECIAL! ");
+        //     Console.WriteLine($" BID={level.Bid} ASK ={level.Ask} PRICE = {level.Price}");
+        // }
 
 
+        #endregion
 
-        }
+        //теперь мы должны сравнить прошлый и обновить индексы. 
+
+        //CompareOldWithNewAndPlaceIndexes(QuotesAgregated,null);
+
     }
 
-    //QuotesDictionary - old
+	//QuotesDictionary - old
 
-	private void CompareOldWithNew
-    (ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes, 
-        ConcurrentDictionary<decimal, MarketDepthLevel> oldQuotes)
+    private void CompareOldWithNewAndPlaceIndexes
+    (ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,
+        ConcurrentDictionary<decimal, MarketDepthLevel> oldQuotes )
     {
+
+   
         foreach (var quoteKey in oldQuotes.Keys.ToList())
         {
 
@@ -597,7 +670,7 @@
 
 
                 //меняем коллекицю внутри цикла
-				oldQuotes.TryRemove(quoteKey, out var _);
+                oldQuotes.TryRemove(quoteKey, out var _);
 
                 //Уровень удален.. 
                 //Значит кидаем 0
@@ -615,11 +688,11 @@
             {
                 //новая котировка
                 var freshQuote = newdictionaryQuotes[quoteKey];
-				var oldquote = oldQuotes[quoteKey];
+                var oldquote = oldQuotes[quoteKey];
 
                 if (oldquote != freshQuote)
                 {
-					oldQuotes[quoteKey] = freshQuote;
+                    oldQuotes[quoteKey] = freshQuote;
 
                     if (!IndexesQuotes.ContainsKey(quoteKey))
                         continue;
@@ -632,7 +705,7 @@
 
                 }
 
-            } 
+            }
 
 
         }
@@ -640,10 +713,10 @@
         foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
         {
             //в нашей колекции нет нового уровня... 
-			if (!oldQuotes.ContainsKey(quoteKey))
+            if (!oldQuotes.ContainsKey(quoteKey))
             {
-				oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
-					
+                oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
+
                 if (!IndexesQuotes.ContainsKey(quoteKey))
                     continue;
 
@@ -654,26 +727,11 @@
 
             }
         }
+
     }
 
-
-	private void OnNewMarketDepth(List<MarketDepthLevel> bids, List<MarketDepthLevel> asks, string secID)
+    private ConcurrentDictionary<decimal, MarketDepthLevel> BuildMarketDepthDictionary(List<MarketDepthLevel> bids, List<MarketDepthLevel> asks)
 	{
-		if (secID != secutityMain.id)
-			return;
-
-		var bestbid = bids[0].Price;
-
-		//Обновление индекса
-		if (IndexesQuotes.ContainsKey(bestbid))
-		{
-			bestbidIndex = IndexesQuotes[bestbid];
-			EasySkip(bestbidIndex);
-			//Console.WriteLine($" BestBidIndex {bestbidIndex} bestbID= {bestbid}");
-        }
-
-		// ------- перенос котировок в словарь ------------//
-
 		var newdictionaryQuotes = new ConcurrentDictionary<decimal, MarketDepthLevel>();
 		foreach (var bid in bids)
 		{
@@ -685,26 +743,66 @@
 			newdictionaryQuotes.TryAdd(ask.Price, ask);
 		}
 
+		return newdictionaryQuotes;
+	}
+
+	private void OnNewMarketDepth(List<MarketDepthLevel> bids, List<MarketDepthLevel> asks, string secID)
+	{
+		if (secID != secutityMain.id)
+			return;
+
+		var bestbid = bids[0].Price;
+
+		var easyDictionaryCurrent = BuildMarketDepthDictionary(bids, asks);
+
+        var newdictionaryQuotes = ScaleBuilderQuotes(easyDictionaryCurrent);
+
+		//поменялся масштаб
+		if (prevbuildScale != Scale)
+		{
+			//Применяем масштаб (даже если 1)
+			//строим пустой стакан на всю длину
+            BuildAndRenderInitialQuotes(bids[0].Price);
+			QuotesDictionary.Clear();
+
+            CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary);
+            prevbuildScale = Scale;
+        }
+        else
+        {
+            CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary);
+        }
+
+
+		//Обновление индекса
+		if (IndexesQuotes.ContainsKey(bestbid) && !skipped)
+		{
+			bestbidIndex = IndexesQuotes[bestbid];
+			EasySkip(bestbidIndex);
+			//Console.WriteLine($" BestBidIndex {bestbidIndex} bestbID= {bestbid}");
+        }
+
+		// ------- перенос котировок в словарь ------------//
+
+       
 
 		//изначальная установка
-		if (Quotes==null)
+        /* if (Quotes==null)
 		{
 			QuotesDictionary = newdictionaryQuotes;
-			InitialBuildQuotes(bids[0].Price);
+			BuildAndRenderInitialQuotes(bids[0].Price);
         }
 		else
         {
-            CompareOldWithNew(newdictionaryQuotes, QuotesDictionary);
+            CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary);
 
             //TODO: ВОЗМОЖНО ЕЩЕ НЕ УЧЕЛ Какой то перебор
 
         }
 
-		//-------раскидывание по уровням динамически ------------//
+        ScaleBuilderQuotes(newdictionaryQuotes) */
 
-
-
-	}
+    }
 
 	private void NewMyOrder(Order obj)
 	{
@@ -731,22 +829,49 @@
 
 	private void OnKeyDown(string windowId, string keyCode, bool isCtrl, bool isShift)
 	{
-		try
-		{
-			if (windowId != WindowId)
-				return;
+        try
+        {
+            if (windowId != WindowId)
+                return;
 
-			if (keyCode == "Backspace")
-			{
-				JSRuntime.InvokeVoidAsync("scrollToRow", GridTableId, bestbidIndex);
-			}
-		}
-		catch (Exception ex)
-		{
-			Console.WriteLine(ex.Message);
-		}
 
-		//Console.WriteLine($"{keyCode} {windowId}");
+            if (keyCode == cancelHotKey)
+            {
+                /* foreach (var order in Orders)
+                {
+                    ApiDataService.CancelOrder(order.Value);
+                } */
+            }
+
+            if (keyCode == plusHotKey)
+            {
+                if (Scale > 0)
+                {
+                    Scale -= 5;
+                    Console.WriteLine($"{secutityMain.Isin} New Agregation Step {Scale}");
+
+                }
+            }
+
+            if (keyCode == minusHotKey)
+            {
+                Scale += 5;
+                //UpdateAll();
+
+                Console.WriteLine($"{secutityMain.Isin} New Agregation Step {Scale}");
+            }
+
+           /*  if (keyCode == "Backspace")
+            {
+                JSRuntime.InvokeVoidAsync("scrollToRow", GridTableId, 30);
+            } */
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+        //Console.WriteLine($"{keyCode} {windowId}");
 	}
 
 	int firstVisibleIndex;
@@ -804,6 +929,7 @@
 		ApiDataService.NewQuotes -= OnNewMarketDepth;
 		ApiDataService.NewTicks -= OnNewTicks;
 
+        if (WebSockets != null) 
 		foreach (var websocketID in WebSockets)
 		{
 			ApiDataService.StopWebSocket(websocketID);

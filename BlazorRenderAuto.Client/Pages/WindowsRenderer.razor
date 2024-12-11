@@ -6,37 +6,41 @@
 
 
 @rendermode InteractiveAuto
+@inject IJSRuntime js;
+
 
 <TelerikTileLayout
-Columns="OpenedInstruments.Count"
-ColumnWidth="auto"
-RowHeight="90vh"
-Reorderable="true"
-ColumnSpacing="0px"
-RowSpacing="0px"
-Resizable="true">
+    Columns="OpenedInstruments.Count"
+    ColumnWidth="auto"
+    RowHeight="90vh"
+    Reorderable="true"
+    ColumnSpacing="0px"
+    RowSpacing="0px"
+    Resizable="true">
+    
 
-<TileLayoutItems >
-		@foreach (var security in OpenedInstruments)
-		{
-			<TileLayoutItem @key="security.SpecialHash">
+
+    <TileLayoutItems >
+        @foreach (var security in OpenedInstruments)
+        {
+            <TileLayoutItem @key="security.SpecialHash">
                 <HeaderTemplate>
                     <div @onclick="() => { Console.WriteLine(security.Isin); }">
-                    @security.Isin
-                    <svg class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
-                        <line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"/>
-                        <line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"/>
-                    </svg>
+                        @security.Isin
+                        <svg class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
+                            <line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"/>
+                            <line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"/>
+                        </svg>
                     </div>
                 </HeaderTemplate>
-				<Content>
-					<div class="tile-content">
-						<WorkWindow secHash="@security.SpecialHash" secutityMain="@security" />
-					</div>
-				</Content>
-			</TileLayoutItem>
-		}
-	</TileLayoutItems> 
+                <Content>
+                    <div class="tile-content">
+                        <WorkWindow secHash="@security.SpecialHash" secutityMain="@security" />
+                    </div>
+                </Content>
+            </TileLayoutItem>
+        }
+    </TileLayoutItems>
 </TelerikTileLayout>
 
 @code {

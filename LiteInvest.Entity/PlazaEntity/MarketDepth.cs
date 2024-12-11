@@ -202,6 +202,9 @@ public class MarketDepth
 public record MarketDepthLevel
 {
 
+	//TODO: ПО хорошему это надо все рефакторить.
+    //Но посыпится сборщик стаканов на стороне плазы, что не айс. 
+
 	public static MarketDepthLevel GetEmptyLevel(decimal quotePrice)
 	{
         return new MarketDepthLevel() { Ask = 0, Bid = 0, Price = quotePrice, Type = Side.Empty };
@@ -225,7 +228,7 @@ public record MarketDepthLevel
 
     public decimal Volume { get => Ask == 0 ? Bid : Ask; }
 
-    private Side _side = Side.Empty;
+	private Side _side = Side.Empty;
 
     /// <summary>
     /// BID =0
