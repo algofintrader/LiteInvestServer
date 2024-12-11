@@ -330,6 +330,9 @@
 	[Parameter] public string secHash { get; set; }
 	[Parameter] public SecurityApi secutityMain { get; set; }
 
+
+	public int Scale { get; set; } = 1;
+
 	// public ObservableCollection<Quote> GridData { get; set; }
 	public ObservableCollection<MarketDepthLevel> Quotes { get; set; }
 
@@ -459,10 +462,16 @@
 	}
 
 
-	private void OnNewTicks(string arg1, List<TradeApi> arg2)
+	private void OnNewTicks(string secID, List<TradeApi> Ticks)
 	{
+		if(secID!=secutityMain.id)
+			return;
 
-	}
+        foreach (var tick in Ticks)
+        {
+            Console.WriteLine($"New tick arrived! {tick.Price}");
+        }
+    }
 
 	ConcurrentDictionary<decimal, MarketDepthLevel> QuotesDictionary = new();
 
@@ -527,15 +536,123 @@
 
 	}
 
-    bool skipped = false;
+	bool skipped = false;
 	public async void EasySkip(int index)
 	{
-        if (!skipped)
+		if (!skipped)
+		{
+			skipped = true;
+			var state = QuotesGrid.GetState();
+			state.Skip = index - 10;
+			await QuotesGrid.SetStateAsync(state);
+		}
+	}
+
+	//смена уровней по хоткею.
+	//обновление таблицы соотвветсвенно основной. 
+	private void ChangeScale()
+	{
+
+
+
+	}
+
+	/// <summary>
+	/// Придется сравнивать прошлый вариант с новым. 
+	/// </summary>
+	/// <param name="newquotes"></param>
+	private void ScaleBuilder(ConcurrentDictionary<decimal, MarketDepthLevel> newquotes)
+    {
+
+        ConcurrentDictionary<decimal, MarketDepthLevel> QuotesAgregated = new ();
+		foreach (var level in newquotes)
+		{
+			decimal agrregatedlevel = level.Key - level.Key % (secutityMain.PriceStep * Scale);
+
+            if (QuotesAgregated.ContainsKey(agrregatedlevel))
+            {
+				//
+            }
+            else
+            {
+
+            }
+
+
+
+        }
+    }
+
+    //QuotesDictionary - old
+
+	private void CompareOldWithNew
+    (ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes, 
+        ConcurrentDictionary<decimal, MarketDepthLevel> oldQuotes)
+    {
+        foreach (var quoteKey in oldQuotes.Keys.ToList())
         {
-            skipped = true;
-            var state = QuotesGrid.GetState();
-            state.Skip = index - 10;
-            await QuotesGrid.SetStateAsync(state);
+
+            if (!newdictionaryQuotes.ContainsKey(quoteKey))
+            {
+
+
+                //меняем коллекицю внутри цикла
+				oldQuotes.TryRemove(quoteKey, out var _);
+
+                //Уровень удален.. 
+                //Значит кидаем 0
+                if (!IndexesQuotes.ContainsKey(quoteKey))
+                    continue;
+
+                var indexfound = IndexesQuotes[quoteKey];
+                //меняем на нулевой
+                Quotes[indexfound] = MarketDepthLevel.GetEmptyLevel(quoteKey);
+
+                //Console.WriteLine($" {secID} Level removed {quoteKey} index = {indexfound}");
+
+            }
+            else
+            {
+                //новая котировка
+                var freshQuote = newdictionaryQuotes[quoteKey];
+				var oldquote = oldQuotes[quoteKey];
+
+                if (oldquote != freshQuote)
+                {
+					oldQuotes[quoteKey] = freshQuote;
+
+                    if (!IndexesQuotes.ContainsKey(quoteKey))
+                        continue;
+
+                    //Поменялась котировочка.. 
+                    var indexfound = IndexesQuotes[quoteKey];
+                    Quotes[indexfound] = freshQuote;
+
+                    //Console.WriteLine($" {secID} Level Changed! {quoteKey} index = {indexfound}");
+
+                }
+
+            } 
+
+
+        }
+
+        foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
+        {
+            //в нашей колекции нет нового уровня... 
+			if (!oldQuotes.ContainsKey(quoteKey))
+            {
+				oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
+					
+                if (!IndexesQuotes.ContainsKey(quoteKey))
+                    continue;
+
+                var indexfound = IndexesQuotes[quoteKey];
+                Quotes[indexfound] = newdictionaryQuotes[quoteKey];
+
+                //Console.WriteLine($" {secID} Level Added! {quoteKey} index = {indexfound}");
+
+            }
         }
     }
 
@@ -574,86 +691,14 @@
 		{
 			QuotesDictionary = newdictionaryQuotes;
 			InitialBuildQuotes(bids[0].Price);
-      
-
-            //TODO: вот здесь надо двинуть в середину. в первый раз!
-
         }
 		else
-		{
-			// обновление
+        {
+            CompareOldWithNew(newdictionaryQuotes, QuotesDictionary);
 
-			// удалился из нашей колллекции уровень...
-			//
-			foreach (var quoteKey in QuotesDictionary.Keys.ToList())
-			{
+            //TODO: ВОЗМОЖНО ЕЩЕ НЕ УЧЕЛ Какой то перебор
 
-				if (!newdictionaryQuotes.ContainsKey(quoteKey))
-				{
-
-
-                    //меняем коллекицю внутри цикла
-                    QuotesDictionary.TryRemove(quoteKey, out var _);
-
-					//Уровень удален.. 
-					//Значит кидаем 0
-					if (!IndexesQuotes.ContainsKey(quoteKey))
-					continue;
-
-					var indexfound = IndexesQuotes[quoteKey];
-					//меняем на нулевой
-					Quotes[indexfound] = MarketDepthLevel.GetEmptyLevel(quoteKey);
-
-					//Console.WriteLine($" {secID} Level removed {quoteKey} index = {indexfound}");
-
-				}
-				else
-				{
-					//новая котировка
-					var freshQuote = newdictionaryQuotes[quoteKey];
-					var oldquote = QuotesDictionary[quoteKey];
-
-					if (oldquote != freshQuote)
-					{
-                        QuotesDictionary[quoteKey] = freshQuote;
-
-                        if (!IndexesQuotes.ContainsKey(quoteKey))
-                            continue;
-
-						//Поменялась котировочка.. 
-						var indexfound = IndexesQuotes[quoteKey];
-						Quotes[indexfound] = freshQuote;
-
-						//Console.WriteLine($" {secID} Level Changed! {quoteKey} index = {indexfound}");
-
-					}
-
-				} 
-
-
-			}
-
-			foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
-			{
-				//в нашей колекции нет нового уровня... 
-				if (!QuotesDictionary.ContainsKey(quoteKey))
-                {
-                    QuotesDictionary[quoteKey] = newdictionaryQuotes[quoteKey];
-					
-                    if (!IndexesQuotes.ContainsKey(quoteKey))
-                        continue;
-
-					var indexfound = IndexesQuotes[quoteKey];
-					Quotes[indexfound] = newdictionaryQuotes[quoteKey];
-
-					//Console.WriteLine($" {secID} Level Added! {quoteKey} index = {indexfound}");
-
-				}
-			}
-
-			//TODO: ВОЗМОЖНО ЕЩЕ НЕ УЧЕЛ Какой то перебор
-
-		}
+        }
 
 		//-------раскидывание по уровням динамически ------------//
 
