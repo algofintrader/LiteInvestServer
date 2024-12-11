@@ -327,9 +327,9 @@
 
 @code {
 
-    static string plusHotKey = "Equal";
-    static string minusHotKey = "Minus";
-    static string cancelHotKey = "KeyC";
+	static string plusHotKey = "Equal";
+	static string minusHotKey = "Minus";
+	static string cancelHotKey = "KeyC";
 
 	[Parameter] public string secHash { get; set; }
 	[Parameter] public SecurityApi secutityMain { get; set; }
@@ -363,8 +363,10 @@
 	public List<int?> WebSockets { get; set; }
 	public TelerikGrid<MarketDepthLevel> QuotesGrid { get; set; }
 
-	private string WindowId { get; set; } = Guid.NewGuid().ToString();
-	private string GridTableId { get; set; } = Guid.NewGuid().ToString();
+	public string WindowId { get; set; } = Guid.NewGuid().ToString();
+	public string GridTableId { get; set; } = Guid.NewGuid().ToString();
+
+	public bool firstRendered { get; set; } = false;
 
 
 	/// <summary>
@@ -403,6 +405,8 @@
 	{
 		if (firstRender)
 		{
+			firstRendered = true;
+
 			await JSRuntime.InvokeVoidAsync("getScrollEvent", GridTableId);
 			await JSRuntime.InvokeVoidAsync("addHotkeyListener", WindowId);
 		}

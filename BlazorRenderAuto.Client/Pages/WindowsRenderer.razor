@@ -25,7 +25,7 @@
         {
             <TileLayoutItem @key="security.SpecialHash">
                 <HeaderTemplate>
-                    <div @onclick="() => { Console.WriteLine(security.Isin); }">
+					<div @onclick="() => addListenersToWorkWindowByHeaderClick(workWindow)">
                         @security.Isin
                         <svg class="buttonclose" @onclick="() => OnClosingMain(security)" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10">
                             <line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"/>
@@ -34,8 +34,8 @@
                     </div>
                 </HeaderTemplate>
                 <Content>
-                    <div class="tile-content">
-                        <WorkWindow secHash="@security.SpecialHash" secutityMain="@security" />
+                    <div @ref="elemRef" class="tile-content">
+                        <WorkWindow @ref="workWindow" secHash="@security.SpecialHash" secutityMain="@security" />
                     </div>
                 </Content>
             </TileLayoutItem>
@@ -44,7 +44,19 @@
 </TelerikTileLayout>
 
 @code {
+	WorkWindow workWindow;
+	ElementReference elemRef;
 
+	private async Task addListenersToWorkWindowByHeaderClick(WorkWindow windowRef)
+	{
+		await js.InvokeVoidAsync("focusElementById", windowRef.WindowId);
+
+		if (!windowRef.firstRendered)
+		{
+			await js.InvokeVoidAsync("getScrollEvent", windowRef.GridTableId);
+			await js.InvokeVoidAsync("addHotkeyListener", windowRef.WindowId);
+		}
+	}
 
 	ObservableCollection<SecurityApi> OpenedInstruments { get; set; } = new();
 

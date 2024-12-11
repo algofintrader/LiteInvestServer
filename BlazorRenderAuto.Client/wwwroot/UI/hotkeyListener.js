@@ -30,6 +30,13 @@ window.addHotkeyListener = (windowId) => {
     });
 };
 
+window.focusElementById = (windowId) => {
+    const element = document.getElementById(windowId);
+    if (element) {
+        element.focus(); // Устанавливаем фокус на элемент
+    }
+};
+
 function getScrollEvent(gridTableId) {
     let parent = document.getElementById(gridTableId);
     if (parent) {
