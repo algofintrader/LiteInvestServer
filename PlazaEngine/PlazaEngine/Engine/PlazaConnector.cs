@@ -188,7 +188,7 @@ namespace PlazaEngine.Engine
 		/// <param name="TickEventPeriodMilliSecond">Периодичность отправки тиков, миллисекунд</param>
 		/// <param name="depthEventMillisecond"></param>
 		public PlazaConnector(string key, bool emulation, bool testTrading = true, string appname = "", 
-            int TickEventPeriodMilliSecond = 20,int depthEventMillisecond = 100)
+            int TickEventPeriodMilliSecond = 20,int depthEventMillisecond = 200)
         {
             AddPlazaDll();
 
