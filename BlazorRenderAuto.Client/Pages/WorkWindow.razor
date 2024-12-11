@@ -281,7 +281,7 @@
 					@ref="QuotesGrid" Id="@GridTableId" 
 					OnRowClick="@OnRowClickHandler" 
 					RowHeight="10"
-					Height="80vh"
+					Height="90vh"
 					Data="@Quotes"
 					TItem="@MarketDepthLevel"
 					ScrollMode="@GridScrollMode.Virtual"
@@ -326,48 +326,6 @@
 
 
 @code {
-
-
-	private List<Product> GridData { get; set; } = new List<Product>();
-
-	private async Task OnGridRead(GridReadEventArgs args)
-	{
-		await Task.Delay(200); // simulate network delay
-
-		DataSourceResult result = GridData.ToDataSourceResult(args.Request);
-
-		args.Data = result.Data;
-		args.Total = result.Total;
-		args.AggregateResults = result.AggregateResults;
-	}
-
-	protected override void OnInitialized()
-	{
-		GridData = new List<Product>();
-		var rnd = new Random();
-
-		for (int i = 1; i <= 1000; i++)
-		{
-			GridData.Add(new Product()
-			{
-				Id = i,
-				Name = $"Product {i}",
-				Stock = rnd.Next(0, 100)
-			});
-		}
-	}
-
-	public class Product
-	{
-		public int Id { get; set; }
-		public string Name { get; set; } = string.Empty;
-		public int Stock { get; set; }
-	}
-
-
-
-
-
 
 	[Parameter] public string secHash { get; set; }
 	[Parameter] public SecurityApi secutityMain { get; set; }
@@ -555,7 +513,10 @@
 			}
 
 			Quotes = localQuotesBuild;
-			
+
+
+			//пришлось засунуть местами плохо работает.. 
+			InvokeAsync(StateHasChanged);
 			Console.WriteLine($"{secutityMain.id} LOADED INITIAL EMPTY QUOTES");
 
 		}
@@ -615,15 +576,19 @@
 
 				if (!newdictionaryQuotes.ContainsKey(quoteKey))
 				{
+
+
+                    //меняем коллекицю внутри цикла
+                    QuotesDictionary.TryRemove(quoteKey, out var _);
+
 					//Уровень удален.. 
 					//Значит кидаем 0
+					if (!IndexesQuotes.ContainsKey(quoteKey))
+					continue;
 
 					var indexfound = IndexesQuotes[quoteKey];
 					//меняем на нулевой
 					Quotes[indexfound] = MarketDepthLevel.GetEmptyLevel(quoteKey);
-
-					//меняем коллекицю внутри цикла
-					QuotesDictionary.TryRemove(quoteKey, out var _);
 
 					//Console.WriteLine($" {secID} Level removed {quoteKey} index = {indexfound}");
 
@@ -636,12 +601,15 @@
 
 					if (oldquote != freshQuote)
 					{
+                        QuotesDictionary[quoteKey] = freshQuote;
+
+                        if (!IndexesQuotes.ContainsKey(quoteKey))
+                            continue;
+
 						//Поменялась котировочка.. 
 						var indexfound = IndexesQuotes[quoteKey];
 						Quotes[indexfound] = freshQuote;
 
-
-						QuotesDictionary[quoteKey] = freshQuote;
 						//Console.WriteLine($" {secID} Level Changed! {quoteKey} index = {indexfound}");
 
 					}
@@ -655,11 +623,15 @@
 			{
 				//в нашей колекции нет нового уровня... 
 				if (!QuotesDictionary.ContainsKey(quoteKey))
-				{
+                {
+                    QuotesDictionary[quoteKey] = newdictionaryQuotes[quoteKey];
+					
+                    if (!IndexesQuotes.ContainsKey(quoteKey))
+                        continue;
+
 					var indexfound = IndexesQuotes[quoteKey];
 					Quotes[indexfound] = newdictionaryQuotes[quoteKey];
 
-					QuotesDictionary.TryAdd(quoteKey, newdictionaryQuotes[quoteKey]);
 					//Console.WriteLine($" {secID} Level Added! {quoteKey} index = {indexfound}");
 
 				}
