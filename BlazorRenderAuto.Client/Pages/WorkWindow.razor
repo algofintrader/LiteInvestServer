@@ -255,7 +255,7 @@
 </style> 
 
 
-<div id="@secutityMain.Isin" tabindex="0">
+<div id="@secutityMain.SpecialHash" tabindex="0">
 
 	<TelerikGridLayout>
 		<GridLayoutColumns>
@@ -403,7 +403,7 @@
 		if (firstRender)
 		{
 			await JSRuntime.InvokeVoidAsync("getScrollEvent", GridTableId);
-			await JSRuntime.InvokeVoidAsync("addHotkeyListener", secutityMain.Isin);
+			await JSRuntime.InvokeVoidAsync("addHotkeyListener", secutityMain.SpecialHash);
 		}
 		else
 		{
@@ -830,7 +830,7 @@
 	{
         try
         {
-            if (windowId != secutityMain.Isin)
+			if (windowId != secutityMain.SpecialHash)
                 return;
 
 
