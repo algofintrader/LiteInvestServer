@@ -363,11 +363,8 @@
 	public List<int?> WebSockets { get; set; }
 	public TelerikGrid<MarketDepthLevel> QuotesGrid { get; set; }
 
-	public string WindowId { get; set; } = Guid.NewGuid().ToString();
-	public string GridTableId { get; set; } = Guid.NewGuid().ToString();
-
-	public bool firstRendered { get; set; } = false;
-
+	private string WindowId { get; set; } = Guid.NewGuid().ToString();
+	private string GridTableId { get; set; } = Guid.NewGuid().ToString();
 
 	/// <summary>
 	/// Индекс к которому мы должны таблицу откскроллить!
@@ -405,8 +402,6 @@
 	{
 		if (firstRender)
 		{
-			firstRendered = true;
-
 			await JSRuntime.InvokeVoidAsync("getScrollEvent", GridTableId);
 			await JSRuntime.InvokeVoidAsync("addHotkeyListener", WindowId);
 		}

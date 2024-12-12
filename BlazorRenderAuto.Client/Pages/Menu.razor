@@ -86,7 +86,7 @@
     {
         string currValue = theUserInput as string;
 
-        if (!currValue.Equals(lastOnChangeValue))
+        if (currValue != lastOnChangeValue)
         {
             lastOnChangeValue = currValue;
 

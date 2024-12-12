@@ -33,6 +33,7 @@ window.addHotkeyListener = (windowId) => {
 window.focusElementById = (windowId) => {
     const element = document.getElementById(windowId);
     if (element) {
+        console.log(element);
         element.focus(); // Устанавливаем фокус на элемент
     }
 };
