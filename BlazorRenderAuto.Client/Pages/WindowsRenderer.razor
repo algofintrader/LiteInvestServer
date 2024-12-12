@@ -23,11 +23,6 @@
 		@foreach (var security in OpenedInstruments)
 		{
 			<TileLayoutItem @key="security.SpecialHash">
-				<Content>
-					<section id="@security.Isin">
-					</section>
-
-				</Content>
 				<HeaderTemplate>
 					<div @onclick="() => focusWindowByHeaderClick(security.Isin)">
 						@security.Isin
@@ -48,8 +43,6 @@
 </TelerikTileLayout>
 
 @code {
-	int id { get; set; } = 0;
-
 	private void focusWindowByHeaderClick(string id)
 	{
 		js.InvokeVoidAsync("focusElementById", id);
