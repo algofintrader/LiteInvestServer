@@ -17,6 +17,8 @@ namespace LiteInvestServer
 
     public record AuthResponse(string Token, DateTime ExpirationTime);
 
+ 
+
     public class JwtOptions
     {
         public string SecretKey { get; set; }
