@@ -270,10 +270,103 @@
 
 		<GridLayoutItems>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="1">
+				@* ScatterLine Series *@
 
+				<TelerikChart>
+					<ChartLegend Visible="false"></ChartLegend>
+					
+					<ChartSeriesItems>
+						<ChartSeries Type="Telerik.Blazor.ChartSeriesType.ScatterLine"
+									 Data="@Ticks"
+									 Name=""
+									 
+									 XField="@nameof(TradeApi.Time)"
+									 YField="@nameof(TradeApi.Price)">
+						</ChartSeries>
+					</ChartSeriesItems>
+
+					<ChartXAxes>
+
+						<ChartXAxis Visible="false" Max="100">
+							<ChartXAxisTitle Visible="false" Text="Time"></ChartXAxisTitle>
+							<ChartXAxisLabels Visible="false" Format="{0}m"></ChartXAxisLabels>
+						</ChartXAxis>
+					</ChartXAxes>
+
+					<ChartYAxes>
+						<ChartYAxis Visible="false" Max="100">
+							<ChartYAxisTitle Visible="false" Text="Price"></ChartYAxisTitle>
+							<ChartYAxisLabels Visible="false" Format="{0}%"></ChartYAxisLabels>
+						</ChartYAxis>
+
+					</ChartYAxes>
+				</TelerikChart>
+@* 				<TelerikChart>
+					<ChartSeriesItems>
+						<ChartSeries Type="Telerik.Blazor.ChartSeriesType.ScatterLine"
+									 Data="Ticks"
+									 
+						>
+							
+						</ChartSeries>
+					</ChartSeriesItems>
+
+					<ChartXAxes>
+
+						<ChartXAxis Max="100">
+							<ChartXAxisTitle Text="Time"></ChartXAxisTitle>
+							<ChartXAxisLabels Format="{0}m"></ChartXAxisLabels>
+						</ChartXAxis>
+					</ChartXAxes>
+
+					<ChartYAxes>
+						<ChartYAxis Max="100">
+							<ChartYAxisTitle Text="Charge"></ChartYAxisTitle>
+							<ChartYAxisLabels Format="{0}%"></ChartYAxisLabels>
+						</ChartYAxis>
+
+					</ChartYAxes>
+
+				</TelerikChart> *@
 			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
+@* 				<DxChart CssClass="chart"
+						 CustomizeSeriesPoint="@PrepareSeriesPoint"
+						 @ref="Chart"
+						 Data="Ticks"
+						 Width="100%"
+						 LabelOverlap="ChartLabelOverlap.Hide">
+					<DxChartLineSeries Name="ticksLineSeries"
+									   T="TradeApi"
+									   TArgument="DateTime"
+									   TValue="decimal"
+									   ArgumentField="si => si.Time"
+									   ValueField="si => si.Price"
+									   HoverMode="ChartContinuousSeriesHoverMode.Series">
 
+						<DxChartLegend Visible="false" />
+
+						<!--<DxChartSeriesPoint Visible="true"
+						HoverMode="ChartSeriesPointHoverMode.None" />-->
+						<!--<DxChartSeriesLabel Visible="true"
+						ValueFormat="ChartElementFormat.Thousands(1)" />-->
+					</DxChartLineSeries>
+
+					<DxChartArgumentAxis Visible="false">
+						<DxChartAxisLabel Visible="false" />
+						<DxChartAxisTick Visible="false" />
+						<DxChartAxisMinorTick Visible="false" />
+						<DxChartAxisGridLines Visible="true" />
+					</DxChartArgumentAxis>
+
+					<DxChartValueAxis Visible="false">
+						<DxChartAxisLabel Visible="false" />
+						<DxChartAxisTick Visible="false" />
+						<DxChartAxisMinorTick Visible="false" />
+						<DxChartAxisGridLines Visible="true" />
+						<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart" />
+					</DxChartValueAxis>
+				</DxChart> *@
 			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
 
@@ -326,6 +419,25 @@
 
 
 @code {
+
+	public class ModelData
+	{
+		public int X { get; set; }
+		public int Y { get; set; }
+	}
+
+	public List<ModelData> Series1Data = new List<ModelData>()
+	{
+		new ModelData() { X = 10, Y = 10 },
+		new ModelData() { X = 15, Y = 20 },
+		new ModelData() { X = 20, Y = 25 },
+		new ModelData() { X = 32, Y = 40 },
+		new ModelData() { X = 43, Y = 50 },
+		new ModelData() { X = 55, Y = 60 },
+		new ModelData() { X = 60, Y = 70 },
+		new ModelData() { X = 70, Y = 80 },
+		new ModelData() { X = 90, Y = 100 },
+	};
 
 	static string plusHotKey = "Equal";
 	static string minusHotKey = "Minus";
@@ -486,15 +598,34 @@
 		return base.ShouldRender();
 	}
 
+	DateTime lasttime = DateTime.Now;
+	int counter = 0;
 
-	private void OnNewTicks(string secID, List<TradeApi> Ticks)
+	public List<TradeApi> Ticks { get; set; } = new List<TradeApi>();
+
+	private void OnNewTicks(string secID, List<TradeApi> ticks)
 	{
 		if(secID!=secutityMain.id)
 			return;
 
 		foreach (var tick in Ticks)
 		{
-			Console.WriteLine($"New tick arrived! {tick.Price}");
+			counter++;
+
+
+			//tick.Time = dt + TimeSpan.FromSeconds(start);
+			tick.Time = lasttime + TimeSpan.FromSeconds(counter);
+
+			Ticks.Add(tick);
+
+			try
+			{
+				if (Ticks.Count > 15) Ticks.RemoveAt(0);
+			}
+			catch (Exception ex)
+			{
+
+			}
 		}
 	}
 
@@ -574,13 +705,15 @@
 
 	bool skipped = false;
 
-    public async void EasySkip(int index)
-    {
-        skipped = true;
-        var state = QuotesGrid.GetState();
-        state.Skip = index - 10;
-        await QuotesGrid.SetStateAsync(state);
-
+	public async void EasySkip(int index)
+	{
+		if(QuotesGrid != null)
+		{
+			skipped = true;
+			var state = QuotesGrid.GetState();
+			state.Skip = index - 10;
+			await QuotesGrid.SetStateAsync(state);
+		}
     }
 
     //смена уровней по хоткею.
