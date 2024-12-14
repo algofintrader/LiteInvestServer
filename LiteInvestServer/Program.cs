@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using LiteInvest.Entity.PlazaEntity;
 using LiteInvest.Entity.ServerEntity;
+using LiteInvestServer.Options;
 
 
 //NOTE: Идея такая короче. Протестировать за неделю, все что связано с торговлей
@@ -74,6 +75,8 @@ var services = builder.Services;
 var configuration = builder.Configuration;
 
 var jwtOptions = builder.Configuration.GetSection("JwtOptions").Get<JwtOptions>();
+var plazasimulation = builder.Configuration.GetSection("PlazaOptions").Get<PlazaOptions>();
+
 var jwtprovider = new JwtProvider(jwtOptions);
 
 builder.Services.AddControllers();
@@ -136,7 +139,9 @@ builder.Services.AddSingleton(_ =>
     if (!UsersContext.ContainsKey(admin))
         UsersContext.TryAdd(admin, new User(admin, "adminPass#1R") { Admin = true, CanTrade = false });
 
-    plaza = new PlazaConnector("02mMLX144T2yxnfzEUrCjUKzXKciQKJ",Helper.isSimulation(), testTrading: false, appname: "osaApplication")
+    Console.WriteLine($"simulation PLAZA {plazasimulation.Simulation}");
+
+    plaza = new PlazaConnector("02mMLX144T2yxnfzEUrCjUKzXKciQKJ",plazasimulation.Simulation, testTrading: false, appname: "osaApplication")
     {
         Limit = 30,
         LoadTicksFromStart = false,
