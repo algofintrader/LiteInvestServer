@@ -1,5 +1,6 @@
 ﻿@using DevExpress.Blazor
 @using Microsoft.AspNetCore.Mvc.ViewFeatures
+@inject IFileVersionProvider FileVersionProvider
 
 <!DOCTYPE html>
 <html lang="en">
@@ -16,7 +17,11 @@
 	<script src="_content/Telerik.UI.for.Blazor.Trial/js/telerik-blazor.js"></script>
 	<link rel="stylesheet" href="_content/Telerik.UI.for.Blazor.Trial/css/kendo-theme-default/all.css" />
 	
-	<link href="_content/DevExpress.Blazor.Themes/blazing-berry.bs5.min.css" rel="stylesheet"/>
+    <link href=@AppendVersion("_content/DevExpress.Blazor.Themes/blazing-dark.bs5.min.css") rel="stylesheet" />
+
+    @DxResourceManager.RegisterScripts()
+    <link href=@AppendVersion("css/site.css") rel="stylesheet" />
+    <link href=@AppendVersion("DxBlazorApplication3.styles.css") rel="stylesheet" />
 	<HeadOutlet />
 </head>
 
@@ -38,3 +43,7 @@
 
 </html>
 
+
+@code {
+	private string AppendVersion(string path) => FileVersionProvider.AddFileVersionToPath("/", path);
+}

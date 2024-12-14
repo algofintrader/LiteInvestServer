@@ -64,6 +64,7 @@ namespace BlazorRenderAuto.Client.Services
 		string token = "";
 
 		public Action<string, List<TradeApi>> NewTicks;
+
 		/// <summary>
 		/// Мой новый ордер
 		/// </summary>

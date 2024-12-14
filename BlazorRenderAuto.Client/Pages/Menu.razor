@@ -47,7 +47,7 @@
             <TelerikAutoComplete Data="@Instruments"
                                  ValueField="@nameof(SecuritySelected.Isin)"
                                  @bind-Value="@AutoComplete"
-                                 Placeholder="Enter your role (can be free text)"
+                                 Placeholder="Выберите Инструмент!"
                                  Filterable="true"
                                  OnChange="OnChangeHandler"
                                  FilterOperator="@StringFilterOperator.StartsWith"

@@ -4,6 +4,7 @@
 @using BlazorRenderAuto.Client.Entity
 @using BlazorRenderAuto.Client.Services
 @using DevExpress.Blazor.Internal
+@using DevExpress.Blazor.Scheduler.Internal
 @using LiteInvest.Entity.PlazaEntity
 @using LiteInvest.Entity.ServerEntity
 @using Telerik.Blazor.Components
@@ -270,107 +271,31 @@
 
 		<GridLayoutItems>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="1">
-				@* ScatterLine Series *@
 
-				<TelerikChart @ref="chart" Width="100%">
-					<ChartLegend Visible="false"></ChartLegend>
-					
-					<ChartSeriesItems>
-						<ChartSeries Type="Telerik.Blazor.ChartSeriesType.ScatterLine"
-									 Data="@Ticks"
-									 XField="@nameof(TradeApi.Time)"
-									 YField="@nameof(TradeApi.Price)"
-									 >
-									 <ChartSeriesMarkers
-										 Background="@(nameof(TradeApi.Side) == Side.Sell.ToString() ? "red" : "green")"
-										 Size="8">
-									 </ChartSeriesMarkers>
-						</ChartSeries>
-					</ChartSeriesItems>
 
-					<ChartXAxes>
+				
 
-						<ChartXAxis Visible="false">
-							<ChartXAxisTitle Visible="false"></ChartXAxisTitle>
-							<ChartXAxisLabels Visible="false"></ChartXAxisLabels>
-						</ChartXAxis>
-					</ChartXAxes>
 
-					<ChartYAxes>
-						<ChartYAxis Visible="false">
-							<ChartYAxisTitle Visible="false">
-							</ChartYAxisTitle>
-							<ChartYAxisLabels Visible="false"></ChartYAxisLabels>
-						</ChartYAxis>
-
-					</ChartYAxes>
-				</TelerikChart>
-@* 				<TelerikChart>
-					<ChartSeriesItems>
-						<ChartSeries Type="Telerik.Blazor.ChartSeriesType.ScatterLine"
-									 Data="Ticks"
-									 
-						>
-							
-						</ChartSeries>
-					</ChartSeriesItems>
-
-					<ChartXAxes>
-
-						<ChartXAxis Max="100">
-							<ChartXAxisTitle Text="Time"></ChartXAxisTitle>
-							<ChartXAxisLabels Format="{0}m"></ChartXAxisLabels>
-						</ChartXAxis>
-					</ChartXAxes>
-
-					<ChartYAxes>
-						<ChartYAxis Max="100">
-							<ChartYAxisTitle Text="Charge"></ChartYAxisTitle>
-							<ChartYAxisLabels Format="{0}%"></ChartYAxisLabels>
-						</ChartYAxis>
-
-					</ChartYAxes>
-
-				</TelerikChart> *@
 			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
-@* 				<DxChart CssClass="chart"
-						 CustomizeSeriesPoint="@PrepareSeriesPoint"
-						 @ref="Chart"
-						 Data="Ticks"
-						 Width="100%"
-						 LabelOverlap="ChartLabelOverlap.Hide">
-					<DxChartLineSeries Name="ticksLineSeries"
-									   T="TradeApi"
-									   TArgument="DateTime"
-									   TValue="decimal"
-									   ArgumentField="si => si.Time"
-									   ValueField="si => si.Price"
-									   HoverMode="ChartContinuousSeriesHoverMode.Series">
+				@* <TelerikChart Transitions="false" RenderAs="@RenderingMode.Canvas" @ref="chart" Width="100%">
+					<ChartLegend Visible="false"></ChartLegend>
 
-						<DxChartLegend Visible="false" />
+					<ChartSeriesItems>
+						<ChartSeries Type="Telerik.Blazor.ChartSeriesType.ScatterLine"
+						Data="@Ticks"
+						XField="@nameof(TradeApi.IndexForChart)"
+						YField="@nameof(TradeApi.Price)"
+						>
+							<ChartSeriesMarkers
+							Background="@(nameof(TradeApi.Side) == Side.Sell.ToString() ? "red" : "green")"
+							Size="8">
+							</ChartSeriesMarkers>
+						</ChartSeries>
+					</ChartSeriesItems>
 
-						<!--<DxChartSeriesPoint Visible="true"
-						HoverMode="ChartSeriesPointHoverMode.None" />-->
-						<!--<DxChartSeriesLabel Visible="true"
-						ValueFormat="ChartElementFormat.Thousands(1)" />-->
-					</DxChartLineSeries>
 
-					<DxChartArgumentAxis Visible="false">
-						<DxChartAxisLabel Visible="false" />
-						<DxChartAxisTick Visible="false" />
-						<DxChartAxisMinorTick Visible="false" />
-						<DxChartAxisGridLines Visible="true" />
-					</DxChartArgumentAxis>
-
-					<DxChartValueAxis Visible="false">
-						<DxChartAxisLabel Visible="false" />
-						<DxChartAxisTick Visible="false" />
-						<DxChartAxisMinorTick Visible="false" />
-						<DxChartAxisGridLines Visible="true" />
-						<DxChartAxisRange StartValue="@minchart" EndValue="@maxchart" />
-					</DxChartValueAxis>
-				</DxChart> *@
+				</TelerikChart> *@
 			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
 
@@ -423,6 +348,34 @@
 
 
 @code {
+
+
+	TelerikGrid<ClusterData> clustersgrid;
+	public List<ClusterData> ClusterDatas { get; set; } = new List<ClusterData>();
+
+	public class ClusterData
+	{
+		public decimal Volume;
+		public DateTime DateTime;
+
+		public ClusterData(decimal volume, DateTime dateTime)
+		{
+			Volume = volume;
+			DateTime = dateTime;
+		}
+	}
+
+	private void UpdateClusterData(decimal volumeSumm)
+	{
+		if (ClusterDatas != null && ClusterDatas.Count > 5)
+		{
+			ClusterDatas.RemoveAt(0);
+		}
+
+		ClusterDatas.Add(new ClusterData(volumeSumm, DateTime.Now));
+		clustersgrid.Rebind();
+	}
+
 	TelerikChart chart;
 
 	static string plusHotKey = "Equal";
@@ -457,6 +410,8 @@
 
 	// public ObservableCollection<Quote> GridData { get; set; }
 	public ObservableCollection<MarketDepthLevel> Quotes { get; set; }
+
+	public ObservableCollection<TradeApi> Ticks { get; set; } = new();
 
 	public List<int?> WebSockets { get; set; }
 	public TelerikGrid<MarketDepthLevel> QuotesGrid { get; set; }
@@ -587,42 +542,56 @@
 	DateTime lasttime = DateTime.Now;
 	int counter = 0;
 
-	public List<TradeApi> Ticks { get; set; } = new List<TradeApi>();
+
+	private async Task<Task> AddTickData(TradeApi tick)
+	{
+		tick.Price = bestbid + counter;
+
+		tick.IndexForChart = counter;
+
+		Ticks.Add(tick);
+
+		try
+		{
+			if (Ticks.Count > 15) Ticks.RemoveAt(0);
+		}
+		catch (Exception ex)
+		{
+
+		}
+
+		return Task.CompletedTask;
+
+	}
 
 	private async void OnNewTicks(string secID, List<TradeApi> ticks)
 	{
-		if(secID!=secutityMain.id)
+		if (secID != secutityMain.id)
 			return;
 
-		Console.WriteLine(Ticks?.Count);
-		if(Ticks.Count > 0)
-		{
-			Console.WriteLine(Ticks?.Last().Time.ToString());
-			Console.WriteLine(Ticks?.Last().Price.ToString());
-		}
+        UpdateClusterData(ticks[0].Volume);
 
-		foreach (var tick in ticks)
-		{
-			counter++;
+        // Console.WriteLine(Ticks?.Count);
+        // if(Ticks.Count > 0)
+        // {
+        // 	Console.WriteLine(Ticks?.Last().Time.ToString());
+        // 	Console.WriteLine(Ticks?.Last().Price.ToString());
+        // }
 
+        // foreach (var tick in ticks)
+        // {
+        // 	counter++;
 
-			//tick.Time = dt + TimeSpan.FromSeconds(start);
-			tick.Time = lasttime + TimeSpan.FromSeconds(counter);
+        // 	//tick.Time = dt + TimeSpan.FromSeconds(start);
 
-			Ticks.Add(tick);
+        // 	//TODO: для симуляции.. 
+        //           await AddTickData(tick);
 
-			try
-			{
-				if (Ticks.Count > 15) Ticks.RemoveAt(0);
-			}
-			catch (Exception ex)
-			{
+        //       }
 
-			}
-
-			chart.Refresh();
-		}
-	}
+        //        chart.Refresh();
+        //InvokeAsync(StateHasChanged);
+    }
 
 	ConcurrentDictionary<decimal, MarketDepthLevel> QuotesDictionary = new();
 
@@ -632,7 +601,7 @@
 	Dictionary<decimal, int> IndexesQuotes = new Dictionary<decimal, int>();
 
 
-	private void BuildAndRenderInitialQuotes(decimal bestbid)
+	private ObservableCollection<MarketDepthLevel> BuildInitialQuotes(decimal bestbid)
 	{
 		try
 		{
@@ -642,6 +611,8 @@
 			// var min = (bestbid * 0.7m);
 
 			decimal agrregatedlevel = bestbid - bestbid % (secutityMain.PriceStep * Scale);
+
+			agregatedBestbid = agrregatedlevel;
 
 			//previous 
 			// var min = bestbid - levels * secutityMain.PriceStep * Scale;
@@ -683,35 +654,48 @@
 				index++;
 			}
 
-			Quotes = localQuotesBuild;
+			Console.WriteLine($"{secutityMain.id} Created INITIAL EMPTY QUOTES SCALE {Scale}");
+
+			//Quotes = localQuotesBuild;
+
+			return localQuotesBuild;
 
 
 			//пришлось засунуть местами плохо работает.. 
-			InvokeAsync(StateHasChanged);
-			Console.WriteLine($"{secutityMain.id} LOADED INITIAL EMPTY QUOTES");
+			//InvokeAsync(StateHasChanged);
+
+			//QuotesGrid.Rebind();
+
+
 
 		}
 		catch (Exception ex)
 		{
+			Console.WriteLine(ex.Message);
+			return null;
 
 		}
 
 	}
 
+	public decimal agregatedBestbid { get; set; }
+
 	bool skipped = false;
 
-	public async void EasySkip(int index)
+	public async void ScrollTo(int index)
 	{
-		if(QuotesGrid != null)
-		{
-			skipped = true;
-			var state = QuotesGrid.GetState();
-			state.Skip = index - 10;
-			await QuotesGrid.SetStateAsync(state);
-		}
+        if (QuotesGrid != null)
+        {
+            skipped = true;
+            var state = QuotesGrid.GetState();
+            var scrollindex = index - 10;
+            state.Skip = scrollindex;
+            Console.WriteLine($"Scrolling to {state.Skip} bestbid={Quotes[index].Price} price = {Quotes[scrollindex].Price}");
+            await QuotesGrid.SetStateAsync(state);
+        }
     }
 
-    //смена уровней по хоткею.
+	//смена уровней по хоткею.
 	//обновление таблицы соотвветсвенно основной. 
 	private void ChangeScale()
 	{
@@ -760,104 +744,109 @@
 			}
 		}
 
-        return QuotesAgregated;
+		return QuotesAgregated;
 
-        #region Для теста того что мы насобрали
+		#region Для теста того что мы насобрали
 
-        // var sorteddictionary = QuotesAgregated.Values.OrderByDescending(s => s.Price).ToList();
-        // foreach (var level in sorteddictionary)
-        // {
-        //     if (level.Ask!=0 && level.Bid!=0)
-        //         Console.WriteLine($"SPECIAL! ");
-        //     Console.WriteLine($" BID={level.Bid} ASK ={level.Ask} PRICE = {level.Price}");
-        // }
+		// var sorteddictionary = QuotesAgregated.Values.OrderByDescending(s => s.Price).ToList();
+		// foreach (var level in sorteddictionary)
+		// {
+		//     if (level.Ask!=0 && level.Bid!=0)
+		//         Console.WriteLine($"SPECIAL! ");
+		//     Console.WriteLine($" BID={level.Bid} ASK ={level.Ask} PRICE = {level.Price}");
+		// }
 
 
-        #endregion
+		#endregion
 
-        //теперь мы должны сравнить прошлый и обновить индексы. 
+		//теперь мы должны сравнить прошлый и обновить индексы. 
 
-        //CompareOldWithNewAndPlaceIndexes(QuotesAgregated,null);
+		//CompareOldWithNewAndPlaceIndexes(QuotesAgregated,null);
 
-    }
+	}
 
 	//QuotesDictionary - old
 
-    private void CompareOldWithNewAndPlaceIndexes
-    (ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,
-        ConcurrentDictionary<decimal, MarketDepthLevel> oldQuotes )
-    {
+	bool logquotes = false;
 
-   
-        foreach (var quoteKey in oldQuotes.Keys.ToList())
-        {
-
-            if (!newdictionaryQuotes.ContainsKey(quoteKey))
-            {
+	private void CompareOldWithNewAndPlaceIndexes
+	(ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,
+		ConcurrentDictionary<decimal, MarketDepthLevel> oldQuotes , ObservableCollection<MarketDepthLevel> _quotesList)
+	{
 
 
-                //меняем коллекицю внутри цикла
-                oldQuotes.TryRemove(quoteKey, out var _);
+		foreach (var quoteKey in oldQuotes.Keys.ToList())
+		{
 
-                //Уровень удален.. 
-                //Значит кидаем 0
-                if (!IndexesQuotes.ContainsKey(quoteKey))
-                    continue;
-
-                var indexfound = IndexesQuotes[quoteKey];
-                //меняем на нулевой
-                Quotes[indexfound] = MarketDepthLevel.GetEmptyLevel(quoteKey);
-
-                //Console.WriteLine($" {secID} Level removed {quoteKey} index = {indexfound}");
-
-            }
-            else
-            {
-                //новая котировка
-                var freshQuote = newdictionaryQuotes[quoteKey];
-                var oldquote = oldQuotes[quoteKey];
-
-                if (oldquote != freshQuote)
-                {
-                    oldQuotes[quoteKey] = freshQuote;
-
-                    if (!IndexesQuotes.ContainsKey(quoteKey))
-                        continue;
-
-                    //Поменялась котировочка.. 
-                    var indexfound = IndexesQuotes[quoteKey];
-                    Quotes[indexfound] = freshQuote;
-
-                    //Console.WriteLine($" {secID} Level Changed! {quoteKey} index = {indexfound}");
-
-                }
-
-            }
+			if (!newdictionaryQuotes.ContainsKey(quoteKey))
+			{
 
 
-        }
+			//меняем коллекицю внутри цикла
+				oldQuotes.TryRemove(quoteKey, out var _);
 
-        foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
-        {
-            //в нашей колекции нет нового уровня... 
-            if (!oldQuotes.ContainsKey(quoteKey))
-            {
-                oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
+				//Уровень удален.. 
+				//Значит кидаем 0
+				if (!IndexesQuotes.ContainsKey(quoteKey))
+					continue;
 
-                if (!IndexesQuotes.ContainsKey(quoteKey))
-                    continue;
+				var indexfound = IndexesQuotes[quoteKey];
+				//меняем на нулевой
+				_quotesList[indexfound] = MarketDepthLevel.GetEmptyLevel(quoteKey);
 
-                var indexfound = IndexesQuotes[quoteKey];
-                Quotes[indexfound] = newdictionaryQuotes[quoteKey];
+				if(logquotes)
+				Console.WriteLine($" {secutityMain.id} Level removed {quoteKey} index = {indexfound}");
 
-                //Console.WriteLine($" {secID} Level Added! {quoteKey} index = {indexfound}");
+			}
+			else
+			{
+			//новая котировка
+				var freshQuote = newdictionaryQuotes[quoteKey];
+				var oldquote = oldQuotes[quoteKey];
 
-            }
-        }
+				if (oldquote != freshQuote)
+				{
+					oldQuotes[quoteKey] = freshQuote;
 
-    }
+					if (!IndexesQuotes.ContainsKey(quoteKey))
+						continue;
 
-    private ConcurrentDictionary<decimal, MarketDepthLevel> BuildMarketDepthDictionary(List<MarketDepthLevel> bids, List<MarketDepthLevel> asks)
+						//Поменялась котировочка.. 
+					var indexfound = IndexesQuotes[quoteKey];
+					_quotesList[indexfound] = freshQuote;
+
+                    if(logquotes)
+					Console.WriteLine($" {secutityMain.id} Level Changed! {quoteKey} index = {indexfound}");
+
+				}
+
+			}
+
+
+		}
+
+		foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
+		{
+		//в нашей колекции нет нового уровня... 
+			if (!oldQuotes.ContainsKey(quoteKey))
+			{
+				oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
+
+				if (!IndexesQuotes.ContainsKey(quoteKey))
+					continue;
+
+				var indexfound = IndexesQuotes[quoteKey];
+				_quotesList[indexfound] = newdictionaryQuotes[quoteKey];
+
+                if(logquotes)
+				Console.WriteLine($" {secutityMain.id} Level Added! {quoteKey} index = {indexfound}");
+
+			}
+		}
+
+	}
+
+	private ConcurrentDictionary<decimal, MarketDepthLevel> BuildMarketDepthDictionary(List<MarketDepthLevel> bids, List<MarketDepthLevel> asks)
 	{
 		var newdictionaryQuotes = new ConcurrentDictionary<decimal, MarketDepthLevel>();
 		foreach (var bid in bids)
@@ -873,65 +862,71 @@
 		return newdictionaryQuotes;
 	}
 
+	public decimal bestbid { get; set; }
+
+	private void UpdateBestBidIndex(decimal _bestbid)
+	{
+		if (IndexesQuotes.ContainsKey(_bestbid))
+		{
+			bestbidIndex = IndexesQuotes[_bestbid];
+		}
+	}
+
+
+	//симуляция погано работает. 
+    bool real = false;
+
 	private void OnNewMarketDepth(List<MarketDepthLevel> bids, List<MarketDepthLevel> asks, string secID)
 	{
 		if (secID != secutityMain.id)
 			return;
 
-		var bestbid = bids[0].Price;
-
 		var easyDictionaryCurrent = BuildMarketDepthDictionary(bids, asks);
 
-        var newdictionaryQuotes = ScaleBuilderQuotes(easyDictionaryCurrent);
+		//из-за погано работающей симуляиции приходится так делать
+        if (!real)
+        {
+            easyDictionaryCurrent = BuildMarketDepthDictionary(asks, bids);
+        }
+
+		var newdictionaryQuotes = ScaleBuilderQuotes(easyDictionaryCurrent);
+
+		        
 
 		//поменялся масштаб
 		if (prevbuildScale != Scale)
 		{
-			//Применяем масштаб (даже если 1)
+		//Применяем масштаб (даже если 1)
 			//строим пустой стакан на всю длину
-            BuildAndRenderInitialQuotes(bids[0].Price);
+			var initialquotes= BuildInitialQuotes(real? bids[0].Price : asks[0].Price);
 			QuotesDictionary.Clear();
 
-            CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary);
-            prevbuildScale = Scale;
+			CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,initialquotes);
+
+			Quotes = initialquotes;
+            InvokeAsync(StateHasChanged).GetAwaiter().GetResult();
+
+			prevbuildScale = Scale;
+
+			UpdateBestBidIndex(agregatedBestbid);
+			ScrollTo(bestbidIndex);
+
+            //InvokeAsync(StateHasChanged);
+
         }
         else
         {
-            CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary);
+            CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,Quotes);
         }
 
-
-		//Обновление индекса
-		if (IndexesQuotes.ContainsKey(bestbid) && !skipped)
-		{
-			bestbidIndex = IndexesQuotes[bestbid];
-			EasySkip(bestbidIndex);
-			//Console.WriteLine($" BestBidIndex {bestbidIndex} bestbID= {bestbid}");
-        }
-
-		// ------- перенос котировок в словарь ------------//
-
-       
-
-		//изначальная установка
-        /* if (Quotes==null)
-		{
-			QuotesDictionary = newdictionaryQuotes;
-			BuildAndRenderInitialQuotes(bids[0].Price);
-        }
-		else
-        {
-            CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary);
-
-            //TODO: ВОЗМОЖНО ЕЩЕ НЕ УЧЕЛ Какой то перебор
-
-        }
-
-        ScaleBuilderQuotes(newdictionaryQuotes) */
+        // ------- перенос котировок в словарь ------------//
+        UpdateBestBidIndex(agregatedBestbid);
 
     }
 
-	private void NewMyOrder(Order obj)
+    
+
+    private void NewMyOrder(Order obj)
 	{
 		//throw new NotImplementedException();
 	}
@@ -962,6 +957,13 @@
                 return;
 
 
+            if (keyCode == "KeyM")
+            {
+				//двигаем в середину
+
+                ScrollTo(bestbidIndex);
+            }
+
             if (keyCode == cancelHotKey)
             {
                 /* foreach (var order in Orders)
@@ -974,7 +976,11 @@
             {
                 if (Scale > 0)
                 {
-                    Scale -= 5;
+                    var newScale = Scale - 5;
+
+                    if (newScale == 0)
+                        Scale = 1;
+
                     Console.WriteLine($"{secutityMain.Isin} New Agregation Step {Scale}");
 
                 }
@@ -982,7 +988,9 @@
 
             if (keyCode == minusHotKey)
             {
-                Scale += 5;
+                if (Scale == 1)
+                    Scale += 4;
+					else Scale += 5;
                 //UpdateAll();
 
                 Console.WriteLine($"{secutityMain.Isin} New Agregation Step {Scale}");

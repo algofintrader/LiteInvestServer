@@ -25,9 +25,14 @@ builder.Services.AddScoped<ApiDataServiceTest>();
 builder.Services.AddScoped<JsInteropService>();
 
 builder.Services.AddTelerikBlazor();
-builder.Services.AddDevExpressBlazor(config => config.BootstrapVersion = DevExpress.Blazor.BootstrapVersion.v5);
 
-//builder.Services.AddMvc();
+builder.Services.AddDevExpressBlazor(options =>
+ {
+     options.BootstrapVersion = DevExpress.Blazor.BootstrapVersion.v5;
+     options.SizeMode = DevExpress.Blazor.SizeMode.Medium;
+ });
+
+builder.Services.AddMvc();
 
 var app = builder.Build();
 
@@ -54,6 +59,7 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(BlazorRenderAuto.Client._Imports).Assembly);
+    .AddAdditionalAssemblies(typeof(Home).Assembly);
+    //.AddAdditionalAssemblies(typeof(BlazorRenderAuto.Client._Imports).Assembly);
 
 app.Run();

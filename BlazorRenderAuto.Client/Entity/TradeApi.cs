@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace BlazorRenderAuto.Client.Entity
 {
-	public partial class TradeApi
+	public class TradeApi
 	{
 		[JsonProperty("sn")]
 		public string SecurityName { get; set; }
@@ -25,5 +25,7 @@ namespace BlazorRenderAuto.Client.Entity
 
 		[JsonProperty("p")]
 		public decimal Price { get; set; }
+
+		public int IndexForChart { get; set; }
 	}
 }
