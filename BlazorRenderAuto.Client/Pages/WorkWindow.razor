@@ -272,31 +272,35 @@
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="1">
 				@* ScatterLine Series *@
 
-				<TelerikChart>
+				<TelerikChart @ref="chart" Width="100%">
 					<ChartLegend Visible="false"></ChartLegend>
 					
 					<ChartSeriesItems>
 						<ChartSeries Type="Telerik.Blazor.ChartSeriesType.ScatterLine"
 									 Data="@Ticks"
-									 Name=""
-									 
 									 XField="@nameof(TradeApi.Time)"
-									 YField="@nameof(TradeApi.Price)">
+									 YField="@nameof(TradeApi.Price)"
+									 >
+									 <ChartSeriesMarkers
+										 Background="@(nameof(TradeApi.Side) == Side.Sell.ToString() ? "red" : "green")"
+										 Size="8">
+									 </ChartSeriesMarkers>
 						</ChartSeries>
 					</ChartSeriesItems>
 
 					<ChartXAxes>
 
-						<ChartXAxis Visible="false" Max="100">
-							<ChartXAxisTitle Visible="false" Text="Time"></ChartXAxisTitle>
-							<ChartXAxisLabels Visible="false" Format="{0}m"></ChartXAxisLabels>
+						<ChartXAxis Visible="false">
+							<ChartXAxisTitle Visible="false"></ChartXAxisTitle>
+							<ChartXAxisLabels Visible="false"></ChartXAxisLabels>
 						</ChartXAxis>
 					</ChartXAxes>
 
 					<ChartYAxes>
-						<ChartYAxis Visible="false" Max="100">
-							<ChartYAxisTitle Visible="false" Text="Price"></ChartYAxisTitle>
-							<ChartYAxisLabels Visible="false" Format="{0}%"></ChartYAxisLabels>
+						<ChartYAxis Visible="false">
+							<ChartYAxisTitle Visible="false">
+							</ChartYAxisTitle>
+							<ChartYAxisLabels Visible="false"></ChartYAxisLabels>
 						</ChartYAxis>
 
 					</ChartYAxes>
@@ -419,25 +423,7 @@
 
 
 @code {
-
-	public class ModelData
-	{
-		public int X { get; set; }
-		public int Y { get; set; }
-	}
-
-	public List<ModelData> Series1Data = new List<ModelData>()
-	{
-		new ModelData() { X = 10, Y = 10 },
-		new ModelData() { X = 15, Y = 20 },
-		new ModelData() { X = 20, Y = 25 },
-		new ModelData() { X = 32, Y = 40 },
-		new ModelData() { X = 43, Y = 50 },
-		new ModelData() { X = 55, Y = 60 },
-		new ModelData() { X = 60, Y = 70 },
-		new ModelData() { X = 70, Y = 80 },
-		new ModelData() { X = 90, Y = 100 },
-	};
+	TelerikChart chart;
 
 	static string plusHotKey = "Equal";
 	static string minusHotKey = "Minus";
@@ -603,12 +589,19 @@
 
 	public List<TradeApi> Ticks { get; set; } = new List<TradeApi>();
 
-	private void OnNewTicks(string secID, List<TradeApi> ticks)
+	private async void OnNewTicks(string secID, List<TradeApi> ticks)
 	{
 		if(secID!=secutityMain.id)
 			return;
 
-		foreach (var tick in Ticks)
+		Console.WriteLine(Ticks?.Count);
+		if(Ticks.Count > 0)
+		{
+			Console.WriteLine(Ticks?.Last().Time.ToString());
+			Console.WriteLine(Ticks?.Last().Price.ToString());
+		}
+
+		foreach (var tick in ticks)
 		{
 			counter++;
 
@@ -626,6 +619,8 @@
 			{
 
 			}
+
+			chart.Refresh();
 		}
 	}
 
