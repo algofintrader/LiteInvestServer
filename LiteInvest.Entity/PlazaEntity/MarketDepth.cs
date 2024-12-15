@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace LiteInvest.Entity.PlazaEntity;
 
@@ -278,5 +280,62 @@ public record MarketDepthLevel
     /// </summary>
     public decimal? RestVolume { get; set; } = null;
 
-   
+}
+
+public class ClusterLevel:INotifyPropertyChanged,ICloneable
+{
+	private decimal _bidVolume;
+	private decimal _askVolume;
+
+
+	public decimal BidVolume
+	{
+		get => _bidVolume;
+		set
+		{
+			if (value == _bidVolume) return;
+			_bidVolume = value;
+			OnPropertyChanged();
+		}
+	}
+
+	public decimal AskVolume
+	{
+		get => _askVolume;
+		set
+		{
+			if (value == _askVolume) return;
+			_askVolume = value;
+			OnPropertyChanged();
+		}
+	}
+
+	public decimal Price { get; set; }
+
+	public decimal Volume => AskVolume + BidVolume;
+
+   public event PropertyChangedEventHandler? PropertyChanged;
+
+   protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+   {
+	   PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+   }
+
+   protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+   {
+	   if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+	   field = value;
+	   OnPropertyChanged(propertyName);
+	   return true;
+   }
+
+   public object Clone()
+   {
+	   return new ClusterLevel()
+	   {
+           BidVolume = BidVolume,
+           AskVolume = AskVolume,
+           Price = Price,
+	   };
+   }
 }

@@ -192,7 +192,7 @@
 	height: 80vh;
 	}
 
-	.highlighted-item {
+	.red-highlight {
 	background-color: var(--bs-danger-bg-subtle)
 	}
 
@@ -386,7 +386,7 @@
 
 		// if (quote.RestVolume != 0)
 		// {
-		// 	return quote.Type == Side.Sell ? "highlighted-item" : "highlighted-item2";
+		// 	return quote.Type == Side.Sell ? "red-highlight" : "highlighted-item2";
 		// }
 
 		if (quote.Volume == 0 || quote.Volume == null)
@@ -394,7 +394,7 @@
 			return "transparent-item";
 		}
 
-		return quote.Type == Side.Sell ? "highlighted-item" : "highlighted-item2";
+		return quote.Type == Side.Sell ? "red-highlight" : "highlighted-item2";
 
 	}
 
