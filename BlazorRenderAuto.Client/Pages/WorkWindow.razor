@@ -663,7 +663,7 @@
 		if (IndexesQuotes.Count != 0 && bestbidIndex!=0)
 		{
 
-		//симуляция 
+		    //симуляция 
 			foreach (var tick in ticks)
 			{
 				var indexrand = new Random().Next(1, 10);
@@ -675,8 +675,6 @@
 					Volume = 10,
 					Side = randomdirection == 0 ? Side.Buy : Side.Sell,
 					Time = DateTime.Now,
-
-
 				});
             }
         }

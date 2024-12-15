@@ -10,12 +10,12 @@
 
 
 <TelerikTileLayout Columns="OpenedInstruments.Count"
-				   ColumnWidth="auto"
-				   RowHeight="90vh"
-				   Reorderable="true"
-				   ColumnSpacing="0px"
-				   RowSpacing="0px"
-				   Resizable="true">
+ColumnWidth="auto"
+RowHeight="90vh"
+Reorderable="true"
+ColumnSpacing="0px"
+RowSpacing="0px"
+Resizable="true">
 
 
 
@@ -43,8 +43,14 @@
 </TelerikTileLayout>
 
 @code {
+
+
+	private bool shouldNOTrenderafterclick = false;
+
+
 	private void focusWindowByHeaderClick(string id)
 	{
+		shouldNOTrenderafterclick = true;
 		js.InvokeVoidAsync("focusElementById", id);
 	}
 
@@ -91,6 +97,12 @@
 
 	protected override bool ShouldRender()
 	{
+		if (shouldNOTrenderafterclick)
+        {
+            shouldNOTrenderafterclick = false;
+			return false;
+        }
+
 		return base.ShouldRender();
 	}
 
