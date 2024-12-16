@@ -14,20 +14,19 @@
                 IndicatorAreaVisible="false"
                 Text="@textForLogin">
 
-
 <DxWindow @ref=windowRef
-AllowResize="true"
-ShowCloseButton="true"
-CloseOnEscape="true"
-HeaderText="Авторизация"
-FooterText="Footer"
-ShowFooter="true"
-Width="max(25vw, 250px)"
-MinWidth="300"
-MinHeight="200"
-MaxWidth="800"
-MaxHeight="500"
-@bind-Visible=windowVisible>
+          AllowResize="true"
+          ShowCloseButton="true"
+          CloseOnEscape="true"
+          HeaderText="Авторизация"
+          FooterText="Footer"
+          ShowFooter="true"
+          Width="max(25vw, 250px)"
+          MinWidth="300"
+          MinHeight="200"
+          MaxWidth="800"
+          MaxHeight="500"
+          @bind-Visible=windowVisible>
     <BodyContentTemplate>
         Привет
     </BodyContentTemplate>
@@ -36,6 +35,29 @@ MaxHeight="500"
         <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Primary" Text="OK" />
     </FooterContentTemplate>
 </DxWindow>
+
+@* <TelerikWindow @bind-Visible=windowVisible
+Resizable="true"
+               MinWidth="300"
+               MinHeight="200"
+               Centered="true"
+               Modal="true"
+               MaxWidth="800"
+               CloseOnOverlayClick="true"
+               MaxHeight="500">
+               <WindowContent>
+                    <TelerikForm>
+                       <FormItems>
+                           <FormItem>
+
+                           </FormItem>
+                       </FormItems>
+                   </TelerikForm>
+               </WindowContent>
+               <WindowFooter>
+        <TelerikButton OnClick="()=>{windowVisible = !windowVisible;}" Class="popup-button my-1 ms-2">Ok</TelerikButton>
+               </WindowFooter>
+</TelerikWindow> *@
 
 <nav id="header" class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
     <div class="container-fluid">
