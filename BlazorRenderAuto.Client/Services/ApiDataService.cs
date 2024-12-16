@@ -32,7 +32,7 @@ namespace BlazorRenderAuto.Client.Services
 		}
 	}
 
-	public class ApiDataService
+	public class ApiDataService:IDisposable
 	{
 		//TODO: перенести все нормально в настройки
 
@@ -248,6 +248,7 @@ namespace BlazorRenderAuto.Client.Services
 				return null;
 			}
 
+
 			// var r = await JsonSerializer.DeserializeAsync<SecurityApi>(response.st);
 
 			var instruments = JsonConvert.DeserializeObject<IEnumerable<SecurityApi>>(response.Content);
@@ -371,6 +372,13 @@ namespace BlazorRenderAuto.Client.Services
 				: $"Closed success {websocketId}");
 
 			AllWebSockets.Remove((int)websocketId,out var _);
+		}
+
+		public void Dispose()
+		{
+			client = null;
+			Securities = null;
+			GC.SuppressFinalize(this);
 		}
 	}
 

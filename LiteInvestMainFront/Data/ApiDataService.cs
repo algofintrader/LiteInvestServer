@@ -585,6 +585,8 @@ namespace LiteInvestMainFront.Data
 
 		public void Dispose()
 		{
+			client = null;
+			Securities = null;
 			GC.SuppressFinalize(this);
 		}
 	}

@@ -8,11 +8,15 @@
 
 @implements IDisposable
 
-<DxLoadingPanel @bind-Visible="loadingLogIn"
-                IsContentBlocked="true"
-                ApplyBackgroundShading="true"
-                IndicatorAreaVisible="false"
-                Text="@textForLogin">
+<DxLoadingPanel 
+@ref="loadingpanel"
+@bind-Visible="loadingLogIn"
+IsContentBlocked="true"
+ApplyBackgroundShading="true"
+IndicatorAreaVisible="false"
+Text="@textForLogin">
+
+</DxLoadingPanel>
 
 
 <DxWindow @ref=windowRef
@@ -54,13 +58,13 @@ MaxHeight="500"
 
         <form class="d-flex internalSearch" role="search">
             <TelerikAutoComplete Data="@Instruments"
-                                 ValueField="@nameof(SecuritySelected.Isin)"
-                                 @bind-Value="@AutoComplete"
-                                 Placeholder="Выберите Инструмент!"
-                                 Filterable="true"
-                                 OnChange="OnChangeHandler"
-                                 FilterOperator="@StringFilterOperator.StartsWith"
-                                 ShowClearButton="true" />
+            ValueField="@nameof(SecuritySelected.Isin)"
+            @bind-Value="@AutoComplete"
+            Placeholder="Выберите Инструмент!"
+            Filterable="true"
+            OnChange="OnChangeHandler"
+            FilterOperator="@StringFilterOperator.StartsWith"
+            ShowClearButton="true" />
         </form>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -87,7 +91,7 @@ MaxHeight="500"
     </div>
 </nav>
 
-</DxLoadingPanel>
+
 
 @code
 {
@@ -139,7 +143,10 @@ MaxHeight="500"
 
     int i = 0;
     private bool loadingLogIn { get; set; }
-    public string textForLogin { get; set; } 
+    public string textForLogin { get; set; }
+
+    public DxLoadingPanel loadingpanel { get; set; }
+
     private async Task<Task> OnLoginClick(MouseEventArgs obj)
     {
 
@@ -148,15 +155,22 @@ MaxHeight="500"
             loadingLogIn = true;
 
             textForLogin = "Входим";
+
             var res = await ApiDataService.LogIn("samujan1@yandex.ru", "pass2");
+            
 
             if (res == null)
             {
                 textForLogin = "ERROR LOGIN";
                 Console.WriteLine("ERROR LOGIN");
             }
+            else
+            {
+                Console.WriteLine(" LOGIN SUCCESS");
+            }
 
             textForLogin = "Грузим инструменты";
+            Console.WriteLine("Loading instruments");
             Instruments = await ApiDataService.GetInstruments();
             SecuritySelected = Instruments.FirstOrDefault();
 
@@ -204,6 +218,7 @@ MaxHeight="500"
 
     public void Dispose()
     {
+        
         GC.SuppressFinalize(this);
     }
 }
