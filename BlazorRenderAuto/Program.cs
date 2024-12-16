@@ -20,11 +20,12 @@ builder.Services.AddCors(options =>
 });
 
 
-builder.Services.AddScoped<ApiDataService>();
-builder.Services.AddScoped<ApiDataServiceTest>();
+
+//builder.Services.AddScoped<ApiDataServiceTest>();
 builder.Services.AddScoped<JsInteropService>();
 
-builder.Services.AddTelerikBlazor();
+builder.Services.AddSingleton<ApiDataService>();
+//builder.Services.AddTelerikBlazor();
 
 builder.Services.AddDevExpressBlazor(options =>
  {

@@ -11,8 +11,9 @@ builder.Services.AddDevExpressBlazor(options =>
 	options.SizeMode = DevExpress.Blazor.SizeMode.Medium;
 });
 
-builder.Services.AddScoped<ApiDataService>();
-builder.Services.AddScoped<ApiDataServiceTest>();
+builder.Services.AddSingleton<ApiDataService>();
+
+//builder.Services.AddScoped<ApiDataServiceTest>();
 builder.Services.AddScoped<JsInteropService>();
 
 await builder.Build().RunAsync();
