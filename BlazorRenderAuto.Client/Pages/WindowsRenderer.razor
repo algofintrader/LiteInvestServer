@@ -7,7 +7,7 @@
 
 @rendermode InteractiveAuto
 @inject IJSRuntime js;
-
+@implements IDisposable
 
 <TelerikTileLayout Columns="OpenedInstruments.Count"
 ColumnWidth="auto"
@@ -47,7 +47,6 @@ Resizable="true">
 
 	private bool shouldNOTrenderafterclick = false;
 
-
 	private void focusWindowByHeaderClick(string id)
 	{
 		shouldNOTrenderafterclick = true;
@@ -70,7 +69,8 @@ Resizable="true">
 		if (firstRender)
 		{
 			_apidataService.NewSecOpened += (sec) =>
-			{
+            {
+                
 				OpenedInstruments.Add(sec);
 				InvokeAsync(StateHasChanged);
 			};
@@ -126,6 +126,10 @@ Resizable="true">
 		//RegisteredInstruments.Remove(instrument);
 	}
 
+    public void Dispose()
+    {
+		GC.SuppressFinalize(this);
+    }
 
 }
 

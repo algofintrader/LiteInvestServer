@@ -11,6 +11,8 @@
 @inject JsInteropService jsInteropService;
 @inject IJSRuntime js;
 
+@implements IDisposable
+
 @rendermode InteractiveAuto
 
 <style>
@@ -157,6 +159,23 @@
     private void NewSecAdded(SecurityApi sec)
     {
 	   
+    }
+
+    public void Dispose()
+    {
+        try{
+            // if (ApiDataService != null)
+            //     ApiDataService.StopPrivateOrderSubscription();
+
+            if (ApiDataService != null)
+                ApiDataService = null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+        GC.SuppressFinalize(this);
     }
 
 }

@@ -394,7 +394,7 @@
 				Data="@Quotes"
 				TItem="@MarketDepthLevel"
 				ScrollMode="@GridScrollMode.Virtual"
-				PageSize="150">
+				PageSize="250">
 					<GridColumns>
 						<GridColumn Width="1fr" Field="@nameof(MarketDepthLevel.Volume)" HeaderClass="d-none" />
 						<GridColumn Width="1fr"  Field="@nameof(MarketDepthLevel.Price)" HeaderClass="d-none" />
@@ -471,34 +471,40 @@
 
 	[Parameter] public string secHash { get; set; }
 	[Parameter] public SecurityApi secutityMain { get; set; }
+	[Parameter] public string lastsecAdded { get; set; }
+
 
 	/// <summary>
 	/// Последний собранный масштаб
 	/// </summary>
 	private int prevbuildScale { get; set; } = 0;
 
-	private int _scale;
+    private int _oldScale ;//для первой отрисовки
 	public int Scale
 	{
-		get => _scale;
+		get => _oldScale;
 		set
 		{
-			if (_scale != value)
+			if (_oldScale != value)
 				OnScaleChanged(value);
 
-			_scale = value;
+			_oldScale = value;
 		}
 	}
 
 	private void OnScaleChanged(int newscale)
 	{
-
-	}
+        lock (scalelocker)
+        {
+            if (newdictionaryQuotes != null && newdictionaryQuotes.Count != 0)
+                AlgoQuotesScale(newscale, newdictionaryQuotes, usualbestbid);
+        }
+    }
 
 	// public ObservableCollection<Quote> GridData { get; set; }
 	public ObservableCollection<MarketDepthLevel> Quotes { get; set; }
 
-    public ObservableCollection<TradeApi> Ticks { get; set; } = new();
+	public ObservableCollection<TradeApi> Ticks { get; set; } = new();
 
 	public List<int?> WebSockets { get; set; }
 
@@ -535,7 +541,7 @@
 		WebSockets =
 		[
 			await ApiDataService.SubscribeOrderBook(secutityMain.id),
-	await ApiDataService.SubcribeTick(secutityMain.id)
+	        await ApiDataService.SubcribeTick(secutityMain.id)
 		];
 
 		return base.OnInitializedAsync();
@@ -623,7 +629,7 @@
 
 	protected override bool ShouldRender()
 	{
-		Console.WriteLine($"{DateTime.Now} Should {secutityMain.id} Render WorkWindow");
+        Console.WriteLine($"{DateTime.Now} Should {secutityMain.id} Render WorkWindow");
 		return base.ShouldRender();
 	}
 
@@ -1107,80 +1113,95 @@
 	bool real = true;
 	bool initial = false;
 
+    object scalelocker = new object();
+
+
+	//if (prevbuildScale != Scale)
+	private void AlgoQuotesScale(int newscale, ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,decimal bestbbid)
+    {
+        //поменялся масштаб
+		if (newscale != prevbuildScale)
+        {
+            //Применяем масштаб (даже если 1)
+            //строим пустой стакан на всю длину
+			var initialquotes = BuildInitialQuotes(bestbbid);
+            QuotesDictionary.Clear();
+
+            CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,initialquotes);
+
+            Quotes = initialquotes;
+            InvokeAsync(StateHasChanged).GetAwaiter().GetResult();
+
+
+            UpdateBestBidIndex(agregatedBestbid);
+
+            ScrollTo(bestbidIndex,QuotesGrid);
+            //ScrollOrderBookTo(bestbidIndex);
+
+            // ---- теперь тоже саоме по кластерам //
+
+            ClusterDatas = new ObservableCollection<ClusterLevel>();
+            ClusterDatas = BuildEmptyClusterLevels(initialquotes);
+
+            //ClustersGrid.Rebind();
+            InvokeAsync(StateHasChanged).GetAwaiter().GetResult();
+
+            ScrollTo(bestbidIndex,ClustersGrid);
+
+            InvokeAsync(StateHasChanged);
+
+            initial = false;
+
+            prevbuildScale = Scale;
+        }
+        else
+        {
+            CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,Quotes);
+        }
+
+        UpdateBestBidIndex(agregatedBestbid);
+    }
+
 	private void OnNewMarketDepth(List<MarketDepthLevel> bids, List<MarketDepthLevel> asks, string secID)
 	{
 		if (secID != secutityMain.id)
 			return;
 
-		var easyDictionaryCurrent = BuildMarketDepthDictionary(bids, asks);
+        usualbestbid = real ? bids[0].Price : asks[0].Price;
 
-		//из-за погано работающей симуляиции приходится так делать
-		if (!real)
-		{
-			easyDictionaryCurrent = BuildMarketDepthDictionary(asks, bids);
-		}
-
-		var newdictionaryQuotes = ScaleBuilderQuotes(easyDictionaryCurrent);
+        lock (scalelocker)
+        {
+            var easyDictionaryCurrent = BuildMarketDepthDictionary(bids, asks);
 
 
+            //из-за погано работающей симуляиции приходится так делать
+            if (!real)
+            {
+                easyDictionaryCurrent = BuildMarketDepthDictionary(asks, bids);
+            }
 
-		//поменялся масштаб
-		if (prevbuildScale != Scale)
-		{
-			//Применяем масштаб (даже если 1)
-			//строим пустой стакан на всю длину
-			var initialquotes= BuildInitialQuotes(real? bids[0].Price : asks[0].Price);
-			QuotesDictionary.Clear();
+            newdictionaryQuotes = ScaleBuilderQuotes(easyDictionaryCurrent);
 
-			CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,initialquotes);
 
-			Quotes = initialquotes;
-			InvokeAsync(StateHasChanged).GetAwaiter().GetResult();
+            AlgoQuotesScale(Scale, newdictionaryQuotes, usualbestbid);
 
-			prevbuildScale = Scale;
+            /*maxask = agregatedBestbid + middleamountofitems;
+            minbid = agregatedBestbid - middleamountofitems;
 
-			UpdateBestBidIndex(agregatedBestbid);
+            if (!initial)
+            {
+                initial = true;
 
-			ScrollTo(bestbidIndex,QuotesGrid);
-			//ScrollOrderBookTo(bestbidIndex);
+                /*maxchart = agregatedBestbid + middleamountofitems;
+                minchart = agregatedBestbid - middleamountofitems;
 
-			// ---- теперь тоже саоме по кластерам //
+                Console.WriteLine($"max = {maxchart} min = {minchart}");
+            }*/
 
-			ClusterDatas = new ObservableCollection<ClusterLevel>();
-			ClusterDatas = BuildEmptyClusterLevels(initialquotes);
-
-			//ClustersGrid.Rebind();
-			InvokeAsync(StateHasChanged).GetAwaiter().GetResult();
-
-			ScrollTo(bestbidIndex,ClustersGrid);
-
-			InvokeAsync(StateHasChanged);
-
-			initial = false;
-
-		}
-		else
-		{
-			CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,Quotes);
-		}
-
-		maxask  = agregatedBestbid + middleamountofitems;
-		minbid = agregatedBestbid - middleamountofitems;
-
-         if (!initial) 
-		{
-			initial = true;
-
-			/*maxchart = agregatedBestbid + middleamountofitems;
-			minchart = agregatedBestbid - middleamountofitems;
-
-			Console.WriteLine($"max = {maxchart} min = {minchart}");*/
-		}
-
-        // ------- перенос котировок в словарь ------------//
-		UpdateBestBidIndex(agregatedBestbid);
-
-	}
+            // ------- перенос котировок в словарь ------------//
+            //UpdateBestBidIndex(agregatedBestbid);
+        }
+    }
 
     public decimal minbid
     { get; set; }
@@ -1316,8 +1337,10 @@
 
 	int firstVisibleIndex;
 	int lastVisibleIndex;
+    private ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes;
+    private decimal usualbestbid;
 
-	private void OnScroll(string gridTableId, string firstVisibleRowPrice, string lastVisibleRowPrice, int visibleRowCount)
+    private void OnScroll(string gridTableId, string firstVisibleRowPrice, string lastVisibleRowPrice, int visibleRowCount)
 	{
 		if (gridTableId == GridTableId)
         {

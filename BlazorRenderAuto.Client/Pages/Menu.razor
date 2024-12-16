@@ -6,19 +6,28 @@
 @inject ApiDataService ApiDataService
 @rendermode InteractiveAuto
 
+@implements IDisposable
+
+<DxLoadingPanel @bind-Visible="loadingLogIn"
+                IsContentBlocked="true"
+                ApplyBackgroundShading="true"
+                IndicatorAreaVisible="false"
+                Text="@textForLogin">
+
+
 <DxWindow @ref=windowRef
-          AllowResize="true"
-          ShowCloseButton="true"
-          CloseOnEscape="true"
-          HeaderText="Авторизация"
-          FooterText="Footer"
-          ShowFooter="true"
-          Width="max(25vw, 250px)"
-          MinWidth="300"
-          MinHeight="200"
-          MaxWidth="800"
-          MaxHeight="500"
-          @bind-Visible=windowVisible>
+AllowResize="true"
+ShowCloseButton="true"
+CloseOnEscape="true"
+HeaderText="Авторизация"
+FooterText="Footer"
+ShowFooter="true"
+Width="max(25vw, 250px)"
+MinWidth="300"
+MinHeight="200"
+MaxWidth="800"
+MaxHeight="500"
+@bind-Visible=windowVisible>
     <BodyContentTemplate>
         Привет
     </BodyContentTemplate>
@@ -31,7 +40,7 @@
 <nav id="header" class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="#">LiteInvest</a>
-@*         <form class="d-flex internalSearch" role="search">
+        @*         <form class="d-flex internalSearch" role="search">
             <DxComboBox Data="@Instruments"
                         ValueFieldName="Isin"
                         @bind-Value="@SecuritySelected"
@@ -77,6 +86,8 @@
         </div>
     </div>
 </nav>
+
+</DxLoadingPanel>
 
 @code
 {
@@ -127,30 +138,39 @@
     public ElementReference LogInButton { get; set; }
 
     int i = 0;
-
+    private bool loadingLogIn { get; set; }
+    public string textForLogin { get; set; } 
     private async Task<Task> OnLoginClick(MouseEventArgs obj)
     {
 
         try
         {
+            loadingLogIn = true;
 
+            textForLogin = "Входим";
             var res = await ApiDataService.LogIn("samujan1@yandex.ru", "pass2");
 
             if (res == null)
+            {
+                textForLogin = "ERROR LOGIN";
                 Console.WriteLine("ERROR LOGIN");
+            }
 
+            textForLogin = "Грузим инструменты";
             Instruments = await ApiDataService.GetInstruments();
             SecuritySelected = Instruments.FirstOrDefault();
 
-
+            textForLogin = $"Получено {Instruments.Count()}";
             Console.WriteLine($"Loaded instruments {Instruments.Count()}");
 
-
+            textForLogin = "Готово";
             textlogin = "ON";
 
             LoginClicked?.Invoke();
 
-            windowVisible = true;
+
+            loadingLogIn = false;
+            //windowVisible = true;
             //windowRef.ShowAsync();
 
             return Task.CompletedTask;
@@ -180,5 +200,10 @@
     {
         ApiDataService.OpenInstrument(sec);
         return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
     }
 }
