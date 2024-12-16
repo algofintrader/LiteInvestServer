@@ -1,42 +1,30 @@
-﻿let DOTNET_JSINTEROPSERVICE_REFERENCE;
-function setDonNetObjectReference(obj) {
-    DOTNET_JSINTEROPSERVICE_REFERENCE = obj;
-}
-function keyDownHandler(e, windowId) {
-    const windowElement = document.getElementById(windowId);
-    console.log(e.code, windowElement);
-    if (e.target && (e.target.nodeName != "INPUT") && e.target.nodeName != "TEXTAREA") {
-        if (e.code !== "F5") {
-            e.preventDefault();
-        }
-        DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("KeyDown", windowId, e.code, e.ctrlKey, e.shiftKey);
-    }
-    else if (e.target && e.target.nodeName == "INPUT") {
-        if (e.code == "Enter" || e.code == "Escape" || e.code == "NumpadEnter") {
-            DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("KeyDown", windowId, e.code, e.ctrlKey, e.shiftKey);
-        }
-    }
-}
-function keyUpHandler(e) {
-    //if (e.target && (e.target.nodeName != "INPUT")) {
-    //    DOTNET_JSINTEROPSERVICE_REFERENCE.invokeMethodAsync("KeyUp", e.code, e.ctrlKey, e.shiftKey);
-    //}
-}
-window.addHotkeyListener = (windowId) => {
-    const windowElement = document.getElementById(windowId);
-    if (!windowElement) return;
-    windowElement.addEventListener('keydown', (e) => {
-        keyDownHandler(e, windowId);
-    });
-};
-
-window.focusElementById = (windowId) => {
+﻿window.focusElementById = (windowId) => {
     const element = document.getElementById(windowId);
     if (element) {
         console.log(element);
         element.focus({ preventScroll: true });
     }
 };
+
+function getScrollEventForAllTables(gridTableId) {
+    let parent = document.getElementById(gridTableId);
+    if (parent) {
+        console.log(parent);
+        parent.addEventListener("scroll", (e) => {
+            if (e.target && e.target.classList.contains("k-grid-content")) {
+                let targetElements = parent.querySelectorAll(".k-grid-content");
+                let scrollTop = e.target.scrollTop;
+
+                targetElements.forEach((otherElement) => {
+                    if (otherElement !== e.target) {
+                        console.log(otherElement);
+                        otherElement.scrollTop = scrollTop;
+                    }
+                });
+            }
+        }, true);
+    }
+}
 
 function getScrollEvent(gridTableId) {
     let parent = document.getElementById(gridTableId);
@@ -153,39 +141,3 @@ function getWheelEvent(historyTableId) {
 //        }
 //    }
 //}
-
-function scrollToRow(gridItemId, rowIndex) {
-    let parent = document.getElementById(gridItemId);
-    if (parent) {
-        let scrollableElement = parent.querySelector(".k-grid-content");
-        if (scrollableElement) {
-            let rows = scrollableElement.querySelectorAll(".k-table-tbody tr");
-
-            // Если строки с таким индексом ещё не загружены, прокручиваем до нужного места
-            if (rows.length <= rowIndex) {
-                let rowHeight = rows.length > 0 ? rows[0].offsetHeight : 30; // Примерная высота строки
-                let targetScrollTop = rowIndex * rowHeight;
-
-                // Прокрутка до нужного места
-                scrollableElement.scrollTop = targetScrollTop;
-
-                // Нужно подождать, чтобы новые строки загрузились в DOM, и затем снова проверим
-                setTimeout(function () {
-                    let rowsAfterScroll = scrollableElement.querySelectorAll(".k-table-tbody tr");
-                    if (rowsAfterScroll.length > rowIndex) {
-                        let targetRow = rowsAfterScroll[rowIndex];
-                        // Добавляем желтый фон
-                        targetRow.classList.add("highlight-row");
-                        targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }, 300); // Задержка для подгрузки строк
-            } else {
-                // Если строки уже в DOM, прокручиваем сразу
-                let targetRow = rows[rowIndex];
-                // Добавляем желтый фон
-                targetRow.classList.add("highlight-row");
-                targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-    }
-}

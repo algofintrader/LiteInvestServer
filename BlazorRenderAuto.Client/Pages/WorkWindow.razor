@@ -26,11 +26,6 @@
 
 
 <style>
-
-	.highlight-row {
-	background-color: yellow !important;
-	}
-
 	.cardnew {
 	height: 800px;
 	}
@@ -245,7 +240,6 @@
 
 	.restVolume {
 	display: flex;
-	height: 22px;
 	}
 
 	.restVolumeSpan {
@@ -295,7 +289,7 @@
 
 				<TelerikGrid 
 				@ref="ClustersGrid" 
-				RowHeight="22"
+				RowHeight="10"
 				Height="90vh"
 				Data="@ClusterDatas"
 				TItem="@ClusterLevel"
@@ -479,7 +473,7 @@
 	/// </summary>
 	private int prevbuildScale { get; set; } = 0;
 
-    private int _oldScale ;//для первой отрисовки
+	private int _oldScale ;//для первой отрисовки
 	public int Scale
 	{
 		get => _oldScale;
@@ -494,12 +488,12 @@
 
 	private void OnScaleChanged(int newscale)
 	{
-        lock (scalelocker)
-        {
-            if (newdictionaryQuotes != null && newdictionaryQuotes.Count != 0)
-                AlgoQuotesScale(newscale, newdictionaryQuotes, usualbestbid);
-        }
-    }
+		lock (scalelocker)
+		{
+			if (newdictionaryQuotes != null && newdictionaryQuotes.Count != 0)
+				AlgoQuotesScale(newscale, newdictionaryQuotes, usualbestbid);
+		}
+	}
 
 	// public ObservableCollection<Quote> GridData { get; set; }
 	public ObservableCollection<MarketDepthLevel> Quotes { get; set; }
@@ -541,7 +535,7 @@
 		WebSockets =
 		[
 			await ApiDataService.SubscribeOrderBook(secutityMain.id),
-	        await ApiDataService.SubcribeTick(secutityMain.id)
+		await ApiDataService.SubcribeTick(secutityMain.id)
 		];
 
 		return base.OnInitializedAsync();
@@ -552,6 +546,7 @@
 		if (firstRender)
 		{
 			await JSRuntime.InvokeVoidAsync("getScrollEvent", GridTableId);
+			await JSRuntime.InvokeVoidAsync("getScrollEventForAllTables", secutityMain.SpecialHash);
 			await JSRuntime.InvokeVoidAsync("addHotkeyListener", secutityMain.SpecialHash);
 		}
 		else
