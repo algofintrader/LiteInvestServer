@@ -218,7 +218,7 @@
 	}
 
 	.chart {
-	height: 80vh;
+	height: 90vh;
 	}
 
 	.highlighted-item {
@@ -323,9 +323,9 @@
 
 
 			</Telerik.Blazor.Components.GridLayoutItem>
-            <Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
+			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
 
-			@* 	<TelerikChart @ref="Chart2" Transitions="false" RenderAs="@RenderingMode.Canvas"  Width="100%">
+				@* 	<TelerikChart @ref="Chart2" Transitions="false" RenderAs="@RenderingMode.Canvas"  Width="100%">
                     <ChartLegend Visible="false"></ChartLegend>
 
                     <ChartSeriesItems>
@@ -341,7 +341,7 @@
                     </ChartSeriesItems>
                 </TelerikChart>  *@
 
-                
+
 				<DxChart CssClass="chart"
 				CustomizeSeriesPoint="@PrepareSeriesPoint"
 				@ref="Chart"
@@ -371,19 +371,19 @@
 						<DxChartAxisGridLines Visible="true" />
 					</DxChartArgumentAxis>
 
-                    <DxChartValueAxis Visible="false" VisualRangeUpdateMode="ChartVisualRangeUpdateMode.Reset">
-                        <DxChartAxisLabel Visible="false" />
-                        <DxChartAxisTick Visible="false" />
-                        <DxChartAxisMinorTick Visible="false" />
-                        <DxChartAxisGridLines Visible="true" />
-                        <DxChartAxisRange  StartValue="@minchart" EndValue="@maxchart" />
-                    </DxChartValueAxis>
-                    
-                    <DxChartZoomAndPanSettings  />
-               
-                    </DxChart> 
+					<DxChartValueAxis Visible="false" VisualRangeUpdateMode="ChartVisualRangeUpdateMode.Reset">
+						<DxChartAxisLabel Visible="false" />
+						<DxChartAxisTick Visible="false" />
+						<DxChartAxisMinorTick Visible="false" />
+						<DxChartAxisGridLines Visible="true" />
+						<DxChartAxisRange />
+					</DxChartValueAxis>
 
-            </Telerik.Blazor.Components.GridLayoutItem>
+					<DxChartZoomAndPanSettings  />
+
+				</DxChart> 
+
+			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
 
 				<TelerikGrid 
@@ -498,11 +498,7 @@
 	// public ObservableCollection<Quote> GridData { get; set; }
 	public ObservableCollection<MarketDepthLevel> Quotes { get; set; }
 
-	[Parameter]
-	public ObservableCollection<ClusterLevel> ClustersData { get; set; }
-
-    [Parameter]
-	public ObservableCollection<TradeApi> Ticks { get; set; } 
+    public ObservableCollection<TradeApi> Ticks { get; set; } = new();
 
 	public List<int?> WebSockets { get; set; }
 
@@ -531,7 +527,7 @@
 		ApiDataService.NewTicks += OnNewTicks;
 
 		jsInteropService.OnKeyDown += OnKeyDown;
-		jsInteropService.OnScroll += OnScroll;
+		//jsInteropService.OnScroll += OnScroll;
 		//сначала подпишемся на ордера
 
 		//TODO: Сделать нормальную подписку на частные ордера
@@ -635,27 +631,6 @@
 	int counter = 0;
 
 
-	private async Task<Task> AddTickData(TradeApi tick)
-	{
-		tick.Price = bestbid + counter;
-
-		tick.IndexForChart = counter;
-
-		Ticks.Add(tick);
-
-		try
-		{
-			if (Ticks.Count > 15) Ticks.RemoveAt(0);
-		}
-		catch (Exception ex)
-		{
-
-		}
-
-		return Task.CompletedTask;
-
-	}
-
 	int lasttradetickTime { get; set; } = -1;
 
 	private void ProcessClusterTick(TradeApi tick)
@@ -699,57 +674,126 @@
 		}
 	}
 
-    private async void OnNewTicks(string secID, List<TradeApi> ticks)
-    {
-        bool boolshouldrender = false;
+	private async void OnNewTicks(string secID, List<TradeApi> ticks)
+	{
+		bool boolshouldrender = false;
 
-        if (secID != secutityMain.id)
-            return;
+		if (secID != secutityMain.id)
+			return;
 
-        if (IndexesQuotes.Count != 0 && bestbidIndex != 0)
-        {
+		if (IndexesQuotes.Count != 0 && bestbidIndex != 0)
+		{
 
-            //TODO: Реализована симуляция.
-            //симуляция 
-            foreach (var tick in ticks)
-            {
-                tick.IndexForChart = counter++;
-                var indexrand = new Random().Next(1, 10);
-                var randomdirection = new Random().Next(0, 2);
+			#region Симуляция
 
-                var simulationtick = new TradeApi()
-                {
-                    Price = Quotes[bestbidIndex - indexrand].Price,
-                    Volume = 10,
-                    Side = randomdirection == 0 ? Side.Buy : Side.Sell,
-                    Time = DateTime.Now,
-                    IndexForChart = counter,
-                };
+			//симуляция 
+			// foreach (var tick in ticks)
+			// {
+			//     tick.IndexForChart = counter++;
+			//     var indexrand = new Random().Next(1, 10);
+			//     var randomdirection = new Random().Next(0, 2);
 
-                ProcessClusterTick(simulationtick);
+			//     var simulationtick = new TradeApi()
+			//     {
+			//         Price = Quotes[bestbidIndex - indexrand].Price,
+			//         Volume = 10,
+			//         Side = randomdirection == 0 ? Side.Buy : Side.Sell,
+			//         Time = DateTime.Now,
+			//         IndexForChart = counter,
+			//     };
 
-                if (Ticks == null)
-                {
-                    Ticks = new ObservableCollection<TradeApi>();
-                    InvokeAsync(StateHasChanged);
-                }
-           
-                if (Ticks.Count > 15) 
-                    Ticks.RemoveAt(0);
+			//     ProcessClusterTick(simulationtick);
 
-                Ticks.Add(simulationtick);
-            }
-        }
+			//     if (Ticks == null)
+			//     {
+			//         Ticks = new ObservableCollection<TradeApi>();
+			//         InvokeAsync(StateHasChanged);
+			//     }
 
-        //Chart2.Refresh();
-        //InvokeAsync(StateHasChanged);
+			//     if (Ticks.Count > 15) 
+			//         Ticks.RemoveAt(0);
 
-       // if (Chart != null)
-        //    Chart.RefreshData();
+			//     Ticks.Add(simulationtick);
+			// }
 
-    }
+			#endregion
 
-    ConcurrentDictionary<decimal, MarketDepthLevel> QuotesDictionary = new();
+			// List<TradeApi> tickscopy = new List<TradeApi>();
+			// foreach (var tick in ticks)
+			// {
+			//     tick.IndexForChart = counter++;
+
+			//     ProcessClusterTick(tick);
+
+
+			//     if (Ticks == null)
+			//     {
+			//         Ticks = new();
+			//         InvokeAsync(StateHasChanged);
+			//     }
+
+			//     tickscopy = Ticks.ToList();
+
+			//     if (tickscopy.Count > 15)
+			//         tickscopy.RemoveAt(0);
+
+			//     tickscopy.Add(tick);
+
+			//     Console.WriteLine($"Added New tick {tick.Price} index {tick.IndexForChart}");
+			// }
+
+			// if (tickscopy.Count != 0)
+			//     Ticks = tickscopy;
+
+
+			// if (Chart != null)
+			//     Chart.RefreshData();
+
+
+         
+
+			foreach (var tick in ticks)
+			{
+				tick.IndexForChart = counter++;
+
+				ProcessClusterTick(tick);
+
+				if (Ticks.Count==0)
+				{
+					Ticks = new ObservableCollection<TradeApi>();
+					InvokeAsync(StateHasChanged);
+				}
+
+				if (Ticks.Count > 30) 
+					Ticks.RemoveAt(0);
+
+
+     //            if (maxask != 0 && minbid != 0)
+     //            {
+					// //это то что равно нашим 100 пунткам
+     //                //multiplactor * diff = 100;
+					// //diff = 100/m;
+     //                var diff = maxask - minbid;
+     //                var percent = (tick.Price / maxask) * diff;
+
+     //                var percent2 = (percent / 100) * (maxchart - minchart);
+
+					// Console.WriteLine($"Percent {percent2}");
+     //                tick.Price = percent2;
+     //            }
+                Console.WriteLine($" {secutityMain.Isin} Added New tick {tick.Price} index {tick.IndexForChart}");
+				Ticks.Add(tick);
+			}
+
+		}
+
+		//Chart2.Refresh();
+		//InvokeAsync(StateHasChanged);
+
+
+	}
+
+	ConcurrentDictionary<decimal, MarketDepthLevel> QuotesDictionary = new();
 
 	/// <summary>
 	///Хранит информацию 
@@ -1042,13 +1086,14 @@
 
 	public decimal bestbid { get; set; }
 	public DxChart<TradeApi> Chart { get; set; }
-	public decimal minchart { get; set; }
-	public decimal maxchart { get; set; }
 
-    public TelerikChart Chart2 { get; set; }
+    public decimal minchart { get; set; }// = 0;
+    public decimal maxchart { get; set; }// = 10;
+
+	public TelerikChart Chart2 { get; set; }
 
 
-    private void UpdateBestBidIndex(decimal _bestbid)
+	private void UpdateBestBidIndex(decimal _bestbid)
 	{
 		if (IndexesQuotes.ContainsKey(_bestbid))
 		{
@@ -1058,7 +1103,8 @@
 
 
 	//симуляция погано работает. 
-	bool real = false;
+	//TODO: вынести нормально в настройки или в самом обьекте передавать
+	bool real = true;
 	bool initial = false;
 
 	private void OnNewMarketDepth(List<MarketDepthLevel> bids, List<MarketDepthLevel> asks, string secID)
@@ -1110,30 +1156,40 @@
 
 			InvokeAsync(StateHasChanged);
 
-            initial = false;
+			initial = false;
 
-        }
+		}
 		else
 		{
 			CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,Quotes);
 		}
 
-       
-        if (!initial)
-        {
-            initial = true;
-            maxchart = asks[0].Price + 50;
-			minchart = asks[0].Price - 50;
+		maxask  = agregatedBestbid + middleamountofitems;
+		minbid = agregatedBestbid - middleamountofitems;
 
-			Console.WriteLine($"max = {maxchart} min = {minchart}");
-        }
+         if (!initial) 
+		{
+			initial = true;
+
+			/*maxchart = agregatedBestbid + middleamountofitems;
+			minchart = agregatedBestbid - middleamountofitems;
+
+			Console.WriteLine($"max = {maxchart} min = {minchart}");*/
+		}
 
         // ------- перенос котировок в словарь ------------//
-        UpdateBestBidIndex(agregatedBestbid);
+		UpdateBestBidIndex(agregatedBestbid);
 
-    }
+	}
 
-    
+    public decimal minbid
+    { get; set; }
+
+    public decimal maxask { get; set; }
+
+    //Половина видимых индексов
+	public decimal middleamountofitems { get; set; } = 20;
+
 
     private void NewMyOrder(Order obj)
 	{
@@ -1270,8 +1326,10 @@
 			decimal minprice = decimal.Parse(lastVisibleRowPrice);
 
 
-            maxchart = maxprice;
+            /*maxchart = maxprice;
             minchart = minprice;
+
+            Console.WriteLine($"Scrolled max = {maxchart} min = {minchart}");*/
 
 			//if(Chart!=null)
             //Chart.RefreshData();
