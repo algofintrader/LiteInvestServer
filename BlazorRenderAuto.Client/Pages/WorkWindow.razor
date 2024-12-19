@@ -339,7 +339,7 @@
                 </TelerikChart>  *@
 
 
-				<DxChart CssClass="chart"
+			@* 	<DxChart CssClass="chart"
 				CustomizeSeriesPoint="@PrepareSeriesPoint"
 				@ref="Chart"
 				Data="Ticks"
@@ -378,7 +378,7 @@
 
 					<DxChartZoomAndPanSettings  />
 
-				</DxChart> 
+				</DxChart>  *@
 
 			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
@@ -1030,8 +1030,9 @@
 	private void CompareOldWithNewAndPlaceIndexes
 	(ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,
 		ConcurrentDictionary<decimal, MarketDepthLevel> oldQuotes , ObservableCollection<MarketDepthLevel> _quotesList)
-	{
+    {
 
+		
 
 		foreach (var quoteKey in oldQuotes.Keys.ToList())
 		{
@@ -1050,6 +1051,8 @@
 				//меняем на нулевой
 
 				var emptylevel = MarketDepthLevel.GetEmptyLevel(quoteKey);
+
+				//_quotesList[indexfound] = emptylevel;
 
 				if(logquotes)
 					Console.WriteLine($" {secutityMain.id} Level removed {quoteKey} index = {indexfound}");
@@ -1070,7 +1073,8 @@
 
 					//Поменялась котировочка.. 
 					var indexfound = IndexesQuotes[quoteKey];
-					_quotesList[indexfound] = freshQuote;
+					
+                    //_quotesList[indexfound] = freshQuote;
 
 					if(logquotes)
 						Console.WriteLine($" {secutityMain.id} Level Changed! {quoteKey} index = {indexfound}");
@@ -1093,7 +1097,8 @@
 					continue;
 
 				var indexfound = IndexesQuotes[quoteKey];
-				_quotesList[indexfound] = newdictionaryQuotes[quoteKey];
+
+				//_quotesList[indexfound] = newdictionaryQuotes[quoteKey];
 
 				if(logquotes)
 					Console.WriteLine($" {secutityMain.id} Level Added! {quoteKey} index = {indexfound}");
