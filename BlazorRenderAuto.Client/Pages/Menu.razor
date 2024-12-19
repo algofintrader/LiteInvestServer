@@ -2,6 +2,7 @@
 @using System.Reactive.Linq
 @using BlazorRenderAuto.Client.Services
 @using LiteInvest.Entity.ServerEntity
+@using Telerik.Blazor.Components.RootComponent
 
 @inject ApiDataService ApiDataService
 
@@ -78,13 +79,13 @@ Resizable="true"
         </form> *@
 
         <form class="d-flex internalSearch" role="search">
-            <TelerikAutoComplete Data="@Instruments"
+            <TelerikAutoComplete  @ref="TelerikComboBox" Data="@Instruments"
             ValueField="@nameof(SecuritySelected.Isin)"
             @bind-Value="@AutoComplete"
             Placeholder="Выберите Инструмент!"
             Filterable="true"
             OnChange="OnChangeHandler"
-            FilterOperator="@StringFilterOperator.StartsWith"
+            FilterOperator="@StringFilterOperator.Contains"
             ShowClearButton="true" />
         </form>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -167,6 +168,7 @@ Resizable="true"
     public string textForLogin { get; set; }
 
     public DxLoadingPanel loadingpanel { get; set; }
+    public TelerikAutoComplete<SecurityApi> TelerikComboBox { get; set; }
 
     private async Task<Task> OnLoginClick(MouseEventArgs obj)
     {
@@ -233,6 +235,7 @@ Resizable="true"
 
     private Task SecurityApiChanged(SecurityApi sec)
     {
+        
         ApiDataService.OpenInstrument(sec);
         return Task.CompletedTask;
     }

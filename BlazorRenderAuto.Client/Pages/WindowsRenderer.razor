@@ -68,10 +68,10 @@ Resizable="true">
 
 		if (firstRender)
         {
-            // _apidataService.LastwindowOpened += () =>
-            // {
-            //     lasthashForRender = "";
-            // };
+            _apidataService.LastwindowOpened += () =>
+            {
+                lasthashForRender = "";
+            };
 
 			_apidataService.NewSecOpened += (sec) =>
             {

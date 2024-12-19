@@ -16,6 +16,6 @@ builder.Services.AddSingleton<ApiDataService>();
 //builder.Services.AddScoped<ApiDataServiceTest>();
 
 //TODO
-builder.Services.AddScoped<JsInteropService>();
+builder.Services.AddSingleton<JsInteropService>();
 
 await builder.Build().RunAsync();

@@ -22,7 +22,7 @@ builder.Services.AddCors(options =>
 
 
 //builder.Services.AddScoped<ApiDataServiceTest>();
-builder.Services.AddScoped<JsInteropService>();
+builder.Services.AddSingleton<JsInteropService>();
 
 builder.Services.AddSingleton<ApiDataService>();
 //builder.Services.AddTelerikBlazor();

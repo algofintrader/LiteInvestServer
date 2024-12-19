@@ -248,7 +248,7 @@
 	}
 
 	.k-resize-handle{
-		width: 4px !important;
+	width: 4px !important;
 	}
 
 </style> 
@@ -290,8 +290,9 @@
 
 
 				<TelerikGrid 
-				@ref="ClustersGrid" 
-				RowHeight="10"
+                    @ref="ClustersGrid" 
+                    EnableLoaderContainer="false"
+                    RowHeight="10"
 				Height="90vh"
 				Data="@ClusterDatas"
 				TItem="@ClusterLevel"
@@ -339,7 +340,7 @@
                 </TelerikChart>  *@
 
 
-			@* 	<DxChart CssClass="chart"
+				@* 	<DxChart CssClass="chart"
 				CustomizeSeriesPoint="@PrepareSeriesPoint"
 				@ref="Chart"
 				Data="Ticks"
@@ -385,12 +386,15 @@
 
 				<TelerikGrid 
 				@ref="QuotesGrid" Id="@GridTableId" 
-				OnRowClick="@OnRowClickHandler" 
-				RowHeight="10"
+                OnRowClick="@OnRowClickHandler" 
+                EnableLoaderContainer="false"
+                RowHeight="10"
 				Height="90vh"
 				Data="@Quotes"
 				TItem="@MarketDepthLevel"
-				ScrollMode="@GridScrollMode.Virtual"
+                ScrollMode="@GridScrollMode.Virtual"
+                Pageable="false"
+                Sortable="false"
 				PageSize="250">
 					<GridColumns>
 						<GridColumn Width="1fr" Field="@nameof(MarketDepthLevel.Volume)" HeaderClass="d-none" />
@@ -435,7 +439,7 @@
 
 
 	TelerikGrid<ClusterLevel> clustersgrid;
-	ObservableCollection<ClusterLevel> ClusterDatas { get; set; } = new ();
+	List<ClusterLevel> ClusterDatas { get; set; } = new ();
 
 	// public class ClusterData
 	// {
@@ -499,7 +503,7 @@
 	}
 
 	// public ObservableCollection<Quote> GridData { get; set; }
-	public ObservableCollection<MarketDepthLevel> Quotes { get; set; }
+	public List<MarketDepthLevel> Quotes { get; set; }
 
 	public ObservableCollection<TradeApi> Ticks { get; set; } = new();
 
@@ -540,6 +544,8 @@
 			await ApiDataService.SubscribeOrderBook(secutityMain.id),
 	await ApiDataService.SubcribeTick(secutityMain.id)
 		];
+
+        
 
 		return base.OnInitializedAsync();
 	}
@@ -605,7 +611,7 @@
 
 			Console.WriteLine($"Sending order price = {order.Price} side = {order.Side}");
 
-			ApiDataService.SendOrder(order);
+			//ApiDataService.SendOrder(order);
 		}
 		catch (Exception ex)
 		{
@@ -627,78 +633,86 @@
 	}
 
 
-	protected override bool ShouldRender()
+    protected override bool ShouldRender()
     {
 
-		// была попытка перевести 
-           Console.WriteLine($"{DateTime.Now} Should {secutityMain.id} Render WorkWindow");
+        // была попытка перевести 
+        //Console.WriteLine($"{DateTime.Now} Should {secutityMain.id} Render WorkWindow");
 
-   //      if (lastsecHashOpened == secutityMain.SpecialHash)
-   //      {
-			// //TODO: Indicate that was opened last one
-			// Console.WriteLine($"RENDERING SHOULD {secutityMain.Isin} LAST");
-   //          ApiDataService.LastWindowWasOpened();
-   //          return true;
-   //      }
+        if (lastsecHashOpened == secutityMain.SpecialHash)
+        {
+            //TODO: Indicate that was opened last one
+            Console.WriteLine($"RENDERING SHOULD {secutityMain.Isin} LAST");
+            ApiDataService.LastWindowWasOpened();
+            return true;
+        }
 
-   //      if (lastsecHashOpened == "")
-   //      {
-   //          Console.WriteLine($"RENDERING EMPTY {secutityMain.Isin} ");
-   //          return true;
-   //      }
+        if (lastsecHashOpened == "")
+        {
+            Console.WriteLine($"RENDERING EMPTY {secutityMain.Isin} ");
+            return true;
+        }
 
-   //      Console.WriteLine($"NOT RENDERING {secutityMain.Isin} ");
-   //      return false;
+        Console.WriteLine($"NOT RENDERING {secutityMain.Isin} ");
+        return false;
 
-		return base.ShouldRender();
-	}
+        return base.ShouldRender();
+    }
 
-	DateTime lasttime = DateTime.Now;
+    DateTime lasttime = DateTime.Now;
 	int counter = 0;
 
 
 	int lasttradetickTime { get; set; } = -1;
 
-	private void ProcessClusterTick(TradeApi tick)
+	private void ProcessClusterTick(List<TradeApi> ticks)
 	{
-		var agregatingTime = tick.Time.Minute - tick.Time.Minute % 5;
 
-		//Console.WriteLine($"real time {DateTime.Now} agreagatedtime = {agregatingTime}");
+        var copyclusters = ClusterDatas.ToList();
 
-		if (agregatingTime != lasttradetickTime)
-		{
-			Console.WriteLine($"Time For clusters Updated lastmintime={agregatingTime} timeNow = {lasttradetickTime}");
+        foreach (var tick in ticks)
+        {
+            var agregatingTime = tick.Time.Minute - tick.Time.Minute % 5;
 
-			foreach (var cluster in ClusterDatas)
-			{
-				cluster.AskVolume = 0;
-				cluster.BidVolume = 0;
-			}
+            //Console.WriteLine($"real time {DateTime.Now} agreagatedtime = {agregatingTime}");
 
-			Console.WriteLine($"Cluster Table Empty");
+            if (agregatingTime != lasttradetickTime)
+            {
+                Console.WriteLine($"Time For clusters Updated lastmintime={agregatingTime} timeNow = {lasttradetickTime}");
 
-			lasttradetickTime = agregatingTime;
-		}
+                foreach (var cluster in copyclusters)
+                {
+                    cluster.AskVolume = 0;
+                    cluster.BidVolume = 0;
+                }
 
-		decimal tickAgregatedLevel = tick.Price - tick.Price % (secutityMain.PriceStep * Scale);
+                Console.WriteLine($"Cluster Table Empty");
 
-		if (IndexesQuotes.ContainsKey(tickAgregatedLevel) && ClusterDatas.Count!=0)
-		{
-			var index = IndexesQuotes[tickAgregatedLevel];
+                lasttradetickTime = agregatingTime;
+            }
+
+            decimal tickAgregatedLevel = tick.Price - tick.Price % (secutityMain.PriceStep * Scale);
+
+            if (IndexesQuotes.ContainsKey(tickAgregatedLevel) && copyclusters.Count != 0)
+            {
+                var index = IndexesQuotes[tickAgregatedLevel];
 
 
-			var lastclusterItem = (ClusterLevel) ClusterDatas[index].Clone();
+                var lastclusterItem = (ClusterLevel)copyclusters[index].Clone();
 
-			if (tick.Side == Side.Sell)
-				lastclusterItem.AskVolume += tick.Volume;
-			if(tick.Side== Side.Buy)
-				lastclusterItem.BidVolume += tick.Volume;
+                if (tick.Side == Side.Sell)
+                    lastclusterItem.AskVolume += tick.Volume;
+                if (tick.Side == Side.Buy)
+                    lastclusterItem.BidVolume += tick.Volume;
 
-			ClusterDatas[index] = lastclusterItem;
+                copyclusters[index] = lastclusterItem;
 
-			//Console.WriteLine($"Updated level {tickAgregatedLevel} ");
-		}
-	}
+                Console.WriteLine($"Updated {secutityMain.Isin} level {tickAgregatedLevel} ");
+            }
+        }
+
+        ClusterDatas = copyclusters;
+    }
 
 	private async void OnNewTicks(string secID, List<TradeApi> ticks)
 	{
@@ -709,92 +723,26 @@
 
 		if (IndexesQuotes.Count != 0 && bestbidIndex != 0)
 		{
-
-			#region Симуляция
-
-			//симуляция 
-			// foreach (var tick in ticks)
-			// {
-			//     tick.IndexForChart = counter++;
-			//     var indexrand = new Random().Next(1, 10);
-			//     var randomdirection = new Random().Next(0, 2);
-
-			//     var simulationtick = new TradeApi()
-			//     {
-			//         Price = Quotes[bestbidIndex - indexrand].Price,
-			//         Volume = 10,
-			//         Side = randomdirection == 0 ? Side.Buy : Side.Sell,
-			//         Time = DateTime.Now,
-			//         IndexForChart = counter,
-			//     };
-
-			//     ProcessClusterTick(simulationtick);
-
-			//     if (Ticks == null)
-			//     {
-			//         Ticks = new ObservableCollection<TradeApi>();
-			//         InvokeAsync(StateHasChanged);
-			//     }
-
-			//     if (Ticks.Count > 15) 
-			//         Ticks.RemoveAt(0);
-
-			//     Ticks.Add(simulationtick);
-			// }
-
-			#endregion
-
-			// List<TradeApi> tickscopy = new List<TradeApi>();
-			// foreach (var tick in ticks)
-			// {
-			//     tick.IndexForChart = counter++;
-
-			//     ProcessClusterTick(tick);
-
-
-			//     if (Ticks == null)
-			//     {
-			//         Ticks = new();
-			//         InvokeAsync(StateHasChanged);
-			//     }
-
-			//     tickscopy = Ticks.ToList();
-
-			//     if (tickscopy.Count > 15)
-			//         tickscopy.RemoveAt(0);
-
-			//     tickscopy.Add(tick);
-
-			//     Console.WriteLine($"Added New tick {tick.Price} index {tick.IndexForChart}");
-			// }
-
-			// if (tickscopy.Count != 0)
-			//     Ticks = tickscopy;
-
-
-			// if (Chart != null)
-			//     Chart.RefreshData();
-
-
-
+			ProcessClusterTick(ticks);
+			UpdateClastersGrid();
 
 			foreach (var tick in ticks)
 			{
 				tick.IndexForChart = counter++;
 
-				ProcessClusterTick(tick);
+				
 
 				if (Ticks.Count==0)
 				{
 					Ticks = new ObservableCollection<TradeApi>();
-					InvokeAsync(StateHasChanged);
+					//InvokeAsync(StateHasChanged);
 				}
 
-				if (Ticks.Count > 30) 
+				if (Ticks.Count > 30 ) 
 					Ticks.RemoveAt(0);
 
 
-					//            if (maxask != 0 && minbid != 0)
+				//            if (maxask != 0 && minbid != 0)
 				//            {
 				// //это то что равно нашим 100 пунткам
 				//                //multiplactor * diff = 100;
@@ -827,9 +775,9 @@
 	Dictionary<decimal, int> IndexesQuotes = new Dictionary<decimal, int>();
 
 
-	private ObservableCollection<ClusterLevel> BuildEmptyClusterLevels(ObservableCollection<MarketDepthLevel> _initialOrderBook)
+	private List<ClusterLevel> BuildEmptyClusterLevels(ICollection<MarketDepthLevel> _initialOrderBook)
 	{
-		var localclustersbuild = new ObservableCollection<ClusterLevel>();
+		var localclustersbuild = new List<ClusterLevel>();
 
 		foreach (var level in _initialOrderBook)
 		{
@@ -839,6 +787,24 @@
 		return localclustersbuild;
 
 	}
+
+    private void UpdateQuotesGrid()
+    {
+        InvokeAsync(()=> 
+        {
+            QuotesGrid.Data = Quotes;
+            QuotesGrid?.Rebind(); 
+        });		
+    }
+
+    private void UpdateClastersGrid()
+    {
+        InvokeAsync(()=> 
+        {
+            ClustersGrid.Data = ClusterDatas;
+			ClustersGrid?.Rebind();
+        });		
+    }
 
 	private ObservableCollection<MarketDepthLevel> BuildInitialQuotes(decimal bestbid)
 	{
@@ -1027,12 +993,12 @@
 
 	}
 
-	private void CompareOldWithNewAndPlaceIndexes
+	private List<MarketDepthLevel> CompareOldWithNewAndPlaceIndexes
 	(ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,
-		ConcurrentDictionary<decimal, MarketDepthLevel> oldQuotes , ObservableCollection<MarketDepthLevel> _quotesList)
-    {
+		ConcurrentDictionary<decimal, MarketDepthLevel> oldQuotes , ICollection<MarketDepthLevel> _quotesList)
+	{
 
-		
+		var copy = _quotesList.ToList();
 
 		foreach (var quoteKey in oldQuotes.Keys.ToList())
 		{
@@ -1053,6 +1019,7 @@
 				var emptylevel = MarketDepthLevel.GetEmptyLevel(quoteKey);
 
 				//_quotesList[indexfound] = emptylevel;
+				copy[indexfound] = emptylevel;
 
 				if(logquotes)
 					Console.WriteLine($" {secutityMain.id} Level removed {quoteKey} index = {indexfound}");
@@ -1073,8 +1040,9 @@
 
 					//Поменялась котировочка.. 
 					var indexfound = IndexesQuotes[quoteKey];
-					
-                    //_quotesList[indexfound] = freshQuote;
+
+					//_quotesList[indexfound] = freshQuote;
+					copy[indexfound] = freshQuote;
 
 					if(logquotes)
 						Console.WriteLine($" {secutityMain.id} Level Changed! {quoteKey} index = {indexfound}");
@@ -1099,12 +1067,15 @@
 				var indexfound = IndexesQuotes[quoteKey];
 
 				//_quotesList[indexfound] = newdictionaryQuotes[quoteKey];
+				copy[indexfound] = newdictionaryQuotes[quoteKey];
 
 				if(logquotes)
 					Console.WriteLine($" {secutityMain.id} Level Added! {quoteKey} index = {indexfound}");
 
 			}
 		}
+
+		return copy;
 
 	}
 
@@ -1127,8 +1098,8 @@
 	public decimal bestbid { get; set; }
 	public DxChart<TradeApi> Chart { get; set; }
 
-    public decimal minchart { get; set; }// = 0;
-    public decimal maxchart { get; set; }// = 10;
+	public decimal minchart { get; set; }// = 0;
+	public decimal maxchart { get; set; }// = 10;
 
 	public TelerikChart Chart2 { get; set; }
 
@@ -1147,50 +1118,47 @@
 	bool real = true;
 	bool initial = false;
 
-    object scalelocker = new object();
+	object scalelocker = new object();
 
 
 	//if (prevbuildScale != Scale)
 	private void AlgoQuotesScale(int newscale, ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,decimal bestbbid)
-    {
-        //поменялся масштаб
+	{
+		//поменялся масштаб
 		if (newscale != prevbuildScale)
-        {
-            //Применяем масштаб (даже если 1)
-            //строим пустой стакан на всю длину
+		{
+		//Применяем масштаб (даже если 1)
+			//строим пустой стакан на всю длину
 			var initialquotes = BuildInitialQuotes(bestbbid);
-            QuotesDictionary.Clear();
+			QuotesDictionary.Clear();
 
-            CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,initialquotes);
+			//TODO: исправить временная фикса
+			Quotes = CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary, initialquotes);
+            UpdateQuotesGrid();
 
-            Quotes = initialquotes;
-            InvokeAsync(StateHasChanged).GetAwaiter().GetResult();
+			UpdateBestBidIndex(agregatedBestbid);
+			ScrollTo(bestbidIndex,QuotesGrid);
 
+			// ---- теперь тоже саоме по кластерам //
 
-            UpdateBestBidIndex(agregatedBestbid);
+			ClusterDatas = new ();
+			ClusterDatas = BuildEmptyClusterLevels(initialquotes);
 
-            ScrollTo(bestbidIndex,QuotesGrid);
-            //ScrollOrderBookTo(bestbidIndex);
+			//ClustersGrid.Rebind();
+            UpdateClastersGrid();
 
-            // ---- теперь тоже саоме по кластерам //
+			ScrollTo(bestbidIndex,ClustersGrid);
 
-            ClusterDatas = new ObservableCollection<ClusterLevel>();
-            ClusterDatas = BuildEmptyClusterLevels(initialquotes);
+			//InvokeAsync(StateHasChanged);
 
-            //ClustersGrid.Rebind();
-            InvokeAsync(StateHasChanged).GetAwaiter().GetResult();
+			initial = false;
 
-            ScrollTo(bestbidIndex,ClustersGrid);
-
-            InvokeAsync(StateHasChanged);
-
-            initial = false;
-
-            prevbuildScale = Scale;
-        }
-        else
-        {
-            CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,Quotes);
+			prevbuildScale = Scale;
+		}
+		else
+		{
+			Quotes = CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,Quotes);
+            UpdateQuotesGrid();
         }
 
         UpdateBestBidIndex(agregatedBestbid);
