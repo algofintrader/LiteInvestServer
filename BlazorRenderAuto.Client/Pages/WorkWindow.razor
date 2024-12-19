@@ -21,9 +21,6 @@
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
-@rendermode InteractiveAuto
-
-
 
 <style>
 	.cardnew {
@@ -298,6 +295,7 @@
 				Height="90vh"
 				Data="@ClusterDatas"
 				TItem="@ClusterLevel"
+				OnRowClick="@OnRowClickHandler" 
 				ScrollMode="@GridScrollMode.Virtual"
 				PageSize="150">
 					<GridColumns>
@@ -470,7 +468,7 @@
 
 	[Parameter] public string secHash { get; set; }
 	[Parameter] public SecurityApi secutityMain { get; set; }
-	[Parameter] public string lastsecAdded { get; set; }
+	[Parameter] public string lastsecHashOpened { get; set; }
 
 
 	/// <summary>
@@ -540,7 +538,7 @@
 		WebSockets =
 		[
 			await ApiDataService.SubscribeOrderBook(secutityMain.id),
-		await ApiDataService.SubcribeTick(secutityMain.id)
+	await ApiDataService.SubcribeTick(secutityMain.id)
 		];
 
 		return base.OnInitializedAsync();
@@ -575,6 +573,8 @@
 		base.OnParametersSet();
 	}
 
+	int orderVolume = 1;
+	public ConcurrentDictionary<decimal, Order> Orders { get; set; } = new();
 
 	/// <summary>
 	/// Выставление
@@ -586,26 +586,26 @@
 	{
 		try
 		{
-			// var item = (MarketDepthLevel)arg.Item;
+			var item = (MarketDepthLevel)arg.Item;
 
-			// if (Orders.ContainsKey(item.Price))
-			// {
-			// 	RemoveOrderClick(item);
-			// 	return Task.CompletedTask;
-			// }
+			if (Orders.ContainsKey(item.Price))
+			{
+				RemoveOrderClick(item);
+				return Task.CompletedTask;
+			}
 
-			// var order = new ClientOrder()
-			// {
-			// 	SecID = secutityMain.id,
-			// 	Side = item.Type,
-			// 	Volume = orderVolume,
-			// 	Price = item.Price,
-			// 	Market = false,
-			// };
+			var order = new ClientOrder()
+            {
+                SecID = secutityMain.id,
+                Side = item.Type,
+					Volume = orderVolume,
+                Price = item.Price,
+                Market = false,
+            };
 
-			// Console.WriteLine($"Sending order price = {order.Price} side = {order.Side}");
+			Console.WriteLine($"Sending order price = {order.Price} side = {order.Side}");
 
-			// ApiDataService.SendOrder(order);
+			ApiDataService.SendOrder(order);
 		}
 		catch (Exception ex)
 		{
@@ -628,8 +628,28 @@
 
 
 	protected override bool ShouldRender()
-	{
-        Console.WriteLine($"{DateTime.Now} Should {secutityMain.id} Render WorkWindow");
+    {
+
+		// была попытка перевести 
+           Console.WriteLine($"{DateTime.Now} Should {secutityMain.id} Render WorkWindow");
+
+   //      if (lastsecHashOpened == secutityMain.SpecialHash)
+   //      {
+			// //TODO: Indicate that was opened last one
+			// Console.WriteLine($"RENDERING SHOULD {secutityMain.Isin} LAST");
+   //          ApiDataService.LastWindowWasOpened();
+   //          return true;
+   //      }
+
+   //      if (lastsecHashOpened == "")
+   //      {
+   //          Console.WriteLine($"RENDERING EMPTY {secutityMain.Isin} ");
+   //          return true;
+   //      }
+
+   //      Console.WriteLine($"NOT RENDERING {secutityMain.Isin} ");
+   //      return false;
+
 		return base.ShouldRender();
 	}
 
@@ -756,7 +776,7 @@
 			//     Chart.RefreshData();
 
 
-         
+
 
 			foreach (var tick in ticks)
 			{
@@ -774,20 +794,20 @@
 					Ticks.RemoveAt(0);
 
 
-     //            if (maxask != 0 && minbid != 0)
-     //            {
-					// //это то что равно нашим 100 пунткам
-     //                //multiplactor * diff = 100;
-					// //diff = 100/m;
-     //                var diff = maxask - minbid;
-     //                var percent = (tick.Price / maxask) * diff;
+					//            if (maxask != 0 && minbid != 0)
+				//            {
+				// //это то что равно нашим 100 пунткам
+				//                //multiplactor * diff = 100;
+				// //diff = 100/m;
+				//                var diff = maxask - minbid;
+				//                var percent = (tick.Price / maxask) * diff;
 
-     //                var percent2 = (percent / 100) * (maxchart - minchart);
+				//                var percent2 = (percent / 100) * (maxchart - minchart);
 
-					// Console.WriteLine($"Percent {percent2}");
-     //                tick.Price = percent2;
-     //            }
-                Console.WriteLine($" {secutityMain.Isin} Added New tick {tick.Price} index {tick.IndexForChart}");
+				// Console.WriteLine($"Percent {percent2}");
+				//                tick.Price = percent2;
+				//            }
+				//Console.WriteLine($" {secutityMain.Isin} Added New tick {tick.Price} index {tick.IndexForChart}");
 				Ticks.Add(tick);
 			}
 
@@ -997,6 +1017,16 @@
 
 	bool logquotes = false;
 
+
+	private decimal GetRestVolumeFromOrders(decimal price)
+	{
+		if (Orders.ContainsKey(price))
+			return Orders[price].VolumeExecuted;
+
+		return 0;
+
+	}
+
 	private void CompareOldWithNewAndPlaceIndexes
 	(ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,
 		ConcurrentDictionary<decimal, MarketDepthLevel> oldQuotes , ObservableCollection<MarketDepthLevel> _quotesList)
@@ -1008,8 +1038,6 @@
 
 			if (!newdictionaryQuotes.ContainsKey(quoteKey))
 			{
-
-
 				//меняем коллекицю внутри цикла
 				oldQuotes.TryRemove(quoteKey, out var _);
 
@@ -1020,7 +1048,8 @@
 
 				var indexfound = IndexesQuotes[quoteKey];
 				//меняем на нулевой
-				_quotesList[indexfound] = MarketDepthLevel.GetEmptyLevel(quoteKey);
+
+				var emptylevel = MarketDepthLevel.GetEmptyLevel(quoteKey);
 
 				if(logquotes)
 					Console.WriteLine($" {secutityMain.id} Level removed {quoteKey} index = {indexfound}");
@@ -1212,9 +1241,41 @@
 	public decimal middleamountofitems { get; set; } = 20;
 
 
-    private void NewMyOrder(Order obj)
+	private void NewMyOrder(Order myorder)
 	{
-		//throw new NotImplementedException();
+        try{
+            /*if (myorder.SecurityId != secutityMain.id)
+                return;
+
+            Console.WriteLine($"New Order {myorder.SecurityId} side = {myorder.Side} price {myorder.PriceOrder} state {myorder.State}");
+
+            if (myorder.State == Order.OrderStateType.Activ || myorder.State == Order.OrderStateType.Partial)
+            {
+                Orders[myorder.PriceOrder] = myorder;
+              Quotes[IndexesQuotes[myorder.PriceOrder]];
+
+                UpdateOrdersAndGrid();
+            }
+            else if (myorder.State == Order.OrderStateType.Done
+                     || myorder.State == Order.OrderStateType.Fail
+                     || myorder.State == Order.OrderStateType.Cancel)
+            {
+
+                Console.WriteLine($"Removing Order {myorder.SecurityId} price {myorder.PriceOrder} state {myorder.State}");
+
+                Orders.Remove(myorder.PriceOrder, out var _);
+
+                if (LastCalculatedQuotesDictionary.ContainsKey(myorder.PriceOrder))
+                    LastCalculatedQuotesDictionary[myorder.PriceOrder].RestVolume = null;
+
+                UpdateOrdersAndGrid();
+
+            }*/
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
 	}
 
     private void OnKeyDown(string windowId, string keyCode, bool isCtrl, bool isShift)

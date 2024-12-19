@@ -380,6 +380,13 @@ namespace BlazorRenderAuto.Client.Services
 			Securities = null;
 			GC.SuppressFinalize(this);
 		}
+
+		public Action LastwindowOpened { get; set; }
+
+		public void LastWindowWasOpened()
+		{
+			LastwindowOpened?.Invoke();
+		}
 	}
 
 	
