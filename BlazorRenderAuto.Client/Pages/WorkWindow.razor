@@ -340,11 +340,14 @@
                 </TelerikChart>  *@
 
 
-				@* 	<DxChart CssClass="chart"
+					<DxChart CssClass="chart"
 				CustomizeSeriesPoint="@PrepareSeriesPoint"
 				@ref="Chart"
 				Data="Ticks"
-				Width="100%"
+                Width="100%"
+                SeriesSelectionMode=ChartSelectionMode.None
+                PointSelectionMode=ChartSelectionMode.None
+				
 				LabelOverlap="ChartLabelOverlap.Hide">
 					<DxChartLineSeries Name="ticksLineSeries"
 					T="TradeApi"
@@ -352,9 +355,14 @@
 					TValue="decimal"
 					ValueField="si => si.Price"
 					ArgumentField="si => si.IndexForChart"
-					HoverMode="ChartContinuousSeriesHoverMode.None">
+                    HoverMode="ChartContinuousSeriesHoverMode.None"
+                    SelectionMode=ChartContinuousSeriesSelectionMode.None>
+                    
+                        
+                        <DxChartSeriesPoint HoverMode=ChartSeriesPointHoverMode.None
+                                            SelectionMode=ChartSeriesPointSelectionMode.None />
 
-						<DxChartLegend Visible="false" />
+                        <DxChartLegend Visible="false" />
 
 						<!--<DxChartSeriesPoint Visible="true"
 						HoverMode="ChartSeriesPointHoverMode.None" />-->
@@ -379,7 +387,7 @@
 
 					<DxChartZoomAndPanSettings  />
 
-				</DxChart>  *@
+				</DxChart> 
 
 			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
@@ -505,7 +513,7 @@
 	// public ObservableCollection<Quote> GridData { get; set; }
 	public List<MarketDepthLevel> Quotes { get; set; }
 
-	public ObservableCollection<TradeApi> Ticks { get; set; } = new();
+	public List<TradeApi> Ticks { get; set; } //= new List();
 
 	public List<int?> WebSockets { get; set; }
 
@@ -528,6 +536,7 @@
 		//Quotes = new();
 
 		Scale = 1;
+        Ticks = new List<TradeApi>();
 
 		ApiDataService.NewMyOrder += NewMyOrder;
 		ApiDataService.NewQuotes += OnNewMarketDepth;
@@ -730,17 +739,11 @@
 			{
 				tick.IndexForChart = counter++;
 
-				
-
-				if (Ticks.Count==0)
+                if (Ticks == null)
 				{
-					Ticks = new ObservableCollection<TradeApi>();
+					//Ticks = new List<TradeApi>();
 					//InvokeAsync(StateHasChanged);
 				}
-
-				if (Ticks.Count > 30 ) 
-					Ticks.RemoveAt(0);
-
 
 				//            if (maxask != 0 && minbid != 0)
 				//            {
@@ -755,10 +758,13 @@
 				// Console.WriteLine($"Percent {percent2}");
 				//                tick.Price = percent2;
 				//            }
-				//Console.WriteLine($" {secutityMain.Isin} Added New tick {tick.Price} index {tick.IndexForChart}");
+				Console.WriteLine($" {secutityMain.Isin} Added New tick {tick.Price} index {tick.IndexForChart}");
 				Ticks.Add(tick);
-			}
 
+                if (Ticks.Count > 20 ) 
+                    Ticks.RemoveAt(0);
+			}
+			Chart.RefreshData();
 		}
 
 		//Chart2.Refresh();
