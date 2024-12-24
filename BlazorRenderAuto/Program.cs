@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents()
+	.AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
 builder.Services.AddCors(options =>
@@ -22,7 +22,7 @@ builder.Services.AddCors(options =>
 
 
 //builder.Services.AddScoped<ApiDataServiceTest>();
-builder.Services.AddSingleton<JsInteropService>();
+builder.Services.AddScoped<JsInteropService>();
 
 builder.Services.AddSingleton<ApiDataService>();
 //builder.Services.AddTelerikBlazor();
