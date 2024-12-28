@@ -3,7 +3,6 @@
 
 @using System.Collections.ObjectModel
 @using BlazorRenderAuto.Client.Services
-@using DevExpress.Blazor
 @using LiteInvest.Entity.ServerEntity
 @using Telerik.Blazor.Components
 
@@ -88,12 +87,12 @@
 </style>
 
 
-<TelerikRootComponent>
+
 
 	<Menu NewSecSelected="@NewSecAdded" LoginClicked="LogInClicked"></Menu>
 	<WindowsRenderer/>
 
-</TelerikRootComponent>
+
 
 
 @code {
@@ -105,7 +104,6 @@
 
     private SecurityApi SecuritySelected { get; set; }
 
-    public DxComboBox<SecurityApi, SecurityApi> ComboBoxSec { get; set; }
     public bool loadingLogIn { get; set; }
 
     // private void OnAutoCompleteChanged(SecurityApi securityApi)

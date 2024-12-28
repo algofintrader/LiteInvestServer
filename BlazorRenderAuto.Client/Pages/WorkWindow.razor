@@ -5,8 +5,7 @@
 @using System.Reactive.Linq
 @using BlazorRenderAuto.Client.Entity
 @using BlazorRenderAuto.Client.Services
-@using DevExpress.Blazor.Internal
-@using DevExpress.Blazor.Scheduler.Internal
+
 @using LiteInvest.Entity.PlazaEntity
 @using LiteInvest.Entity.ServerEntity
 @using Telerik.Blazor.Components
@@ -215,11 +214,11 @@
 	}
 
 	.highlighted-item {
-	background-color: var(--bs-danger-bg-subtle)
+		background-color: #edc6c6
 	}
 
 	.highlighted-item2 {
-	background-color: var(--bs-success-bg-subtle)
+		background-color: #a0dbc6
 	}
 
 	.transparent-item {
@@ -292,7 +291,7 @@
 
 				<TelerikGrid 
 				@ref="ClustersGrid" 
-				EnableLoaderContainer="false"
+				EnableLoaderContainer="true"
 				RowHeight="15"
 				Height="90vh"
 				Data="@ClusterDatas"
@@ -300,6 +299,7 @@
 				OnRowClick="@OnRowClickHandler" 
 				ScrollMode="@GridScrollMode.Virtual"
 				PageSize="120">
+
 					<GridColumns>
 						<GridColumn Width="1fr" Field="@nameof(ClusterLevel.Price)" HeaderClass="d-none" />
 						<GridColumn Width="1fr" Field="@nameof(ClusterLevel.Volume)" HeaderClass="d-none"/>
@@ -340,7 +340,7 @@
                     </ChartSeriesItems>
                 </TelerikChart>  *@
 
-
+@* 
 				<DxChart CssClass="chart"
 				CustomizeSeriesPoint="@PrepareSeriesPoint"
 				@ref="Chart"
@@ -388,7 +388,7 @@
 
 					<DxChartZoomAndPanSettings ArgumentAxisZoomAndPanMode="ChartAxisZoomAndPanMode.None" />
 
-				</DxChart> 
+				</DxChart>  *@
 
 			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="3">
@@ -396,7 +396,7 @@
 				<TelerikGrid 
 				@ref="QuotesGrid" Id="@GridTableId" 
 				OnRowClick="@OnRowClickHandler" 
-				EnableLoaderContainer="false"
+				EnableLoaderContainer="true"
 				RowHeight="15"
 				Height="90vh"
 				Data="@Quotes"
@@ -764,7 +764,7 @@
 				if (Ticks.Count > 20 ) 
 					Ticks.RemoveAt(0);
 			}
-			Chart.RefreshData();
+	
 		}
 
 		//Chart2.Refresh();
@@ -880,7 +880,7 @@
 				index++;
 			}
 
-			Console.WriteLine($"{secutityMain.id} Created INITIAL EMPTY QUOTES SCALE {Scale}");
+			Console.WriteLine($" {secutityMain.Isin} Created INITIAL EMPTY QUOTES SCALE {Scale}");
 
 			//Quotes = localQuotesBuild;
 
@@ -1117,7 +1117,7 @@
 	}
 
 	public decimal bestbid { get; set; }
-	public DxChart<TradeApi> Chart { get; set; }
+	
 
 	public decimal minchart { get; set; }// = 0;
 	public decimal maxchart { get; set; }// = 10;
@@ -1155,22 +1155,26 @@
 
 			//TODO: исправить временная фикса
 			Quotes = CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary, initialquotes);
-			UpdateQuotesGrid();
+			ClusterDatas = BuildEmptyClusterLevels(initialquotes);
+			//UpdateQuotesGrid();
 
 			UpdateBestBidIndex(agregatedBestbid);
-			ScrollTo(bestbidIndex, QuotesGrid);
 
+			InvokeAsync(StateHasChanged).GetAwaiter();
+
+			ScrollTo(bestbidIndex, QuotesGrid);
+			ScrollTo(bestbidIndex, ClustersGrid);
 			// ---- теперь тоже саоме по кластерам //
 
-			ClusterDatas = new();
-			ClusterDatas = BuildEmptyClusterLevels(initialquotes);
+			
 
-			//ClustersGrid.Rebind();
-			UpdateClastersGrid();
-
-			ScrollTo(bestbidIndex, ClustersGrid);
-
-			//TODO: почему то иногда не прогружает
+			//UpdateClastersGrid();
+			
+			InvokeAsync(StateHasChanged).GetAwaiter();
+			
+			//ScrollTo(bestbidIndex, ClustersGrid);
+		
+		
 
             initial = false;
 
@@ -1356,7 +1360,7 @@
 
 	}
 
-    protected void PrepareSeriesPoint(ChartSeriesPointCustomizationSettings pointSettings)
+    /*protected void PrepareSeriesPoint(ChartSeriesPointCustomizationSettings pointSettings)
     {
 
         try
@@ -1385,7 +1389,7 @@
 
         }
 
-    }
+    }*/
 
 	int firstVisibleIndex;
 	int lastVisibleIndex;

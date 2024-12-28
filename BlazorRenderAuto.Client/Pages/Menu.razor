@@ -8,37 +8,7 @@
 
 @implements IDisposable
 
-<DxLoadingPanel 
-@ref="loadingpanel"
-@bind-Visible="loadingLogIn"
-IsContentBlocked="true"
-ApplyBackgroundShading="true"
-IndicatorAreaVisible="false"
-Text="@textForLogin">
 
-</DxLoadingPanel>
-
-<DxWindow @ref=windowRef
-          AllowResize="true"
-          ShowCloseButton="true"
-          CloseOnEscape="true"
-          HeaderText="Авторизация"
-          FooterText="Footer"
-          ShowFooter="true"
-          Width="max(25vw, 250px)"
-          MinWidth="300"
-          MinHeight="200"
-          MaxWidth="800"
-          MaxHeight="500"
-          @bind-Visible=windowVisible>
-    <BodyContentTemplate>
-        Привет
-    </BodyContentTemplate>
-
-    <FooterContentTemplate>
-        <DxButton CssClass="popup-button my-1 ms-2" RenderStyle="ButtonRenderStyle.Primary" Text="OK" />
-    </FooterContentTemplate>
-</DxWindow>
 
 @* <TelerikWindow @bind-Visible=windowVisible
 Resizable="true"
@@ -133,8 +103,6 @@ Resizable="true"
             }
         }
     }
-
-    DxWindow windowRef;
     bool windowVisible;
 
     [Parameter] public Action LoginClicked { get; set; }
@@ -167,7 +135,7 @@ Resizable="true"
     private bool loadingLogIn { get; set; }
     public string textForLogin { get; set; }
 
-    public DxLoadingPanel loadingpanel { get; set; }
+ 
     public TelerikAutoComplete<SecurityApi> TelerikComboBox { get; set; }
 
     private async Task<Task> OnLoginClick(MouseEventArgs obj)
