@@ -214,11 +214,11 @@
 	}
 
 	.highlighted-item {
-		background-color: #edc6c6
+	background-color: #edc6c6
 	}
 
 	.highlighted-item2 {
-		background-color: #a0dbc6
+	background-color: #a0dbc6
 	}
 
 	.transparent-item {
@@ -324,23 +324,30 @@
 			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
 
-				@* 	<TelerikChart @ref="Chart2" Transitions="false" RenderAs="@RenderingMode.Canvas"  Width="100%">
-                    <ChartLegend Visible="false"></ChartLegend>
+				<TelerikChart Class="chart" @ref="Chart2" Transitions="false" RenderAs="@RenderingMode.Canvas"  Width="100%">
+					<ChartLegend Visible="false"></ChartLegend>
 
-                    <ChartSeriesItems>
-                        <ChartSeries Type="Telerik.Blazor.ChartSeriesType.ScatterLine"
-                                     Data="@Ticks"
-                                     XField="@nameof(TradeApi.IndexForChart)"
-                                     YField="@nameof(TradeApi.Price)">
-                            <ChartSeriesMarkers
-                                Background="@(nameof(TradeApi.Side) == Side.Sell.ToString() ? "red" : "green")"
-                                Size="8">
-                            </ChartSeriesMarkers>
-                        </ChartSeries>
-                    </ChartSeriesItems>
-                </TelerikChart>  *@
+					<ChartSeriesItems>
+						<ChartSeries Type="ChartSeriesType.Bubble"
+						Data="@Ticks"
 
-@* 
+						YField="@nameof(TradeApi.Price)"
+						XField="@nameof(TradeApi.IndexForChart)"
+						SizeField="@nameof(TradeApi.Volume)">
+
+						</ChartSeries>
+
+
+					</ChartSeriesItems>
+
+					<ChartValueAxes>
+						<ChartValueAxis Min="@minchart" Max="@maxchart" Color="red"></ChartValueAxis>
+					</ChartValueAxes>
+
+
+				</TelerikChart>  
+
+				@* 
 				<DxChart CssClass="chart"
 				CustomizeSeriesPoint="@PrepareSeriesPoint"
 				@ref="Chart"
@@ -536,14 +543,14 @@
 		//Quotes = new();
 
 		Scale = 1;
-		Ticks = new List<TradeApi>();
+		Ticks = new ();
 
 		ApiDataService.NewMyOrder += NewMyOrder;
 		ApiDataService.NewQuotes += OnNewMarketDepth;
 		ApiDataService.NewTicks += OnNewTicks;
 
 		jsInteropService.OnKeyDown += OnKeyDown;
-		//jsInteropService.OnScroll += OnScroll;
+		jsInteropService.OnScroll += OnScroll;
 		//сначала подпишемся на ордера
 
 		//TODO: Сделать нормальную подписку на частные ордера
@@ -645,7 +652,7 @@
 	protected override bool ShouldRender()
 	{
 
-        // была попытка перевести 
+		// была попытка перевести 
 		Console.WriteLine($"{DateTime.Now} Should {secutityMain.id} Render WorkWindow");
 
 		// if (lastsecHashOpened == secutityMain.SpecialHash)
@@ -745,31 +752,19 @@
 					//InvokeAsync(StateHasChanged);
 				}
 
-				//            if (maxask != 0 && minbid != 0)
-				//            {
-				// //это то что равно нашим 100 пунткам
-				//                //multiplactor * diff = 100;
-				// //diff = 100/m;
-				//                var diff = maxask - minbid;
-				//                var percent = (tick.Price / maxask) * diff;
-
-				//                var percent2 = (percent / 100) * (maxchart - minchart);
-
-				// Console.WriteLine($"Percent {percent2}");
-				//                tick.Price = percent2;
-				//            }
 				Console.WriteLine($" {secutityMain.Isin} Added New tick {tick.Price} index {tick.IndexForChart}");
 				Ticks.Add(tick);
 
-				if (Ticks.Count > 20 ) 
+				if (Ticks.Count > 10 ) 
 					Ticks.RemoveAt(0);
 			}
-	
+
 		}
 
-		//Chart2.Refresh();
+		Chart2.Refresh();
+		//к сожалению нужно обновлению, а это означает что придется переносить все компоненты
 		//InvokeAsync(StateHasChanged);
-
+		//UpdateChart();
 
 	}
 
@@ -826,6 +821,24 @@
 			}
 		}).GetAwaiter().GetResult();
 	}
+
+
+	private void UpdateChart()
+	{
+		InvokeAsync(() =>
+		{
+			try
+			{
+				Chart2.Refresh();
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine(ex.Message);
+			}
+		}).GetAwaiter().GetResult();
+	}
+
+
 
 	private ObservableCollection<MarketDepthLevel> BuildInitialQuotes(decimal bestbid)
 	{
@@ -1117,10 +1130,10 @@
 	}
 
 	public decimal bestbid { get; set; }
-	
 
-	public decimal minchart { get; set; }// = 0;
-	public decimal maxchart { get; set; }// = 10;
+
+	public double minchart { get; set; }// = 0;
+	public double maxchart { get; set; }// = 10;
 
 	public TelerikChart Chart2 { get; set; }
 
@@ -1145,10 +1158,10 @@
 	//if (prevbuildScale != Scale)
 	private void AlgoQuotesScale(int newscale, ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,decimal bestbbid)
 	{
-	//поменялся масштаб
+		//поменялся масштаб
 		if (newscale != prevbuildScale)
 		{
-		//Применяем масштаб (даже если 1)
+			//Применяем масштаб (даже если 1)
 			//строим пустой стакан на всю длину
 			var initialquotes = BuildInitialQuotes(bestbbid);
 			QuotesDictionary.Clear();
@@ -1166,187 +1179,187 @@
 			ScrollTo(bestbidIndex, ClustersGrid);
 			// ---- теперь тоже саоме по кластерам //
 
-			
+
 
 			//UpdateClastersGrid();
-			
+
 			InvokeAsync(StateHasChanged).GetAwaiter();
-			
+
 			//ScrollTo(bestbidIndex, ClustersGrid);
-		
-		
 
-            initial = false;
 
-            prevbuildScale = Scale;
-        }
-        else
+
+			initial = false;
+
+			prevbuildScale = Scale;
+		}
+		else
 		{
 			Quotes = CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,Quotes);
-            UpdateQuotesGrid();
-        }
+			UpdateQuotesGrid();
+		}
 
-        UpdateBestBidIndex(agregatedBestbid);
-    }
+		UpdateBestBidIndex(agregatedBestbid);
+	}
 
 	private void OnNewMarketDepth(List<MarketDepthLevel> bids, List<MarketDepthLevel> asks, string secID)
 	{
 		if (secID != secutityMain.id)
 			return;
 
-        usualbestbid = real ? bids[0].Price : asks[0].Price;
+		usualbestbid = real ? bids[0].Price : asks[0].Price;
 
-        lock (scalelocker)
-        {
-            var easyDictionaryCurrent = BuildMarketDepthDictionary(bids, asks);
+		lock (scalelocker)
+		{
+			var easyDictionaryCurrent = BuildMarketDepthDictionary(bids, asks);
 
-            //из-за погано работающей симуляиции приходится так делать
-            if (!real)
-            {
-                easyDictionaryCurrent = BuildMarketDepthDictionary(asks, bids);
-            }
+			//из-за погано работающей симуляиции приходится так делать
+			if (!real)
+			{
+				easyDictionaryCurrent = BuildMarketDepthDictionary(asks, bids);
+			}
 
-            newdictionaryQuotes = ScaleBuilderQuotes(easyDictionaryCurrent);
-            AlgoQuotesScale(Scale, newdictionaryQuotes, usualbestbid);
+			newdictionaryQuotes = ScaleBuilderQuotes(easyDictionaryCurrent);
+			AlgoQuotesScale(Scale, newdictionaryQuotes, usualbestbid);
 
-            /*maxask = agregatedBestbid + middleamountofitems;
-            minbid = agregatedBestbid - middleamountofitems;
+			/*maxask = agregatedBestbid + middleamountofitems;
+			minbid = agregatedBestbid - middleamountofitems;
 
-            if (!initial)
-            {
-                initial = true;
+			if (!initial)
+			{
+			initial = true;
 
-                /*maxchart = agregatedBestbid + middleamountofitems;
-                minchart = agregatedBestbid - middleamountofitems;
+			/*maxchart = agregatedBestbid + middleamountofitems;
+				minchart = agregatedBestbid - middleamountofitems;
 
-                Console.WriteLine($"max = {maxchart} min = {minchart}");
-            }*/
+				Console.WriteLine($"max = {maxchart} min = {minchart}");
+				}*/
 
-            // ------- перенос котировок в словарь ------------//
-            //UpdateBestBidIndex(agregatedBestbid);
-        }
-    }
+			// ------- перенос котировок в словарь ------------//
+			//UpdateBestBidIndex(agregatedBestbid);
+		}
+	}
 
-    public decimal minbid
-    { get; set; }
+	public decimal minbid
+	{ get; set; }
 
-    public decimal maxask { get; set; }
+	public decimal maxask { get; set; }
 
-    //Половина видимых индексов
+	//Половина видимых индексов
 	public decimal middleamountofitems { get; set; } = 20;
 
 
 	private void NewMyOrder(Order myorder)
 	{
-        try{
-            /*if (myorder.SecurityId != secutityMain.id)
-                return;
+		try{
+	/*if (myorder.SecurityId != secutityMain.id)
+	return;
 
-            Console.WriteLine($"New Order {myorder.SecurityId} side = {myorder.Side} price {myorder.PriceOrder} state {myorder.State}");
+	Console.WriteLine($"New Order {myorder.SecurityId} side = {myorder.Side} price {myorder.PriceOrder} state {myorder.State}");
 
-            if (myorder.State == Order.OrderStateType.Activ || myorder.State == Order.OrderStateType.Partial)
-            {
-                Orders[myorder.PriceOrder] = myorder;
-              Quotes[IndexesQuotes[myorder.PriceOrder]];
+			if (myorder.State == Order.OrderStateType.Activ || myorder.State == Order.OrderStateType.Partial)
+			{
+			Orders[myorder.PriceOrder] = myorder;
+			Quotes[IndexesQuotes[myorder.PriceOrder]];
 
-                UpdateOrdersAndGrid();
-            }
-            else if (myorder.State == Order.OrderStateType.Done
-                     || myorder.State == Order.OrderStateType.Fail
-                     || myorder.State == Order.OrderStateType.Cancel)
-            {
+			UpdateOrdersAndGrid();
+				}
+				else if (myorder.State == Order.OrderStateType.Done
+				|| myorder.State == Order.OrderStateType.Fail
+			|| myorder.State == Order.OrderStateType.Cancel)
+						{
 
-                Console.WriteLine($"Removing Order {myorder.SecurityId} price {myorder.PriceOrder} state {myorder.State}");
+						Console.WriteLine($"Removing Order {myorder.SecurityId} price {myorder.PriceOrder} state {myorder.State}");
 
-                Orders.Remove(myorder.PriceOrder, out var _);
+				Orders.Remove(myorder.PriceOrder, out var _);
 
-                if (LastCalculatedQuotesDictionary.ContainsKey(myorder.PriceOrder))
-                    LastCalculatedQuotesDictionary[myorder.PriceOrder].RestVolume = null;
+				if (LastCalculatedQuotesDictionary.ContainsKey(myorder.PriceOrder))
+				LastCalculatedQuotesDictionary[myorder.PriceOrder].RestVolume = null;
 
-                UpdateOrdersAndGrid();
+					UpdateOrdersAndGrid();
 
             }*/
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex.Message);
+		}
 	}
 
-    private void OnKeyDown(string windowId, string keyCode, bool isCtrl, bool isShift)
-    {
-        try
-        {
-            if (windowId != secutityMain.SpecialHash)
-                return;
+	private void OnKeyDown(string windowId, string keyCode, bool isCtrl, bool isShift)
+	{
+		try
+		{
+			if (windowId != secutityMain.SpecialHash)
+				return;
 
 
-            if (keyCode == "KeyM")
-            {
-                //двигаем в середину
+			if (keyCode == "KeyM")
+			{
+			//двигаем в середину
 
-                ScrollTo(bestbidIndex,QuotesGrid);
-            }
+				ScrollTo(bestbidIndex,QuotesGrid);
+			}
 
-            if (keyCode == cancelHotKey)
-            {
-                /* foreach (var order in Orders)
-                {
-                    ApiDataService.CancelOrder(order.Value);
-                } */
-            }
+			if (keyCode == cancelHotKey)
+			{
+			/* foreach (var order in Orders)
+				{
+				ApiDataService.CancelOrder(order.Value);
+					} */
+			}
 
-            if (keyCode == plusHotKey)
-            {
-                if (Scale >= 5)
-                {
-                    var newScale = Scale - 5;
+			if (keyCode == plusHotKey)
+			{
+				if (Scale >= 5)
+				{
+					var newScale = Scale - 5;
 
-                    if (newScale == 0)
-                        Scale = 1;
-                    else Scale=newScale;
+					if (newScale == 0)
+						Scale = 1;
+					else Scale=newScale;
 
-                    Console.WriteLine($"{secutityMain.Isin} New Agregation Step {Scale}");
+					Console.WriteLine($"{secutityMain.Isin} New Agregation Step {Scale}");
 
-                }
-            }
+				}
+			}
 
-            if (keyCode == minusHotKey)
-            {
-                if (Scale == 1)
-                    Scale += 4;
-                else Scale += 5;
-                //UpdateAll();
+			if (keyCode == minusHotKey)
+			{
+				if (Scale == 1)
+					Scale += 4;
+				else Scale += 5;
+				//UpdateAll();
 
-                Console.WriteLine($"{secutityMain.Isin} New Agregation Step {Scale}");
-            }
+				Console.WriteLine($"{secutityMain.Isin} New Agregation Step {Scale}");
+			}
 
-            /*  if (keyCode == "Backspace")
-             {
-                 JSRuntime.InvokeVoidAsync("scrollToRow", GridTableId, 30);
-             } */
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
+				/*  if (keyCode == "Backspace")
+			{
+				JSRuntime.InvokeVoidAsync("scrollToRow", GridTableId, 30);
+				} */
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex.Message);
+		}
 
-        //Console.WriteLine($"{keyCode} {windowId}");
-    }
+		//Console.WriteLine($"{keyCode} {windowId}");
+	}
 
 
 	//------------ графика ------------//
 
 
-    private string GetClassForClusters(ClusterLevel _clusterLevel)
-    {
+	private string GetClassForClusters(ClusterLevel _clusterLevel)
+	{
 		if (_clusterLevel.Volume == 0 || _clusterLevel.Volume == null)
-        {
-            return "transparent-item";
-        }
+		{
+			return "transparent-item";
+		}
 
 		return _clusterLevel.BidVolume<_clusterLevel.AskVolume ? "highlighted-item" : "highlighted-item2";
-    }
+	}
 
 	public string GetClassForQuote(MarketDepthLevel quote)
 	{
@@ -1360,56 +1373,57 @@
 
 	}
 
-    /*protected void PrepareSeriesPoint(ChartSeriesPointCustomizationSettings pointSettings)
-    {
+		/*protected void PrepareSeriesPoint(ChartSeriesPointCustomizationSettings pointSettings)
+		{
 
-        try
-        {
-            //всегда 1 элемент
-            var t = (TradeApi)pointSettings.Point.DataItems.ToArray()[0];
+		try
+		{
+		//всегда 1 элемент
+	var t = (TradeApi)pointSettings.Point.DataItems.ToArray()[0];
 
-            //показывать объём сверху
-            pointSettings.PointLabel.Texts = new string[] { t.Volume.ToString() };
-            pointSettings.PointLabel.Visible = true;
+	//показывать объём сверху
+			pointSettings.PointLabel.Texts = new string[] { t.Volume.ToString() };
+			pointSettings.PointLabel.Visible = true;
 
-            //кружок
-            pointSettings.PointAppearance.Symbol = ChartPointSymbol.Circle;
+			//кружок
+			pointSettings.PointAppearance.Symbol = ChartPointSymbol.Circle;
 
-            //TODO: Исправить размеры - сделать адаптивными
-            //TODO: написать логику расчета адаптивных элементов
-            pointSettings.PointAppearance.Size = 1;
+			//TODO: Исправить размеры - сделать адаптивными
+			//TODO: написать логику расчета адаптивных элементов
+			pointSettings.PointAppearance.Size = 1;
 
-            if (t.Side == Side.Sell)
-                pointSettings.PointAppearance.Color = Color.Red;
-            else if (t.Side == Side.Buy)
-                pointSettings.PointAppearance.Color = Color.Green;
-        }
-        catch (Exception ex)
-        {
+			if (t.Side == Side.Sell)
+			pointSettings.PointAppearance.Color = Color.Red;
+				else if (t.Side == Side.Buy)
+			pointSettings.PointAppearance.Color = Color.Green;
+				}
+				catch (Exception ex)
+		{
 
-        }
+		}
 
-    }*/
+	}*/
 
 	int firstVisibleIndex;
 	int lastVisibleIndex;
-    private ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes;
-    private decimal usualbestbid;
+	private ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes;
+	private decimal usualbestbid;
 
-    private void OnScroll(string gridTableId, string firstVisibleRowPrice, string lastVisibleRowPrice, int visibleRowCount)
+	private void OnScroll(string gridTableId, string firstVisibleRowPrice, string lastVisibleRowPrice, int visibleRowCount)
 	{
 		if (gridTableId == GridTableId)
-        {
+		{
 
-            decimal maxprice = decimal.Parse(firstVisibleRowPrice);
-			decimal minprice = decimal.Parse(lastVisibleRowPrice);
+			maxchart = double.Parse(firstVisibleRowPrice);
+			minchart = double.Parse(lastVisibleRowPrice);
 
 
-            /*maxchart = maxprice;
-            minchart = minprice;
+			// maxchart = maxprice;
+			// minchart = minprice;
 
-            Console.WriteLine($"Scrolled max = {maxchart} min = {minchart}");*/
+			Console.WriteLine($"Scrolled max = {maxchart} min = {minchart}");
 
+	
 			//if(Chart!=null)
             //Chart.RefreshData();
 

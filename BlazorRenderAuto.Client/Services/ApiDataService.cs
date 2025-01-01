@@ -2,12 +2,20 @@
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Web;
+using Binance.Net.Clients;
 using LiteInvest.Entity.PlazaEntity;
 using LiteInvest.Entity.ServerEntity;
 
 using RestSharp;
 using BlazorRenderAuto.Client.Entity;
 using Websocket.Client;
+using System;
+using Binance.Net.Interfaces;
+using Binance.Net.Objects.Models.Futures;
+using Binance.Net.Objects.Models.Futures.Socket;
+using CryptoExchange.Net.Objects.Sockets;
+using Binance.Net.Objects.Models.Spot;
+
 
 namespace BlazorRenderAuto.Client.Services
 {
@@ -43,6 +51,9 @@ namespace BlazorRenderAuto.Client.Services
 
 		RestClient client;
 
+		private BinanceRestClient binanceRestClient;
+		private BinanceSocketClient binanceSocketClient;
+
 		//TODO: Можно тоже соединить напрямую с проектом сервера
 		static string loginrequest = "Common/Login";
 		static string getinstruments = "Trading/GetAllSecurities";
@@ -77,10 +88,20 @@ namespace BlazorRenderAuto.Client.Services
 
 		public Action<List<MarketDepthLevel>, List<MarketDepthLevel>,string> NewQuotes { get; set; }
 
+
+		private bool crypto { get; set; } = true;
+
 		public ApiDataService()
 		{
 			client = new RestClient(mainadress);
 			Securities = new ConcurrentDictionary<string, SecurityApi>();
+
+			if (crypto)
+			{
+				binanceRestClient = new BinanceRestClient();
+				binanceSocketClient = new BinanceSocketClient();
+
+			}
 			// websocketClient = new WebsocketClient(websocketurl);
 		}
 
@@ -234,29 +255,46 @@ namespace BlazorRenderAuto.Client.Services
 
 		public async Task<IEnumerable<SecurityApi>> GetInstruments()
 		{
-
-			var request = new RestRequest(getinstruments);
-
-			//request.AddCookie("liteinvest", token,"/", "188.72.77.60:3000");
-			request.AddHeader("liteinvest", token);
-
-			var response = await client.GetAsync(request);
-
-			if (!response.IsSuccessful)
+			if (!crypto)
 			{
-				Console.WriteLine(response.ErrorMessage);
-				return null;
+				var request = new RestRequest(getinstruments);
+
+				//request.AddCookie("liteinvest", token,"/", "188.72.77.60:3000");
+				request.AddHeader("liteinvest", token);
+
+				var response = await client.GetAsync(request);
+
+				if (!response.IsSuccessful)
+				{
+					Console.WriteLine(response.ErrorMessage);
+					return null;
+				}
+
+
+				// var r = await JsonSerializer.DeserializeAsync<SecurityApi>(response.st);
+
+				var instruments = JsonConvert.DeserializeObject<IEnumerable<SecurityApi>>(response.Content);
+
+				foreach (var instr in instruments)
+					Securities[instr.id] = instr;
+
+				return instruments;
 			}
+			else
+			{
+				var instruments = await binanceRestClient.UsdFuturesApi.CommonFuturesClient.GetSymbolsAsync();
+
+				foreach (var instument in instruments.Data)
+					Securities[instument.Name] = new SecurityApi()
+					{
+						Isin = instument.Name,
+						PriceStep = (decimal)instument.PriceStep,
+						id = instument.Name
+					};
 
 
-			// var r = await JsonSerializer.DeserializeAsync<SecurityApi>(response.st);
-
-			var instruments = JsonConvert.DeserializeObject<IEnumerable<SecurityApi>>(response.Content);
-
-			foreach (var instr in instruments)
-				Securities[instr.id] = instr;
-
-			return instruments;
+				return Securities.Values.ToList();
+			}
 
 		}
 
@@ -308,39 +346,75 @@ namespace BlazorRenderAuto.Client.Services
 		{
 			try
 			{
-				var webscoketrequest =
-					websocketurl
-						.AddParameter("stream", "orderbook")
-						.AddParameter("sec_id", secid)
-						.AddParameter("liteinvest", token);
 
-				var websocketClient = new WebsocketClient(webscoketrequest);
-
-				websocketClient.MessageReceived.Subscribe(async msg =>
+				if (!crypto)
 				{
-					try
+					var webscoketrequest =
+						websocketurl
+							.AddParameter("stream", "orderbook")
+							.AddParameter("sec_id", secid)
+							.AddParameter("liteinvest", token);
+
+					var websocketClient = new WebsocketClient(webscoketrequest);
+
+					websocketClient.MessageReceived.Subscribe(async msg =>
 					{
-						//почему то не хочет десериализовывать стакан нормальнь
-						var md = JsonConvert.DeserializeObject<MarketDepth>(msg.Text,
-							new JsonSerializerSettings() { CheckAdditionalContent = true, });
+						try
+						{
+							//почему то не хочет десериализовывать стакан нормальнь
+							var md = JsonConvert.DeserializeObject<MarketDepth>(msg.Text,
+								new JsonSerializerSettings() { CheckAdditionalContent = true, });
 
-						NewQuotes?.Invoke(md.Bids,md.Asks, md.SecurityId);
-						
-					}
-					catch (Exception ex)
+							NewQuotes?.Invoke(md.Bids, md.Asks, md.SecurityId);
+
+						}
+						catch (Exception ex)
+						{
+
+						}
+					});
+
+
+					Console.WriteLine(webscoketrequest);
+
+					var hash = websocketClient.GetHashCode();
+					AllWebSockets.TryAdd(hash, websocketClient);
+
+					await websocketClient.Start();
+					return hash;
+				}
+				else
+				{
+
+
+
+
+					var res = binanceSocketClient.UsdFuturesApi.ExchangeData.SubscribeToOrderBookUpdatesAsync(secid, 100, (binanceOrderbok)=>
 					{
+							ProcessCryptoOrderBook(binanceOrderbok.Data, binanceOrderbok.Symbol);
+					});
 
-					}
-				});
+					Console.WriteLine($"Result websocket {res.Id} order book res = {res.Result}");
+
+					//var res = binanceSocketClient.UsdFuturesApi.ExchangeData.SubscribeToSymbolUpdatesAsync(secid, OnMessage);
+
+					//Getting full order book
+					var getfullorderbook = await binanceRestClient.UsdFuturesApi.ExchangeData.GetOrderBookAsync(secid);
+
+					//TODO: Should be accurate with sec id in process FULL ORDER BOOK
+					ProcessCryptoOrderBook(getfullorderbook.Data, secid);
+
+					Console.WriteLine($"Result gettting FULL orderbook res = {getfullorderbook.Success}");
 
 
-				Console.WriteLine(webscoketrequest);
 
-				var hash = websocketClient.GetHashCode();
-				AllWebSockets.TryAdd(hash, websocketClient);
+					AllWebSockets.TryAdd(res.Id, null);
 
-				await websocketClient.Start();
-				return hash;
+					return res.Id;
+
+
+				}
+
 			}
 			catch (Exception ex)
 			{
@@ -349,9 +423,44 @@ namespace BlazorRenderAuto.Client.Services
 			}
 		}
 
+
+		private async void ProcessCryptoOrderBook(IBinanceOrderBook marketOrderBook,string symbol)
+		{
+
+			List<MarketDepthLevel> bids = new List<MarketDepthLevel>();
+			List<MarketDepthLevel> asks = new List<MarketDepthLevel>();
+
+
+			foreach (var cryptolevel in marketOrderBook.Bids)
+			{
+				bids.Add(new MarketDepthLevel(){Bid = cryptolevel.Quantity,Price= cryptolevel.Price});
+			}
+
+
+			foreach (var cryptolevel in marketOrderBook.Asks)
+			{
+				asks.Add(new MarketDepthLevel() { Ask = cryptolevel.Quantity, Price = cryptolevel.Price });
+			}
+
+			//Todo: можно делать один перебор
+			NewQuotes?.Invoke(bids.OrderByDescending(s => s.Price).ToList(), asks, symbol);
+		}
+
 		public async void StopWebSocket(int? websocketId)
 		{
-			if (websocketId == null)
+
+			if (crypto)
+			{
+
+				var cryptoResult = binanceSocketClient.UnsubscribeAsync((int)websocketId);
+
+				Console.WriteLine($"Crypto unsubscribe id = {websocketId} status = {cryptoResult.Status}");
+				return;
+
+			}
+
+
+			if (websocketId == null && !crypto)
 			{
 				Console.WriteLine("NUll WEBSOCKET!");
 				return;
