@@ -1,0 +1,99 @@
+﻿@using BlazorRenderAuto.Client.Entity
+@using LiteInvest.Entity.PlazaEntity
+@using LiteInvest.Entity.ServerEntity
+
+
+
+
+@* <TelerikChart @ref="Chart2" Class="chart"  Transitions="false" RenderAs="@RenderingMode.Canvas" Width="100%">
+    <ChartLegend Visible="false"></ChartLegend>
+
+    <ChartSeriesItems>
+
+        <ChartSeries Type="ChartSeriesType.ScatterLine"
+                     Data="@Ticks"
+                     YField="@nameof(TradeApi.Price)"
+                     XField="@nameof(TradeApi.IndexForChart)">
+        </ChartSeries> 
+
+    </ChartSeriesItems>
+
+    <ChartYAxes>
+        <ChartYAxis Max="@maxchart" Min="@minchart">
+            <ChartYAxisTitle Text=""></ChartYAxisTitle>
+        </ChartYAxis>
+    </ChartYAxes>
+
+</TelerikChart> *@
+
+
+<TelerikChart @ref="Chart2" Class="chart"  Transitions="false" RenderAs="@RenderingMode.Canvas" Width="100%">
+    <ChartLegend Visible="false"></ChartLegend>
+
+    <ChartSeriesItems>
+
+        <ChartSeries Type="ChartSeriesType.Line"
+                     Data="@Ticks"
+                     Field="@nameof(TradeApi.Price)">
+        </ChartSeries> 
+
+    </ChartSeriesItems>
+    
+    <ChartValueAxes>
+        <ChartValueAxis Min="minchart" Max="maxchart" ></ChartValueAxis>
+    </ChartValueAxes>
+
+</TelerikChart>
+
+@code {
+
+    public List<TradeApi> Ticks { get; set; }
+
+    [Parameter]
+    public SecurityApi secutityMain { get; set; }
+
+    double minchart { get; set; } 
+    double maxchart { get; set; } 
+
+    public TelerikChart Chart2 { get; set; }
+
+    int counter = 0;
+
+    object locker = new object();
+
+    public void ProcessTicks(List<TradeApi> ticks)
+    {
+        lock (locker)
+        {
+
+            foreach (var tick in ticks)
+            {
+                counter += 1;
+                tick.IndexForChart = counter;
+
+                if (Ticks == null)
+                {
+                    Ticks = new List<TradeApi>();
+                }
+
+                //Console.WriteLine($" {secutityMain.Isin} Added New tick {tick.Price} index {tick.IndexForChart}");
+                Ticks.Add(tick);
+
+                if (Ticks.Count > 30)
+                    Ticks.RemoveAt(0);
+            }
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+
+    public void SetMaxMin(double max, double min)
+    {
+        minchart = min;
+        maxchart = max;
+
+        InvokeAsync(StateHasChanged);
+    }
+
+}

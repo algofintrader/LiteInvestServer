@@ -298,7 +298,7 @@
 				TItem="@ClusterLevel"
 				OnRowClick="@OnRowClickHandler" 
 				ScrollMode="@GridScrollMode.Virtual"
-				PageSize="120">
+				PageSize="@pagesize">
 
 					<GridColumns>
 						<GridColumn Width="1fr" Field="@nameof(ClusterLevel.Price)" HeaderClass="d-none" />
@@ -324,7 +324,9 @@
 			</Telerik.Blazor.Components.GridLayoutItem>
 			<Telerik.Blazor.Components.GridLayoutItem Row="1" Column="2">
 
-				<TelerikChart Class="chart" @ref="Chart2" Transitions="false" RenderAs="@RenderingMode.Canvas"  Width="100%">
+				<Chart @key="secutityMain.SpecialHash" @ref="ChartComponent" secutityMain="secutityMain"> </Chart>
+
+				@* <TelerikChart Class="chart" @ref="Chart2" Transitions="false" RenderAs="@RenderingMode.Canvas"  Width="100%">
 					<ChartLegend Visible="false"></ChartLegend>
 
 					<ChartSeriesItems>
@@ -345,7 +347,7 @@
 					</ChartValueAxes>
 
 
-				</TelerikChart>  
+				</TelerikChart>   *@
 
 				@* 
 				<DxChart CssClass="chart"
@@ -411,7 +413,7 @@
 				ScrollMode="@GridScrollMode.Virtual"
 				Pageable="false"
 				Sortable="false"
-				PageSize="120">
+				PageSize="@pagesize">
 					<GridColumns>
 						<GridColumn Width="1fr" Field="@nameof(MarketDepthLevel.Volume)" HeaderClass="d-none" />
 						<GridColumn Width="1fr"  Field="@nameof(MarketDepthLevel.Price)" HeaderClass="d-none" />
@@ -723,7 +725,7 @@
 
 				copyclusters[index] = lastclusterItem;
 
-				Console.WriteLine($"Updated {secutityMain.Isin} level {tickAgregatedLevel} ");
+				//Console.WriteLine($"Updated {secutityMain.Isin} level {tickAgregatedLevel} ");
 			}
 		}
 
@@ -742,26 +744,12 @@
 			ProcessClusterTick(ticks);
 			UpdateClastersGrid();
 
-			foreach (var tick in ticks)
-			{
-				tick.IndexForChart = counter++;
-
-				if (Ticks == null)
-				{
-					//Ticks = new List<TradeApi>();
-					//InvokeAsync(StateHasChanged);
-				}
-
-				Console.WriteLine($" {secutityMain.Isin} Added New tick {tick.Price} index {tick.IndexForChart}");
-				Ticks.Add(tick);
-
-				if (Ticks.Count > 10 ) 
-					Ticks.RemoveAt(0);
-			}
+			if (ChartComponent != null)
+				ChartComponent.ProcessTicks(ticks);
 
 		}
 
-		Chart2.Refresh();
+		//Chart2.Refresh();
 		//к сожалению нужно обновлению, а это означает что придется переносить все компоненты
 		//InvokeAsync(StateHasChanged);
 		//UpdateChart();
@@ -1034,105 +1022,105 @@
 
 		var copy = _quotesList.ToList();
 
-        if (!crypto)
-        {
-            foreach (var quoteKey in oldQuotes.Keys.ToList())
-            {
+		if (!crypto)
+		{
+			foreach (var quoteKey in oldQuotes.Keys.ToList())
+			{
 
-                if (!newdictionaryQuotes.ContainsKey(quoteKey))
-                {
-                    //меняем коллекицю внутри цикла
-                    oldQuotes.TryRemove(quoteKey, out var _);
+				if (!newdictionaryQuotes.ContainsKey(quoteKey))
+				{
+				//меняем коллекицю внутри цикла
+					oldQuotes.TryRemove(quoteKey, out var _);
 
-                    //Уровень удален.. 
-                    //Значит кидаем 0
-                    if (!IndexesQuotes.ContainsKey(quoteKey))
-                        continue;
+					//Уровень удален.. 
+					//Значит кидаем 0
+					if (!IndexesQuotes.ContainsKey(quoteKey))
+						continue;
 
-                    var indexfound = IndexesQuotes[quoteKey];
-                    //меняем на нулевой
+					var indexfound = IndexesQuotes[quoteKey];
+					//меняем на нулевой
 
-                    var emptylevel = MarketDepthLevel.GetEmptyLevel(quoteKey);
+					var emptylevel = MarketDepthLevel.GetEmptyLevel(quoteKey);
 
-                    //_quotesList[indexfound] = emptylevel;
-                    copy[indexfound] = emptylevel;
+					//_quotesList[indexfound] = emptylevel;
+					copy[indexfound] = emptylevel;
 
-                    if (logquotes)
-                        Console.WriteLine($" {secutityMain.id} Level removed {quoteKey} index = {indexfound}");
+					if (logquotes)
+						Console.WriteLine($" {secutityMain.id} Level removed {quoteKey} index = {indexfound}");
 
-                }
-                else
-                {
-                    //новая котировка
-                    var freshQuote = newdictionaryQuotes[quoteKey];
-                    var oldquote = oldQuotes[quoteKey];
+				}
+				else
+				{
+				//новая котировка
+					var freshQuote = newdictionaryQuotes[quoteKey];
+					var oldquote = oldQuotes[quoteKey];
 
-                    if (oldquote != freshQuote)
-                    {
-                        oldQuotes[quoteKey] = freshQuote;
+					if (oldquote != freshQuote)
+					{
+						oldQuotes[quoteKey] = freshQuote;
 
-                        if (!IndexesQuotes.ContainsKey(quoteKey))
-                            continue;
+						if (!IndexesQuotes.ContainsKey(quoteKey))
+							continue;
 
-                        //Поменялась котировочка.. 
-                        var indexfound = IndexesQuotes[quoteKey];
+							//Поменялась котировочка.. 
+						var indexfound = IndexesQuotes[quoteKey];
 
-                        //_quotesList[indexfound] = freshQuote;
-                        copy[indexfound] = freshQuote;
+						//_quotesList[indexfound] = freshQuote;
+						copy[indexfound] = freshQuote;
 
-                        if (logquotes)
-                            Console.WriteLine($" {secutityMain.id} Level Changed! {quoteKey} index = {indexfound}");
+						if (logquotes)
+							Console.WriteLine($" {secutityMain.id} Level Changed! {quoteKey} index = {indexfound}");
 
-                    }
+					}
 
-                }
-
-
-            }
-
-            foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
-            {
-                //в нашей колекции нет нового уровня... 
-                if (!oldQuotes.ContainsKey(quoteKey))
-                {
-                    oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
-
-                    if (!IndexesQuotes.ContainsKey(quoteKey))
-                        continue;
-
-                    var indexfound = IndexesQuotes[quoteKey];
-
-                    //_quotesList[indexfound] = newdictionaryQuotes[quoteKey];
-                    copy[indexfound] = newdictionaryQuotes[quoteKey];
-
-                    if (logquotes)
-                        Console.WriteLine($" {secutityMain.id} Level Added! {quoteKey} index = {indexfound}");
-
-                }
-            }
-        }
-        else
-        {
-            foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
-            {
-                //в нашей колекции нет нового уровня... 
-                oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
-
-                if (!IndexesQuotes.ContainsKey(quoteKey))
-                    continue;
-
-                var indexfound = IndexesQuotes[quoteKey];
-
-                //_quotesList[indexfound] = newdictionaryQuotes[quoteKey];
-                copy[indexfound] = newdictionaryQuotes[quoteKey];
-
-                if (logquotes)
-                    Console.WriteLine($" {secutityMain.id} Level Added! {quoteKey} index = {indexfound}");
-            }
-        }
+				}
 
 
-        return copy;
+			}
+
+			foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
+			{
+			//в нашей колекции нет нового уровня... 
+				if (!oldQuotes.ContainsKey(quoteKey))
+				{
+					oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
+
+					if (!IndexesQuotes.ContainsKey(quoteKey))
+						continue;
+
+					var indexfound = IndexesQuotes[quoteKey];
+
+					//_quotesList[indexfound] = newdictionaryQuotes[quoteKey];
+					copy[indexfound] = newdictionaryQuotes[quoteKey];
+
+					if (logquotes)
+						Console.WriteLine($" {secutityMain.id} Level Added! {quoteKey} index = {indexfound}");
+
+				}
+			}
+		}
+		else
+		{
+			foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
+			{
+			//в нашей колекции нет нового уровня... 
+				oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
+
+				if (!IndexesQuotes.ContainsKey(quoteKey))
+					continue;
+
+				var indexfound = IndexesQuotes[quoteKey];
+
+				//_quotesList[indexfound] = newdictionaryQuotes[quoteKey];
+				copy[indexfound] = newdictionaryQuotes[quoteKey];
+
+				if (logquotes)
+					Console.WriteLine($" {secutityMain.id} Level Added! {quoteKey} index = {indexfound}");
+			}
+		}
+
+
+		return copy;
 
 	}
 
@@ -1233,7 +1221,7 @@
 
 		//с бинанса может такой апдейт прийти
 		if(bids.Count!=0)
-		usualbestbid = real ? bids[0].Price : asks[0].Price;
+			usualbestbid = real ? bids[0].Price : asks[0].Price;
 
 		lock (scalelocker)
 		{
@@ -1273,9 +1261,11 @@
 
 	//Половина видимых индексов
 	public decimal middleamountofitems { get; set; } = 20;
+	public Chart ChartComponent { get; set; }
+	public int pagesize { get; set; } = 150;
 
 
-	private void NewMyOrder(Order myorder)
+    private void NewMyOrder(Order myorder)
 	{
 		try{
 	/*if (myorder.SecurityId != secutityMain.id)
@@ -1349,6 +1339,8 @@
 
 				}
 			}
+
+            
 
 			if (keyCode == minusHotKey)
 			{
@@ -1449,6 +1441,8 @@
 
 			Console.WriteLine($"Scrolled max = {maxchart} min = {minchart}");
 
+            if(ChartComponent!=null)
+                ChartComponent.SetMaxMin(maxchart,minchart);
 	
 			//if(Chart!=null)
             //Chart.RefreshData();
@@ -1466,9 +1460,9 @@
 				lastVisibleIndex = index;
 			} */
 
-            Console.WriteLine($"{firstVisibleIndex} {firstVisibleRowPrice}");
+           /*  Console.WriteLine($"{firstVisibleIndex} {firstVisibleRowPrice}");
             Console.WriteLine($"{lastVisibleIndex} {lastVisibleRowPrice}");
-			Console.WriteLine($"Видимые {gridTableId} строки {visibleRowCount}");
+			Console.WriteLine($"Видимые {gridTableId} строки {visibleRowCount}"); */
 		}
 
 		

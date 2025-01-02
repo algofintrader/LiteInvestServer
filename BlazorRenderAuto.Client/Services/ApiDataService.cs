@@ -16,6 +16,7 @@ using Binance.Net.Objects.Models.Futures.Socket;
 using CryptoExchange.Net.Objects.Sockets;
 using Binance.Net.Objects.Models.Spot;
 using Binance.Net.Interfaces.Clients;
+using Binance.Net.Objects.Models.Spot.Socket;
 
 
 namespace BlazorRenderAuto.Client.Services
@@ -306,36 +307,49 @@ namespace BlazorRenderAuto.Client.Services
 		{
 			try
 			{
-				var webscoketrequest =
-					websocketurl
-						.AddParameter("stream", "public_trades")
-						.AddParameter("sec_id", secid)
-						.AddParameter("liteinvest", token);
 
-
-				var websocketClient = new WebsocketClient(webscoketrequest);
-
-				websocketClient.MessageReceived.Subscribe(msg =>
+				if (!crypto)
 				{
-					try
+
+
+					var webscoketrequest =
+						websocketurl
+							.AddParameter("stream", "public_trades")
+							.AddParameter("sec_id", secid)
+							.AddParameter("liteinvest", token);
+
+
+					var websocketClient = new WebsocketClient(webscoketrequest);
+
+					websocketClient.MessageReceived.Subscribe(msg =>
 					{
-						// var ticks = JsonConvert.DeserializeObject<List<Trade>>(msg.Text);
-						var ticks = JsonConvert.DeserializeObject<List<TradeApi>>(msg.Text);
-						NewTicks?.Invoke(ticks[0].SecurityId, ticks);
-					}
-					catch (Exception ex)
-					{
-						Console.WriteLine(ex.ToString());
-					}
+						try
+						{
+							// var ticks = JsonConvert.DeserializeObject<List<Trade>>(msg.Text);
+							var ticks = JsonConvert.DeserializeObject<List<TradeApi>>(msg.Text);
+							NewTicks?.Invoke(ticks[0].SecurityId, ticks);
+						}
+						catch (Exception ex)
+						{
+							Console.WriteLine(ex.ToString());
+						}
 
-				});
+					});
 
-				Console.WriteLine(webscoketrequest);
+					Console.WriteLine(webscoketrequest);
 
-				var hash = websocketClient.GetHashCode();
-				AllWebSockets.TryAdd(hash, websocketClient);
-				await websocketClient.Start();
-				return hash;
+					var hash = websocketClient.GetHashCode();
+					AllWebSockets.TryAdd(hash, websocketClient);
+					await websocketClient.Start();
+					return hash;
+				}
+				else
+				{
+					var res = await binanceSocketClient.UsdFuturesApi.ExchangeData.SubscribeToTradeUpdatesAsync(secid, ProcessCryptoTick);
+					AllWebSockets.TryAdd(res.Data.SocketId, null);
+					Console.WriteLine($"{secid} subscription {res.Success}");
+					return res.Data.SocketId;
+				}
 			}
 			catch (Exception ex)
 			{
@@ -345,7 +359,21 @@ namespace BlazorRenderAuto.Client.Services
 
 		}
 
-		
+		private void ProcessCryptoTick(DataEvent<BinanceStreamTrade> tick)
+		{
+
+			var tradeTicks = new List<TradeApi>();
+			tradeTicks.Add(new TradeApi()
+			{
+				Price = tick.Data.Price,
+				SecurityId = tick.Symbol.ToUpper(),
+				Volume = tick.Data.Quantity, 
+				Time = tick.Data.TradeTime, 
+				Side = tick.Data.BuyerIsMaker ? Side.Buy:Side.Sell
+			});
+			NewTicks?.Invoke(tick.Symbol.ToUpper(), tradeTicks);
+		}
+
 		public async Task<int?> SubscribeOrderBook(string secid)
 		{
 			try
@@ -396,25 +424,25 @@ namespace BlazorRenderAuto.Client.Services
 					//	ProcessCryptoOrderBook(binanceOrderbok.Data, binanceOrderbok.Symbol);
 					//});
 
-
-					var res = binanceSocketClient.UsdFuturesApi.ExchangeData.SubscribeToOrderBookUpdatesAsync(secid, 100, (binanceOrderbok) =>
-					{
-						ProcessCryptoOrderBook(binanceOrderbok.Data, binanceOrderbok.Symbol);
-					});
-
-					Console.WriteLine($"Result websocket {res.Id} order book res = {res.Result}");
-
 					//Getting full order book
 					var getfullorderbook = await binanceRestClient.UsdFuturesApi.ExchangeData.GetOrderBookAsync(secid);
 
 					//TODO: Should be accurate with sec id in process FULL ORDER BOOK
 					ProcessCryptoOrderBook(getfullorderbook.Data, secid);
 
+					var res = await binanceSocketClient.UsdFuturesApi.ExchangeData.SubscribeToOrderBookUpdatesAsync(secid, 100, (binanceOrderbok) =>
+					{
+						ProcessCryptoOrderBook(binanceOrderbok.Data, binanceOrderbok.Symbol);
+					});
+
+					Console.WriteLine($"Result websocket {res.Data.SocketId} order book res = {res.Success}");
+
+
 					Console.WriteLine($"Result gettting FULL orderbook res = {getfullorderbook.Success}");
 
-					AllWebSockets.TryAdd(res.Id, null);
+					AllWebSockets.TryAdd(res.Data.SocketId, null);
 
-					return res.Id;
+					return res.Data.SocketId;
 
 
 				}
