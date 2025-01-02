@@ -110,7 +110,7 @@ Resizable="true"
     [Parameter] public ObservableCollection<SecurityApi> SecurityOpened { get; set; }
 
     IEnumerable<SecurityApi> Instruments { get; set; }
-    string textlogin = "Войти";
+    string textlogin = "Log In";
 
     private string AutoComplete { get; set; }
 
@@ -143,12 +143,13 @@ Resizable="true"
 
         try
         {
-            loadingLogIn = true;
 
+
+
+            loadingLogIn = true;
             textForLogin = "Входим";
 
             var res = await ApiDataService.LogIn("samujan1@yandex.ru", "pass2");
-            
 
             if (res == null)
             {

@@ -513,7 +513,7 @@
 		lock (scalelocker)
 		{
 			if (newdictionaryQuotes != null && newdictionaryQuotes.Count != 0)
-				AlgoQuotesScale(newscale, newdictionaryQuotes, usualbestbid);
+				AlgoQuotesScale(newscale, newdictionaryQuotes, usualbestbid,true); // TODO: временно прописал напрямую
 		}
 	}
 
@@ -844,7 +844,7 @@
 	{
 		try
 		{
-			int levels = 500 ;
+			int levels = 3000 ;
 
 			//округление
 			// var min = (bestbid * 0.7m);
@@ -1029,87 +1029,110 @@
 
 	private List<MarketDepthLevel> CompareOldWithNewAndPlaceIndexes
 	(ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,
-		ConcurrentDictionary<decimal, MarketDepthLevel> oldQuotes , ICollection<MarketDepthLevel> _quotesList)
+		ConcurrentDictionary<decimal, MarketDepthLevel> oldQuotes , ICollection<MarketDepthLevel> _quotesList,bool crypto)
 	{
 
 		var copy = _quotesList.ToList();
 
-		foreach (var quoteKey in oldQuotes.Keys.ToList())
-		{
+        if (!crypto)
+        {
+            foreach (var quoteKey in oldQuotes.Keys.ToList())
+            {
 
-			if (!newdictionaryQuotes.ContainsKey(quoteKey))
-			{
-				//меняем коллекицю внутри цикла
-				oldQuotes.TryRemove(quoteKey, out var _);
+                if (!newdictionaryQuotes.ContainsKey(quoteKey))
+                {
+                    //меняем коллекицю внутри цикла
+                    oldQuotes.TryRemove(quoteKey, out var _);
 
-				//Уровень удален.. 
-				//Значит кидаем 0
-				if (!IndexesQuotes.ContainsKey(quoteKey))
-					continue;
+                    //Уровень удален.. 
+                    //Значит кидаем 0
+                    if (!IndexesQuotes.ContainsKey(quoteKey))
+                        continue;
 
-				var indexfound = IndexesQuotes[quoteKey];
-				//меняем на нулевой
+                    var indexfound = IndexesQuotes[quoteKey];
+                    //меняем на нулевой
 
-				var emptylevel = MarketDepthLevel.GetEmptyLevel(quoteKey);
+                    var emptylevel = MarketDepthLevel.GetEmptyLevel(quoteKey);
 
-				//_quotesList[indexfound] = emptylevel;
-				copy[indexfound] = emptylevel;
+                    //_quotesList[indexfound] = emptylevel;
+                    copy[indexfound] = emptylevel;
 
-				if(logquotes)
-					Console.WriteLine($" {secutityMain.id} Level removed {quoteKey} index = {indexfound}");
+                    if (logquotes)
+                        Console.WriteLine($" {secutityMain.id} Level removed {quoteKey} index = {indexfound}");
 
-			}
-			else
-			{
-				//новая котировка
-				var freshQuote = newdictionaryQuotes[quoteKey];
-				var oldquote = oldQuotes[quoteKey];
+                }
+                else
+                {
+                    //новая котировка
+                    var freshQuote = newdictionaryQuotes[quoteKey];
+                    var oldquote = oldQuotes[quoteKey];
 
-				if (oldquote != freshQuote)
-				{
-					oldQuotes[quoteKey] = freshQuote;
+                    if (oldquote != freshQuote)
+                    {
+                        oldQuotes[quoteKey] = freshQuote;
 
-					if (!IndexesQuotes.ContainsKey(quoteKey))
-						continue;
+                        if (!IndexesQuotes.ContainsKey(quoteKey))
+                            continue;
 
-					//Поменялась котировочка.. 
-					var indexfound = IndexesQuotes[quoteKey];
+                        //Поменялась котировочка.. 
+                        var indexfound = IndexesQuotes[quoteKey];
 
-					//_quotesList[indexfound] = freshQuote;
-					copy[indexfound] = freshQuote;
+                        //_quotesList[indexfound] = freshQuote;
+                        copy[indexfound] = freshQuote;
 
-					if(logquotes)
-						Console.WriteLine($" {secutityMain.id} Level Changed! {quoteKey} index = {indexfound}");
+                        if (logquotes)
+                            Console.WriteLine($" {secutityMain.id} Level Changed! {quoteKey} index = {indexfound}");
 
-				}
+                    }
 
-			}
+                }
 
 
-		}
+            }
 
-		foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
-		{
-			//в нашей колекции нет нового уровня... 
-			if (!oldQuotes.ContainsKey(quoteKey))
-			{
-				oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
+            foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
+            {
+                //в нашей колекции нет нового уровня... 
+                if (!oldQuotes.ContainsKey(quoteKey))
+                {
+                    oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
 
-				if (!IndexesQuotes.ContainsKey(quoteKey))
-					continue;
+                    if (!IndexesQuotes.ContainsKey(quoteKey))
+                        continue;
 
-				var indexfound = IndexesQuotes[quoteKey];
+                    var indexfound = IndexesQuotes[quoteKey];
 
-				//_quotesList[indexfound] = newdictionaryQuotes[quoteKey];
-				copy[indexfound] = newdictionaryQuotes[quoteKey];
+                    //_quotesList[indexfound] = newdictionaryQuotes[quoteKey];
+                    copy[indexfound] = newdictionaryQuotes[quoteKey];
 
-				if(logquotes)
-					Console.WriteLine($" {secutityMain.id} Level Added! {quoteKey} index = {indexfound}");
+                    if (logquotes)
+                        Console.WriteLine($" {secutityMain.id} Level Added! {quoteKey} index = {indexfound}");
 
-			}
-		}
+                }
+            }
+        }
+        else
+        {
+            foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
+            {
+                //в нашей колекции нет нового уровня... 
+                oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
 
-		return copy;
+                if (!IndexesQuotes.ContainsKey(quoteKey))
+                    continue;
+
+                var indexfound = IndexesQuotes[quoteKey];
+
+                //_quotesList[indexfound] = newdictionaryQuotes[quoteKey];
+                copy[indexfound] = newdictionaryQuotes[quoteKey];
+
+                if (logquotes)
+                    Console.WriteLine($" {secutityMain.id} Level Added! {quoteKey} index = {indexfound}");
+            }
+        }
+
+
+        return copy;
 
 	}
 
@@ -1156,7 +1179,7 @@
 
 
 	//if (prevbuildScale != Scale)
-	private void AlgoQuotesScale(int newscale, ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,decimal bestbbid)
+	private void AlgoQuotesScale(int newscale, ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,decimal bestbbid,bool crypto)
 	{
 		//поменялся масштаб
 		if (newscale != prevbuildScale)
@@ -1167,7 +1190,7 @@
 			QuotesDictionary.Clear();
 
 			//TODO: исправить временная фикса
-			Quotes = CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary, initialquotes);
+			Quotes = CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary, initialquotes, crypto);
 			ClusterDatas = BuildEmptyClusterLevels(initialquotes);
 			//UpdateQuotesGrid();
 
@@ -1195,7 +1218,8 @@
 		}
 		else
 		{
-			Quotes = CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,Quotes);
+			//TODO: Крипта пока что вшита напрямую,
+			Quotes = CompareOldWithNewAndPlaceIndexes(newdictionaryQuotes, QuotesDictionary,Quotes,true);
 			UpdateQuotesGrid();
 		}
 
@@ -1207,6 +1231,8 @@
 		if (secID != secutityMain.id)
 			return;
 
+		//с бинанса может такой апдейт прийти
+		if(bids.Count!=0)
 		usualbestbid = real ? bids[0].Price : asks[0].Price;
 
 		lock (scalelocker)
@@ -1220,7 +1246,7 @@
 			}
 
 			newdictionaryQuotes = ScaleBuilderQuotes(easyDictionaryCurrent);
-			AlgoQuotesScale(Scale, newdictionaryQuotes, usualbestbid);
+			AlgoQuotesScale(Scale, newdictionaryQuotes, usualbestbid,true);
 
 			/*maxask = agregatedBestbid + middleamountofitems;
 			minbid = agregatedBestbid - middleamountofitems;

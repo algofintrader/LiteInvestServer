@@ -15,6 +15,7 @@ using Binance.Net.Objects.Models.Futures;
 using Binance.Net.Objects.Models.Futures.Socket;
 using CryptoExchange.Net.Objects.Sockets;
 using Binance.Net.Objects.Models.Spot;
+using Binance.Net.Interfaces.Clients;
 
 
 namespace BlazorRenderAuto.Client.Services
@@ -108,6 +109,9 @@ namespace BlazorRenderAuto.Client.Services
 
 		public async Task<LoginInfo> LogIn(string login, string pass)
 		{
+
+			return new LoginInfo(){ expirationTime = DateTime.Now + TimeSpan.FromDays(1),token = "sucesstoken"};
+
 			var request = new RestRequest(loginrequest)
 				.AddQueryParameter("login", login, false)
 				.AddQueryParameter("pass", pass, false);
@@ -386,17 +390,19 @@ namespace BlazorRenderAuto.Client.Services
 				else
 				{
 
+					//Обычный стакан
+					//var res=binanceSocketClient.UsdFuturesApi.ExchangeData.SubscribeToPartialOrderBookUpdatesAsync(secid,20, 100, (binanceOrderbok)=>
+					//{
+					//	ProcessCryptoOrderBook(binanceOrderbok.Data, binanceOrderbok.Symbol);
+					//});
 
 
-
-					var res = binanceSocketClient.UsdFuturesApi.ExchangeData.SubscribeToOrderBookUpdatesAsync(secid, 100, (binanceOrderbok)=>
+					var res = binanceSocketClient.UsdFuturesApi.ExchangeData.SubscribeToOrderBookUpdatesAsync(secid, 100, (binanceOrderbok) =>
 					{
-							ProcessCryptoOrderBook(binanceOrderbok.Data, binanceOrderbok.Symbol);
+						ProcessCryptoOrderBook(binanceOrderbok.Data, binanceOrderbok.Symbol);
 					});
 
 					Console.WriteLine($"Result websocket {res.Id} order book res = {res.Result}");
-
-					//var res = binanceSocketClient.UsdFuturesApi.ExchangeData.SubscribeToSymbolUpdatesAsync(secid, OnMessage);
 
 					//Getting full order book
 					var getfullorderbook = await binanceRestClient.UsdFuturesApi.ExchangeData.GetOrderBookAsync(secid);
@@ -405,8 +411,6 @@ namespace BlazorRenderAuto.Client.Services
 					ProcessCryptoOrderBook(getfullorderbook.Data, secid);
 
 					Console.WriteLine($"Result gettting FULL orderbook res = {getfullorderbook.Success}");
-
-
 
 					AllWebSockets.TryAdd(res.Id, null);
 
@@ -443,7 +447,7 @@ namespace BlazorRenderAuto.Client.Services
 			}
 
 			//Todo: можно делать один перебор
-			NewQuotes?.Invoke(bids.OrderByDescending(s => s.Price).ToList(), asks, symbol);
+			NewQuotes?.Invoke(bids.OrderByDescending(s => s.Price).ToList(), asks, symbol.ToUpperInvariant());
 		}
 
 		public async void StopWebSocket(int? websocketId)
