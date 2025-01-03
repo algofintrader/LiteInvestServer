@@ -87,7 +87,7 @@ namespace BlazorRenderAuto.Client.Services
 		public WebsocketClient orderwebcocketclient { get; private set; }
 
 		private ConcurrentDictionary<int, WebsocketClient> AllWebSockets = new();
-
+		private ConcurrentDictionary<int, UpdateSubscription> AllCryptoSockets = new();
 		public Action<List<MarketDepthLevel>, List<MarketDepthLevel>,string> NewQuotes { get; set; }
 
 
@@ -346,9 +346,9 @@ namespace BlazorRenderAuto.Client.Services
 				else
 				{
 					var res = await binanceSocketClient.UsdFuturesApi.ExchangeData.SubscribeToTradeUpdatesAsync(secid, ProcessCryptoTick);
-					AllWebSockets.TryAdd(res.Data.SocketId, null);
+					AllCryptoSockets[res.GetHashCode()] = res.Data;
 					Console.WriteLine($"{secid} subscription {res.Success}");
-					return res.Data.SocketId;
+					return res.GetHashCode();
 				}
 			}
 			catch (Exception ex)
@@ -435,14 +435,16 @@ namespace BlazorRenderAuto.Client.Services
 						ProcessCryptoOrderBook(binanceOrderbok.Data, binanceOrderbok.Symbol);
 					});
 
+					
+
 					Console.WriteLine($"Result websocket {res.Data.SocketId} order book res = {res.Success}");
 
 
 					Console.WriteLine($"Result gettting FULL orderbook res = {getfullorderbook.Success}");
 
-					AllWebSockets.TryAdd(res.Data.SocketId, null);
+					AllCryptoSockets[res.GetHashCode()] = res.Data;
 
-					return res.Data.SocketId;
+					return res.GetHashCode();
 
 
 				}
@@ -483,10 +485,10 @@ namespace BlazorRenderAuto.Client.Services
 
 			if (crypto)
 			{
+				if (AllCryptoSockets.ContainsKey((int) websocketId))
+					AllCryptoSockets[(int)websocketId].CloseAsync();
 
-				var cryptoResult = binanceSocketClient.UnsubscribeAsync((int)websocketId);
-
-				Console.WriteLine($"Crypto unsubscribe id = {websocketId} status = {cryptoResult.Status}");
+				Console.WriteLine($"Crypto unsubscribe id = {websocketId} ");
 				return;
 
 			}

@@ -116,7 +116,7 @@ function getWheelEvent(historyTableId) {
                             column.style.width = `${currentWidth - zoomStep}px`;
                         }
 
-                    })
+                    });
                 }
                 else {
                     console.log("Элемент с ID " + gridTableId + " не найден");

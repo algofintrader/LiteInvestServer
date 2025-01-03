@@ -404,8 +404,8 @@
 
 				<TelerikGrid 
 				@ref="QuotesGrid" Id="@GridTableId" 
-				OnRowClick="@OnRowClickHandler" 
-				EnableLoaderContainer="true"
+                OnRowClick="@OnRowClickHandler" 
+                EnableLoaderContainer="true"
 				RowHeight="15"
 				Height="90vh"
 				Data="@Quotes"
@@ -515,7 +515,7 @@
 		lock (scalelocker)
 		{
 			if (newdictionaryQuotes != null && newdictionaryQuotes.Count != 0)
-				AlgoQuotesScale(newscale, newdictionaryQuotes, usualbestbid,true); // TODO: временно прописал напрямую
+				AlgoQuotesScale(newscale, newdictionaryQuotes, usualbestbid,true,savedAgregatedBestbid); // TODO: временно прописал напрямую
 		}
 	}
 
@@ -655,7 +655,7 @@
 	{
 
 		// была попытка перевести 
-		Console.WriteLine($"{DateTime.Now} Should {secutityMain.id} Render WorkWindow");
+		Console.WriteLine($"{DateTime.Now} Should {secutityMain.Isin} Render WorkWindow");
 
 		// if (lastsecHashOpened == secutityMain.SpecialHash)
 		// {
@@ -839,7 +839,6 @@
 
 			decimal agrregatedlevel = bestbid - bestbid % (secutityMain.PriceStep * Scale);
 
-			agregatedBestbid = agrregatedlevel;
 
 			//previous 
 			// var min = bestbid - levels * secutityMain.PriceStep * Scale;
@@ -905,7 +904,7 @@
 
 	}
 
-	public decimal agregatedBestbid { get; set; }
+	public decimal savedAgregatedBestbid { get; set; }
 
 	bool skipped = false;
 
@@ -922,14 +921,15 @@
 	//        }
 	//    }
 
-	public async void ScrollTo <T>(int index,TelerikGrid <T> _grid)
+	public async Task ScrollTo <T>(int index,TelerikGrid <T> _grid)
 	{
 
 		if (_grid != null)
 		{
 			skipped = true;
 			var state = _grid.GetState();
-			var scrollindex = index - 10;
+			//TODO по хорошему надо выяснить сколько элементов показывается на экране... 
+			var scrollindex = index - 20;
 			state.Skip = scrollindex;
 
 			//TODO: Может выскочить ошибка
@@ -1029,7 +1029,7 @@
 
 				if (!newdictionaryQuotes.ContainsKey(quoteKey))
 				{
-				//меняем коллекицю внутри цикла
+					//меняем коллекицю внутри цикла
 					oldQuotes.TryRemove(quoteKey, out var _);
 
 					//Уровень удален.. 
@@ -1051,7 +1051,7 @@
 				}
 				else
 				{
-				//новая котировка
+					//новая котировка
 					var freshQuote = newdictionaryQuotes[quoteKey];
 					var oldquote = oldQuotes[quoteKey];
 
@@ -1062,7 +1062,7 @@
 						if (!IndexesQuotes.ContainsKey(quoteKey))
 							continue;
 
-							//Поменялась котировочка.. 
+						//Поменялась котировочка.. 
 						var indexfound = IndexesQuotes[quoteKey];
 
 						//_quotesList[indexfound] = freshQuote;
@@ -1080,7 +1080,7 @@
 
 			foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
 			{
-			//в нашей колекции нет нового уровня... 
+				//в нашей колекции нет нового уровня... 
 				if (!oldQuotes.ContainsKey(quoteKey))
 				{
 					oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
@@ -1103,7 +1103,7 @@
 		{
 			foreach (var quoteKey in newdictionaryQuotes.Keys.ToList())
 			{
-			//в нашей колекции нет нового уровня... 
+				//в нашей колекции нет нового уровня... 
 				oldQuotes[quoteKey] = newdictionaryQuotes[quoteKey];
 
 				if (!IndexesQuotes.ContainsKey(quoteKey))
@@ -1148,12 +1148,19 @@
 
 	public TelerikChart Chart2 { get; set; }
 
-
+	private int prevbestbid = 0;
 	private void UpdateBestBidIndex(decimal _bestbid)
 	{
 		if (IndexesQuotes.ContainsKey(_bestbid))
 		{
 			bestbidIndex = IndexesQuotes[_bestbid];
+
+            if (prevbestbid != bestbidIndex)
+            {
+               // Console.WriteLine($"New BestBid Index {bestbidIndex} prev={prevbestbid}");
+            }
+
+            prevbestbid = bestbidIndex;
 		}
 	}
 
@@ -1167,7 +1174,7 @@
 
 
 	//if (prevbuildScale != Scale)
-	private void AlgoQuotesScale(int newscale, ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes,decimal bestbbid,bool crypto)
+	private void AlgoQuotesScale(int newscale, ConcurrentDictionary<decimal, MarketDepthLevel> newdictionaryQuotes, decimal bestbbid, bool crypto, decimal agregatedBestbid)
 	{
 		//поменялся масштаб
 		if (newscale != prevbuildScale)
@@ -1184,21 +1191,18 @@
 
 			UpdateBestBidIndex(agregatedBestbid);
 
-			InvokeAsync(StateHasChanged).GetAwaiter();
+			//TODO: вот это мракобесие надо выносить в отдельный компонент
+
+			StateHasChanged();
 
 			ScrollTo(bestbidIndex, QuotesGrid);
-			ScrollTo(bestbidIndex, ClustersGrid);
+            ScrollTo(bestbidIndex, ClustersGrid);
 			// ---- теперь тоже саоме по кластерам //
-
 
 
 			//UpdateClastersGrid();
 
-			InvokeAsync(StateHasChanged).GetAwaiter();
-
 			//ScrollTo(bestbidIndex, ClustersGrid);
-
-
 
 			initial = false;
 
@@ -1225,32 +1229,11 @@
 
 		lock (scalelocker)
 		{
+            savedAgregatedBestbid = usualbestbid - usualbestbid % (secutityMain.PriceStep * Scale);
 			var easyDictionaryCurrent = BuildMarketDepthDictionary(bids, asks);
 
-			//из-за погано работающей симуляиции приходится так делать
-			if (!real)
-			{
-				easyDictionaryCurrent = BuildMarketDepthDictionary(asks, bids);
-			}
-
 			newdictionaryQuotes = ScaleBuilderQuotes(easyDictionaryCurrent);
-			AlgoQuotesScale(Scale, newdictionaryQuotes, usualbestbid,true);
-
-			/*maxask = agregatedBestbid + middleamountofitems;
-			minbid = agregatedBestbid - middleamountofitems;
-
-			if (!initial)
-			{
-			initial = true;
-
-			/*maxchart = agregatedBestbid + middleamountofitems;
-				minchart = agregatedBestbid - middleamountofitems;
-
-				Console.WriteLine($"max = {maxchart} min = {minchart}");
-				}*/
-
-			// ------- перенос котировок в словарь ------------//
-			//UpdateBestBidIndex(agregatedBestbid);
+			AlgoQuotesScale(Scale, newdictionaryQuotes, usualbestbid, true, savedAgregatedBestbid);
 		}
 	}
 
@@ -1435,6 +1418,7 @@
 			maxchart = double.Parse(firstVisibleRowPrice);
 			minchart = double.Parse(lastVisibleRowPrice);
 
+            range = (int)((maxchart - minchart) / ((double)secutityMain.PriceStep * Scale * 0.5));
 
 			// maxchart = maxprice;
 			// minchart = minprice;
@@ -1470,8 +1454,9 @@
 		//Console.WriteLine($"{windowId}");
 	}
 
+    public int range { get; set; }
 
-	// protected override Task OnParametersSetAsync()
+    // protected override Task OnParametersSetAsync()
 	// {
 	// 	GridData = ApiDataServiceTest.GetQuotes();
 
@@ -1508,6 +1493,7 @@
 
 	}
 
-   
+
+
 
 }

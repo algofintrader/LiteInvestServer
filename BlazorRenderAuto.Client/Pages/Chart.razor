@@ -5,7 +5,7 @@
 
 
 
-@* <TelerikChart @ref="Chart2" Class="chart"  Transitions="false" RenderAs="@RenderingMode.Canvas" Width="100%">
+ <TelerikChart @ref="Chart2" Class="chart"  Transitions="false" RenderAs="@RenderingMode.Canvas" Width="100%">
     <ChartLegend Visible="false"></ChartLegend>
 
     <ChartSeriesItems>
@@ -24,10 +24,10 @@
         </ChartYAxis>
     </ChartYAxes>
 
-</TelerikChart> *@
+</TelerikChart>  
 
 
-<TelerikChart @ref="Chart2" Class="chart"  Transitions="false" RenderAs="@RenderingMode.Canvas" Width="100%">
+@*  <TelerikChart @ref="Chart2" Class="chart"  Transitions="false" RenderAs="@RenderingMode.Canvas" Width="100%">
     <ChartLegend Visible="false"></ChartLegend>
 
     <ChartSeriesItems>
@@ -43,7 +43,7 @@
         <ChartValueAxis Min="minchart" Max="maxchart" ></ChartValueAxis>
     </ChartValueAxes>
 
-</TelerikChart>
+</TelerikChart>  *@
 
 @code {
 
@@ -59,13 +59,16 @@
 
     int counter = 0;
 
-    object locker = new object();
+
 
     public void ProcessTicks(List<TradeApi> ticks)
     {
-        lock (locker)
-        {
 
+        if(ticks==null)
+            return;
+
+        try
+        {
             foreach (var tick in ticks)
             {
                 counter += 1;
@@ -83,6 +86,10 @@
                     Ticks.RemoveAt(0);
             }
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
 
         InvokeAsync(StateHasChanged);
     }
@@ -90,10 +97,17 @@
 
     public void SetMaxMin(double max, double min)
     {
-        minchart = min;
-        maxchart = max;
+        try
+        {
+            minchart = min;
+            maxchart = max;
 
-        InvokeAsync(StateHasChanged);
+            InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
     }
 
 }
